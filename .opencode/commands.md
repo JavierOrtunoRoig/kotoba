@@ -108,6 +108,13 @@ Alternativas desde la app:
 - **Ajustes → Reiniciar progreso**: borra `review_log` y `srs_state`, conserva las palabras.
 - **Ajustes → Borrar biblioteca**: borra palabras, fuentes y progreso; obliga a reimportar.
 
+## Logs
+
+Ruta: `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`.
+
+Desde **Ajustes → Sistema → Abrir carpeta** se abre el directorio. El plugin escribe con nivel
+`Info`; las importaciones, copias, restauraciones y el arranque del scheduler dejan traza.
+
 ## Diagnóstico de la UI con CDP
 
 Útil para verificar pantallas sin depender de capturas de pantalla del escritorio.

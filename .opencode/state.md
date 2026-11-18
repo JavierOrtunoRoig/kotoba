@@ -69,6 +69,7 @@ progreso y ajustes.
 - **Historial:** exportación CSV de `review_log` con fecha local, lectura, significado, dirección,
   resultado, calidad y latencia.
 - **Progreso de importación:** evento `import:progress` cada 25 notas y test del callback.
+- **Logs:** `tauri-plugin-log` escribe en `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`.
 - **Limpieza de medios:** test unitario que conserva el audio referenciado y borra el huérfano.
 
 ## Datos de prueba en el equipo
@@ -108,13 +109,13 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 | Media | `.txt` sin audio | El fallback no puede extraer mp3 |
 | Media | Pantalla completa real | Implementada, pero no probada contra un juego/presentación real |
 | Baja | Icono | Sigue el icono por defecto de Tauri |
-| Baja | Logging | No hay log a archivo ni pantalla de diagnóstico |
+| Baja | Errores con reintento | Los errores se muestran, pero no hay reintento automático |
 | Baja | Accesibilidad | Foco y navegación por teclado mejorables |
 | Baja | CI / firma | No hay pipeline ni instalador firmado |
 
 ## Próximos pasos recomendados
 
-1. **Fase 2.6 — Robustez:** logging a archivo y manejo de errores con reintento.
+1. **Fase 2.6 — Robustez:** manejo de errores con reintento.
 2. **Fase 2.7 — Normalización fina:** romaji opcional y más variantes de IME.
 3. **Fase 2.8 — Distribución:** icono propio, instalador y CI.
 4. **Fase 2.9 — Pantalla completa real:** probar contra un juego/presentación.

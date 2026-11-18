@@ -30,10 +30,11 @@ Lo que ya funciona:
 - **Copia de seguridad** a carpeta (SQLite + audio), **restauración** y limpieza de audios huérfanos.
 - **Exportación del historial** de repasos a CSV.
 - **Progreso de importación** en vivo (evento cada 25 notas).
+- **Logs a archivo** con acceso desde Ajustes.
 - Pantallas de importación, progreso y ajustes.
 
-Pendiente para el resto de la Fase 2: logging/errores con reintento, romaji opcional, icono propio e
-instalador.
+Pendiente para el resto de la Fase 2: manejo de errores con reintento, romaji opcional, icono propio
+e instalador.
 
 ## Stack
 

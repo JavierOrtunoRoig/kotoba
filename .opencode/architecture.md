@@ -230,6 +230,12 @@ La limpieza de medios se ejecuta al borrar la biblioteca y al terminar una impor
 **Restaurar copia** valida el SQLite, cierra la conexión viva, reemplaza base y `media/`, y reabre la
 conexión. **Exportar historial** genera un CSV de `review_log` con fecha local y datos del ítem.
 
+## Logging
+
+`tauri-plugin-log` escribe en `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log` con nivel Info.
+Ajustes → Sistema → **Abrir carpeta** abre ese directorio. Se registran importaciones, copias,
+restauraciones y el arranque del scheduler.
+
 ## Ventanas y capacidades
 
 - `main`: 1120×780 lógica, mínimo 820×600, oculta hasta decidir si hay biblioteca.
