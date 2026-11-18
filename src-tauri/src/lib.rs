@@ -113,8 +113,20 @@ fn submit_answer(
         text::check_es_to_jp(&answer, &item)
     };
 
+    let quality = if correct {
+        if latency_ms <= 5_000 {
+            5
+        } else {
+            4
+        }
+    } else if answer.trim().is_empty() {
+        1
+    } else {
+        2
+    };
+
     let next_interval_minutes =
-        db::record_review(&mut conn, item_id, correct, &direction, latency_ms).map_err(to_err)?;
+        db::record_review(&mut conn, item_id, quality, &direction, latency_ms).map_err(to_err)?;
 
     let expected = if direction == "jp_to_es" {
         text::meaning_variants(&item)

@@ -5,8 +5,40 @@ use rusqlite::{params, Connection, OptionalExtension};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
-/// Intervalos del SRS ligero. Se refinó en la Fase 2.
-const INTERVALS_MINUTES: [i64; 8] = [10, 60, 360, 1440, 4320, 10080, 20160, 43200];
+/// Intervalos de aprendizaje antes de entrar en el ciclo SM-2.
+const LEARNING_INTERVAL_MINUTES: i64 = 10;
+const FIRST_REVIEW_INTERVAL_MINUTES: i64 = 1440;
+pub const MAX_QUALITY: u8 = 5;
+
+/// Calcula el siguiente estado SM-2.
+///
+/// `quality`: 0-5 (5 = acierto rápido, 4 = acierto, 2 = fallo, 1 = no lo sé).
+/// Devuelve `(reps, interval_minutes, ease)`.
+pub fn sm2_next(
+    quality: u8,
+    reps: i64,
+    interval_minutes: i64,
+    ease: f64,
+) -> (i64, i64, f64) {
+    let q = quality.min(MAX_QUALITY) as f64;
+    let ease = (ease + (0.1 - (5.0 - q) * (0.08 + (5.0 - q) * 0.02))).max(1.3);
+
+    if quality < 3 {
+        return (0, LEARNING_INTERVAL_MINUTES, ease);
+    }
+
+    let (reps, interval) = match reps {
+        0 => (1, LEARNING_INTERVAL_MINUTES),
+        1 => (2, FIRST_REVIEW_INTERVAL_MINUTES),
+        _ => {
+            let days = (interval_minutes as f64 / 1440.0) * ease;
+            let interval = (days * 1440.0).round().max(1440.0) as i64;
+            (reps + 1, interval)
+        }
+    };
+
+    (reps, interval, ease)
+}
 
 pub fn open(path: &Path) -> Result<Connection> {
     let mut conn = Connection::open(path)?;
@@ -51,6 +83,7 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
             shown_at    INTEGER NOT NULL,
             answered_at INTEGER,
             result      INTEGER NOT NULL,
+            quality     INTEGER NOT NULL DEFAULT 0,
             latency_ms  INTEGER NOT NULL DEFAULT 0,
             direction   TEXT NOT NULL
         );
@@ -74,6 +107,26 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
         CREATE INDEX IF NOT EXISTS idx_items_pattern ON items(is_pattern);
         "#,
     )?;
+
+    // Migraciones incrementales. `user_version` empieza en 0 en bases nuevas y antiguas.
+    let version: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+    if version < 1 {
+        ensure_column(conn, "review_log", "quality", "INTEGER NOT NULL DEFAULT 0")?;
+        conn.pragma_update(None, "user_version", 1)?;
+    }
+
+    Ok(())
+}
+
+fn ensure_column(conn: &Connection, table: &str, column: &str, definition: &str) -> Result<()> {
+    let exists: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM pragma_table_info(?1) WHERE name = ?2",
+        params![table, column],
+        |row| row.get(0),
+    )?;
+    if exists == 0 {
+        conn.execute_batch(&format!("ALTER TABLE {table} ADD COLUMN {column} {definition}"))?;
+    }
     Ok(())
 }
 
@@ -224,47 +277,53 @@ pub fn last_direction(conn: &Connection) -> Result<Option<String>> {
 pub fn record_review(
     conn: &mut Connection,
     item_id: i64,
-    correct: bool,
+    quality: u8,
     direction: &str,
     latency_ms: i64,
 ) -> Result<i64> {
     let now = now_ts();
+    let correct = quality >= 3;
     let tx = conn.transaction()?;
 
     tx.execute(
-        "INSERT INTO review_log (item_id, shown_at, answered_at, result, latency_ms, direction)
-         VALUES (?1, ?2, ?2, ?3, ?4, ?5)",
-        params![item_id, now, correct as i32, latency_ms.max(0), direction],
+        "INSERT INTO review_log
+         (item_id, shown_at, answered_at, result, quality, latency_ms, direction)
+         VALUES (?1, ?2, ?2, ?3, ?4, ?5, ?6)",
+        params![
+            item_id,
+            now,
+            correct as i32,
+            quality as i32,
+            latency_ms.max(0),
+            direction
+        ],
     )?;
 
-    let current_reps: i64 = tx
+    let (current_reps, current_interval, current_ease): (i64, i64, f64) = tx
         .query_row(
-            "SELECT reps FROM srs_state WHERE item_id = ?1",
+            "SELECT reps, interval_minutes, ease FROM srs_state WHERE item_id = ?1",
             [item_id],
-            |row| row.get(0),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
         )
         .optional()?
-        .unwrap_or(0);
+        .unwrap_or((0, 0, 2.5));
 
-    let (reps, interval, lapses) = if correct {
-        let reps = (current_reps + 1).min((INTERVALS_MINUTES.len() - 1) as i64);
-        (reps, INTERVALS_MINUTES[reps as usize], 0)
-    } else {
-        (0, INTERVALS_MINUTES[0], 1)
-    };
-
+    let (reps, interval, ease) = sm2_next(quality, current_reps, current_interval, current_ease);
+    let lapses = if quality < 3 { 1 } else { 0 };
     let due_at = now + interval * 60;
+
     tx.execute(
         r#"
         INSERT INTO srs_state (item_id, interval_minutes, ease, due_at, reps, lapses)
-        VALUES (?1, ?2, 2.5, ?3, ?4, ?5)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6)
         ON CONFLICT(item_id) DO UPDATE SET
             interval_minutes = excluded.interval_minutes,
+            ease = excluded.ease,
             due_at = excluded.due_at,
             reps = excluded.reps,
             lapses = srs_state.lapses + excluded.lapses
         "#,
-        params![item_id, interval, due_at, reps, lapses],
+        params![item_id, interval, ease, due_at, reps, lapses],
     )?;
 
     tx.commit()?;
@@ -493,4 +552,42 @@ pub fn insert_item(tx: &rusqlite::Transaction<'_>, item: &NewItem<'_>) -> Result
     } else {
         InsertOutcome::Merged
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sm2_learning_step() {
+        let (reps, interval, ease) = sm2_next(5, 0, 0, 2.5);
+        assert_eq!(reps, 1);
+        assert_eq!(interval, 10);
+        assert!((ease - 2.6).abs() < 1e-9);
+    }
+
+    #[test]
+    fn sm2_first_day_and_growth() {
+        let (reps, interval, ease) = sm2_next(4, 1, 10, 2.5);
+        assert_eq!((reps, interval), (2, 1440));
+        assert!((ease - 2.5).abs() < 1e-9);
+
+        let (reps, interval, ease) = sm2_next(4, 2, 1440, 2.5);
+        assert_eq!(reps, 3);
+        assert_eq!(interval, 3600);
+        assert!((ease - 2.5).abs() < 1e-9);
+    }
+
+    #[test]
+    fn sm2_lapse_resets() {
+        let (reps, interval, ease) = sm2_next(2, 4, 10080, 2.5);
+        assert_eq!((reps, interval), (0, 10));
+        assert!((ease - 2.18).abs() < 1e-9);
+    }
+
+    #[test]
+    fn sm2_ease_floor() {
+        let (_, _, ease) = sm2_next(0, 3, 1440, 1.35);
+        assert!((ease - 1.3).abs() < 1e-9);
+    }
 }
