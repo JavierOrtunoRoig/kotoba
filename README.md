@@ -29,10 +29,11 @@ Lo que ya funciona:
 - **Progreso por lección** y palabras difíciles.
 - **Copia de seguridad** a carpeta (SQLite + audio), **restauración** y limpieza de audios huérfanos.
 - **Exportación del historial** de repasos a CSV.
+- **Progreso de importación** en vivo (evento cada 25 notas).
 - Pantallas de importación, progreso y ajustes.
 
-Pendiente para el resto de la Fase 2: importación por eventos, logging/errores con reintento,
-romaji opcional, icono propio e instalador.
+Pendiente para el resto de la Fase 2: logging/errores con reintento, romaji opcional, icono propio e
+instalador.
 
 ## Stack
 

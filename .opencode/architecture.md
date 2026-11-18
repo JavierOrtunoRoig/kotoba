@@ -111,7 +111,8 @@ notas de Anki que lo originaron.
    - calcular `is_pattern`, `irregular` y `dedup_key`;
    - extraer el audio referenciado (`[sound:...]`), verificar SHA-1 y escribirlo en
      `media/<sha1>.<ext>`;
-   - insertar o reutilizar el ítem y registrar `item_sources`.
+   - insertar o reutilizar el ítem y registrar `item_sources`;
+   - emitir `import:progress` cada 25 notas.
 6. Commit y devolver `ImportSummary`.
 
 El audio se extrae una sola vez por nombre; las referencias repetidas cuentan como `audio_reused`.
@@ -137,7 +138,7 @@ El audio se extrae una sola vez por nombre; las referencias repetidas cuentan co
 | `get_settings` | — | `Settings` |
 | `update_settings` | `settings` | `Settings` saneado |
 | `get_stats` | — | `Stats` con actividad de 14 días, progreso por lección y palabras difíciles |
-| `import_deck` | `path` | `ImportSummary` |
+| `import_deck` | `path` | `ImportSummary` (emite `import:progress`) |
 | `next_challenge` | `excludeId?` | `Challenge \| null` |
 | `submit_answer` | `itemId`, `direction`, `answer`, `latencyMs` | `AnswerResult` |
 | `get_audio` | `itemId` | `number[] \| null` (bytes del mp3) |
@@ -153,6 +154,9 @@ El audio se extrae una sola vez por nombre; las referencias repetidas cuentan co
 
 Tauri convierte los argumentos `snake_case` a `camelCase` en JS (`itemId`, `latencyMs`,
 `excludeId`).
+
+Eventos principales: `challenge:show` (a popup/widget), `settings:changed`, `import:progress` y
+`library:changed`.
 
 ## Frontend (`src/`)
 

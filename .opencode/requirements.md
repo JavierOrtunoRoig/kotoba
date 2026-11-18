@@ -213,7 +213,7 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 ## RF2-06 — Importación más cómoda
 
-- [ ] Progreso de importación por eventos (no bloqueante).
+- [x] Progreso de importación por eventos (`import:progress` cada 25 notas).
 - [ ] Pantalla de mapeo de campos para mazos no Genki.
 - [x] Limpieza de audios huérfanos al borrar o reimportar.
 - [ ] Importación de mazos distintos a Genki 1.

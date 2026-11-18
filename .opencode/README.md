@@ -30,9 +30,8 @@ La visión de producto sigue estando en [`../docs/plan.md`](../docs/plan.md).
 - **Fase 2 (pulido): en curso.** Hecho: SM-2 completo, popup/widget/toast, selector de modo,
   no robar foco, detección de pantalla completa, migraciones versionadas, normalización validada
   contra 2.369 respuestas reales, estadísticas por lección/palabras difíciles, copia de seguridad,
-  restauración, historial CSV y limpieza de audios huérfanos.
+  restauración, historial CSV, progreso de importación y limpieza de audios huérfanos.
 - Importación real del mazo `Genki 1.apkg`: **1.076 notas → 1.012 ítems**, **827 audios**,
   **66 plantillas**.
 - Windows only, Tauri 2 + React 19 + SQLite, sin red.
-- Pendiente principal: progreso de importación, logging/errores con reintento, romaji, icono e
-  instalador.
+- Pendiente principal: logging/errores con reintento, romaji, icono e instalador.
