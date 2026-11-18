@@ -1,0 +1,32 @@
+# Base de conocimiento de kotoba
+
+Esta carpeta guarda el contexto importante del proyecto para que no se pierda entre sesiones,
+personas o agentes. **No es configuración de OpenCode**: es documentación versionada del proyecto.
+
+La visión de producto sigue estando en [`../docs/plan.md`](../docs/plan.md).
+
+## Índice
+
+| Documento | Para qué sirve |
+|---|---|
+| [`commands.md`](commands.md) | Comandos de desarrollo, build, tests, inspección de datos y diagnóstico |
+| [`decisions.md`](decisions.md) | Decisiones de arquitectura y producto, con su motivo y consecuencias |
+| [`requirements.md`](requirements.md) | Requisitos implementados, criterios de aceptación y backlog futuro |
+| [`architecture.md`](architecture.md) | Módulos, esquema SQLite, flujo de importación, comandos IPC y UI |
+| [`state.md`](state.md) | Estado actual, métricas verificadas, datos de prueba y deuda técnica |
+
+## Reglas de mantenimiento
+
+1. **Actualizar al cambiar el comportamiento**, no al final del proyecto.
+2. Las decisiones nuevas se añaden a `decisions.md` con un identificador `D-0xx`.
+3. Los requisitos nuevos se añaden a `requirements.md` con un identificador `RF-xx` / `RF2-xx`.
+4. Los comandos que se usen más de una vez van a `commands.md`.
+5. Los commits siguen [Conventional Commits](https://www.conventionalcommits.org/):
+   `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
+
+## Estado resumido
+
+- **Fase 1 (MVP técnico): implementada y verificada** el 2026-11-18.
+- Importación real del mazo `Genki 1.apkg`: **1.076 notas → 1.012 ítems**, **827 audios**, **66 plantillas**.
+- Windows only, Tauri 2 + React 19 + SQLite, sin red.
+- Pendiente principal: Fase 2 (widget/toast, no robar foco, SM-2 completo, normalización fina).

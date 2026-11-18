@@ -85,6 +85,16 @@ src-tauri/src/
   tray.rs            Icono y menú de la bandeja
 ```
 
+## Documentación interna
+
+La base de conocimiento del proyecto vive en [`.opencode/`](.opencode/README.md):
+
+- [Comandos](.opencode/commands.md) — desarrollo, build, tests y diagnóstico.
+- [Decisiones](.opencode/decisions.md) — arquitectura y producto, con motivos.
+- [Requisitos](.opencode/requirements.md) — implementados y backlog.
+- [Arquitectura](.opencode/architecture.md) — módulos, SQLite e IPC.
+- [Estado](.opencode/state.md) — métricas, deuda técnica y próximos pasos.
+
 ## Licencia
 
 Uso personal. El contenido del mazo de Anki no se redistribuye con la app.
