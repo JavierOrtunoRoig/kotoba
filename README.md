@@ -10,7 +10,8 @@ El vocabulario se importa desde el mazo de Anki **"Genki 1"** (formato `.apkg` o
 
 ## Estado
 
-**Fase 1 — MVP técnico implementado.** Ver [`docs/plan.md`](docs/plan.md).
+**Fase 1 — MVP técnico implementado.** **Fase 2 — Pulido en curso.** Ver
+[`docs/plan.md`](docs/plan.md).
 
 Lo que ya funciona:
 
@@ -21,11 +22,13 @@ Lo que ya funciona:
 - **Ejercicio bidireccional** ES ↔ JP con IME japonés, feedback y audio.
 - **Bandeja del sistema** con menú (practicar, pausar, abrir, salir).
 - **Scheduler** por intervalo aleatorio, máximo diario y horario de no molestar.
-- **Ventana popup** flotante para los micro-retos.
+- **Tres modos de aparición**: popup, widget persistente y toast nativo de Windows.
+- **SM-2 completo** con calidad de respuesta, `ease` y pasos de aprendizaje.
+- **No robar foco** al mostrar el popup, con detección de pantalla completa/presentación.
 - Pantallas de importación, progreso y ajustes.
 
-Pendiente para la Fase 2: los 3 modos de aparición, detección de pantalla completa, normalización
-más robusta, SRS SM-2 completo y estadísticas ampliadas.
+Pendiente para el resto de la Fase 2: normalización más robusta, estadísticas ampliadas,
+importación por eventos, limpieza de medios y logging.
 
 ## Stack
 

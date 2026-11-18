@@ -73,6 +73,8 @@ la tarjeta sigue funcionando.
 
 ## D-009 — SRS ligero provisional
 
+> Sustituida por [D-022](#d-022--sm-2-completo-sustituye-a-d-009).
+
 **Contexto:** el plan deja el SM-2 completo para la Fase 2.
 **Decisión:** intervalos fijos `[10 min, 1 h, 6 h, 1 d, 3 d, 7 d, 14 d, 30 d]`; acierto sube un
 escalón, fallo vuelve a 10 min. `ease` se guarda pero aún no se usa.
@@ -86,6 +88,8 @@ cambiar el esquema.
 **Consecuencias:** no hay sincronización ni telemetría. AnkiConnect queda para Fase 3 y será opt-in.
 
 ## D-011 — Un solo modo de aparición en Fase 1: popup
+
+> Ampliada por [D-023](#d-023--tres-modos-de-aparición-y-foco-sustituye-a-d-011).
 
 **Contexto:** el plan pide 3 modos (widget, popup, toast) en Fase 2.
 **Decisión:** la Fase 1 implementa solo el popup frameless/always-on-top, creado bajo demanda.
@@ -165,3 +169,34 @@ Cerrar sin responder no cuenta para el máximo diario.
 incluía plantillas y la otra no.
 **Decisión:** `stats.due_now` se filtra con `include_patterns`, igual que `next_challenge`.
 **Consecuencias:** ambas cifras coinciden y el usuario ve el mismo universo de repaso.
+
+---
+
+## D-022 — SM-2 completo (sustituye a D-009)
+
+**Contexto:** el SRS ligero de la Fase 1 no usaba `ease` ni distinguía la calidad de la respuesta.
+**Decisión:** calidad 1-5 (5 = acierto rápido, 4 = acierto, 2 = fallo, 1 = no lo sé); pasos de
+aprendizaje de 10 min y 1 día; después, intervalo = intervalo anterior × `ease`; `ease` se actualiza
+con la fórmula SM-2 y suelo 1.3; un fallo reinicia `reps`, vuelve a 10 min e incrementa `lapses`.
+**Consecuencias:** el repaso se adapta al rendimiento real. La calidad se guarda en
+`review_log.quality` para futuras estadísticas.
+
+## D-023 — Tres modos de aparición y foco (sustituye a D-011)
+
+**Contexto:** el plan pide widget, popup y toast; además, el popup no debe robar el foco.
+**Decisión:** tres modos configurables (`popup`, `widget`, `toast`) con selector en Ajustes y
+submenú “Modo” en la bandeja. El widget es persistente; el popup se crea bajo demanda; el toast usa
+`tauri-plugin-notification` y su click abre el popup. Para no robar foco, se muestra la ventana con
+`window.show()` y se devuelve el foco a la ventana anterior con `SetForegroundWindow`. La pantalla
+completa, presentaciones, juegos y el modo silencio se detectan con `SHQueryUserNotificationState`.
+**Consecuencias:** el usuario elige el nivel de intrusión. El popup aparece sin quedarse con el
+teclado; el widget requiere un click para escribir.
+
+## D-024 — Migraciones con `PRAGMA user_version`
+
+**Contexto:** la Fase 1 solo usaba `CREATE TABLE IF NOT EXISTS`; añadir `quality` a `review_log` no
+se aplicaba a bases existentes.
+**Decisión:** leer `PRAGMA user_version` y aplicar migraciones incrementales idempotentes
+(`ensure_column`). La versión 1 añade `review_log.quality`.
+**Consecuencias:** las bases antiguas se actualizan sin perder datos. Las próximas migraciones
+añaden un bloque `if version < N`.

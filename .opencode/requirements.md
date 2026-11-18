@@ -108,12 +108,14 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 - [x] `max_per_day` configurable (0 = sin límite).
 - [x] Solo cuentan los repasos respondidos; cerrar el popup no cuenta.
 
-## RF-13 — SRS ligero
+## RF-13 — SRS SM-2
 
 - [x] Estado por ítem en `srs_state`.
-- [x] Intervalos `[10 min, 1 h, 6 h, 1 d, 3 d, 7 d, 14 d, 30 d]`.
-- [x] Acierto sube un escalón; fallo vuelve a 10 min.
-- [~] `ease` se guarda pero no se usa; no es SM-2 completo.
+- [x] Calidad 1-5 derivada de acierto y latencia.
+- [x] Pasos de aprendizaje (10 min, 1 día) y crecimiento por `ease`.
+- [x] Fallo reinicia `reps`, vuelve a 10 min e incrementa `lapses`.
+- [x] `ease` se actualiza con la fórmula SM-2 y suelo 1.3.
+- [x] Tests de aprendizaje, crecimiento, fallo y suelo de `ease`.
 
 ## RF-14 — Estadísticas
 
@@ -176,22 +178,24 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 ## RF2-01 — Los 3 modos de aparición
 
 - [x] Popup (Fase 1).
-- [ ] Widget flotante always-on-top con retos en vivo.
-- [ ] Toast nativo de Windows (`tauri-plugin-notification`).
-- [ ] Selector de modo en Ajustes.
+- [x] Widget flotante persistente, always-on-top, arrastrable y con retos en vivo.
+- [x] Toast nativo de Windows (`tauri-plugin-notification`); al hacer click abre el popup.
+- [x] Selector de modo en Ajustes y submenú “Modo” en la bandeja.
+- [x] El modo se aplica al guardar y al arrancar (si es widget, aparece al iniciar).
 
 ## RF2-02 — No molestar de verdad
 
-- [ ] Detección de app a pantalla completa / juegos / presentaciones.
-- [ ] `WS_EX_NOACTIVATE` en el popup para no robar foco.
+- [x] Detección de pantalla completa, presentaciones, juegos y modo silencio con
+  `SHQueryUserNotificationState`.
+- [x] El popup/widget se muestran y se devuelve el foco a la ventana anterior.
 - [ ] Pausa automática durante llamadas o pantalla completa (opcional).
 
 ## RF2-03 — SRS SM-2 completo
 
-- [ ] Usar `ease` y calidad de respuesta (no solo acierto/fallo).
-- [ ] Intervalos con factor de facilidad.
-- [ ] Recalcular `due_at` con zona horaria local.
-- [ ] Tests de la progresión.
+- [x] Usar `ease` y calidad de respuesta (no solo acierto/fallo).
+- [x] Intervalos con factor de facilidad.
+- [x] `due_at` se guarda en UTC; las estadísticas usan hora local.
+- [x] Tests de la progresión.
 
 ## RF2-04 — Normalización robusta
 
@@ -223,7 +227,7 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 ## RF2-08 — Robustez
 
-- [ ] Migraciones versionadas.
+- [x] Migraciones versionadas (`PRAGMA user_version` + `ensure_column`).
 - [ ] Logging a archivo y pantalla de diagnóstico.
 - [ ] Manejo de errores con reintento.
 - [ ] Backup/exportación de la biblioteca y del progreso.

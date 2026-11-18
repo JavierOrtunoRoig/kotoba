@@ -4,10 +4,19 @@
 
 ## Fase actual
 
-**Fase 1 — MVP técnico: implementada y verificada.**
+**Fase 2 — Pulido: en curso.**
 
-Funciona de punta a punta con el mazo real: importación, repaso bidireccional, bandeja, scheduler,
-popup, progreso y ajustes.
+Completado en esta iteración:
+
+- **SM-2 completo** con calidad 1-5, `ease`, pasos de aprendizaje y tests.
+- **Tres modos de aparición**: popup, widget persistente y toast nativo.
+- **Selector de modo** en Ajustes y submenú “Modo” en la bandeja.
+- **No robar foco**: show + devolución del foco a la ventana anterior.
+- **Detección de pantalla completa/presentación** con `SHQueryUserNotificationState`.
+- **Migraciones versionadas** con `PRAGMA user_version` (añadido `review_log.quality`).
+
+La Fase 1 sigue funcionando: importación, repaso bidireccional, bandeja, scheduler, popup,
+progreso y ajustes.
 
 ## Métricas verificadas
 
@@ -21,22 +30,36 @@ popup, progreso y ajustes.
 | Plantillas (`is_pattern`) | 66 |
 | Avisos de importación | 0 |
 | RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 13 OK |
+| Tests unitarios Rust | 19 OK (+1 ignored de importación real) |
 | Typecheck / build frontend | OK |
 
 ## Verificación funcional realizada
 
-- Importación real desde la app (no solo test): 1.076 → 1.012 ítems, 827 audios, 0 avisos.
+**Fase 1**
+
+- Importación real desde la app: 1.076 → 1.012 ítems, 827 audios, 0 avisos.
 - Reto ES → JP: `estudiante de tercer año` → `三年生` aceptado, con lectura `さんねんせい`, glosa
   `Tres - Año - Vida` y audio.
-- Pantalla de progreso con precisión, racha, dominadas, pendientes y gráfico de 14 días.
-- Pantalla de ajustes con frecuencia, DND, contenido, audio y datos.
-- Popup lanzado automáticamente por el scheduler con un reto.
+- Pantalla de progreso y ajustes.
+- Popup lanzado por el scheduler.
 - Cierre de la app y liberación de procesos.
+
+**Fase 2**
+
+- SM-2: tests de paso de aprendizaje, crecimiento, fallo y suelo de `ease`.
+- Cambio de modo popup → widget → toast → popup desde Ajustes, aplicado en caliente.
+- Widget persistente renderizado a 340×248 con reto activo y botón “Ocultar”.
+- Popup renderizado a 392×280 con reto activo.
+- `practice_now` respeta el modo seleccionado.
+- Toast lanzado sin error; el plugin registra el click (`tap`) para abrir el popup.
+- **Foco:** `GetForegroundWindow` antes y después de mostrar el popup devuelve el mismo handle;
+  el popup no roba el foco.
+- Migración de la base existente: `user_version = 1` y columna `quality` presente.
 
 ## Datos de prueba en el equipo
 
-La app ya tiene importado el mazo en `%APPDATA%\com.kotoba.app` y **1 repaso de prueba** registrado.
+La app tiene importado el mazo en `%APPDATA%\com.kotoba.app` y **2 repasos de prueba** (anteriores
+a SM-2, con `quality = 0`). El modo se dejó en `popup`.
 
 Para dejarlo limpio:
 
@@ -66,14 +89,13 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 
 | Prioridad | Tema | Detalle |
 |---|---|---|
-| Alta | No robar foco | El popup se crea con `focused(false)`, pero falta `WS_EX_NOACTIVATE` para garantizarlo |
-| Alta | Detección de pantalla completa | No implementada; los retos pueden aparecer sobre juegos/presentaciones |
-| Alta | SM-2 completo | El SRS actual es provisional y no usa `ease` |
-| Media | Normalización | Casos límite con partículas, `...`, paréntesis y variantes de IME |
+| Alta | Normalización | Casos límite con partículas, `...`, paréntesis y variantes de IME |
+| Alta | Tests de normalización real | Falta validar las 1.012 entradas del mazo, no solo casos sintéticos |
+| Media | Estadísticas | Falta progreso por lección, palabras difíciles y exportación |
 | Media | Importación bloqueante | El comando es síncrono; el usuario solo ve un spinner |
-| Media | Migraciones | Solo `CREATE TABLE IF NOT EXISTS`; falta versionado de esquema |
 | Media | Limpieza de medios | Borrar/reimportar no elimina audios huérfanos de `media/` |
 | Media | `.txt` sin audio | El fallback no puede extraer mp3 |
+| Media | Detección de pantalla completa | Implementada, pero no probada contra un juego/presentación real |
 | Baja | Icono | Sigue el icono por defecto de Tauri |
 | Baja | Logging | No hay log a archivo ni pantalla de diagnóstico |
 | Baja | Accesibilidad | Foco y navegación por teclado mejorables |
@@ -81,12 +103,11 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 
 ## Próximos pasos recomendados
 
-1. **Fase 2.1 — No molestar real:** `WS_EX_NOACTIVATE` + detección de pantalla completa.
-2. **Fase 2.2 — Modos:** widget flotante y toast nativo, con selector en Ajustes.
-3. **Fase 2.3 — SRS:** SM-2 completo con calidad de respuesta y tests.
-4. **Fase 2.4 — Normalización:** tests sobre las 1.012 entradas reales y casos de IME.
-5. **Fase 2.5 — Robustez:** migraciones, logging y limpieza de medios.
-6. **Fase 3:** AnkiConnect, más mazos, distribución e instalador.
+1. **Fase 2.4 — Normalización:** tests sobre las 1.012 entradas reales y casos de IME.
+2. **Fase 2.5 — Estadísticas:** progreso por lección, palabras difíciles y exportación.
+3. **Fase 2.6 — Importación:** progreso por eventos y limpieza de medios huérfanos.
+4. **Fase 2.7 — Robustez:** logging, backup/exportación y manejo de errores con reintento.
+5. **Fase 3:** AnkiConnect, más mazos, distribución e instalador.
 
 ## Cómo actualizar este documento
 

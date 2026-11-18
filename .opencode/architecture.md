@@ -30,13 +30,13 @@ archivos.
 | `main.rs` | Entrada binaria; llama a `kotoba_lib::run()` |
 | `lib.rs` | Estado de la app, comandos Tauri, setup, ventanas, plugins |
 | `models.rs` | Structs serde compartidos con el frontend |
-| `db.rs` | Conexión SQLite, esquema, settings, ítems, repasos, SRS y estadísticas |
+| `db.rs` | Conexión SQLite, esquema, migraciones, settings, ítems, repasos, SRS SM-2 y estadísticas |
 | `import.rs` | Importador `.apkg` / `.txt`, deduplicación y extracción de audio |
 | `media.rs` | Parser del mapa de medios (protobuf de Anki + fallback JSON) |
 | `text.rs` | Limpieza de HTML, normalización y validación de respuestas |
-| `scheduler.rs` | Bucle del planificador pasivo y cálculo de DND |
-| `shell.rs` | Mostrar/ocultar ventanas, posicionar popup, toggle de pausa |
-| `tray.rs` | Icono, menú y eventos de la bandeja |
+| `scheduler.rs` | Bucle del planificador pasivo, modos de aparición y DND |
+| `shell.rs` | Mostrar/ocultar popup y widget, toast, foco, posicionamiento y pausa |
+| `tray.rs` | Icono, menú (incluido “Modo”) y eventos de la bandeja |
 
 ## Estado compartido
 
@@ -44,6 +44,8 @@ archivos.
 pub struct AppState {
     pub db: Mutex<rusqlite::Connection>,
     pub media_dir: PathBuf,
+    pub popup_visible: AtomicBool,
+    pub widget_visible: AtomicBool,
 }
 ```
 
@@ -79,8 +81,8 @@ notas de Anki que lo originaron.
 
 ### `review_log`
 
-`id`, `item_id`, `shown_at`, `answered_at`, `result` (1/0), `latency_ms`, `direction`
-(`jp_to_es` / `es_to_jp`).
+`id`, `item_id`, `shown_at`, `answered_at`, `result` (1/0), `quality` (1-5), `latency_ms`,
+`direction` (`jp_to_es` / `es_to_jp`).
 
 ### `srs_state`
 
@@ -116,14 +118,15 @@ El audio se extrae una sola vez por nombre; las referencias repetidas cuentan co
 ## Flujo de repaso
 
 1. El scheduler (hilo propio) despierta cada 10 s.
-2. Si toca, llama a `shell::show_popup`.
-3. El popup recibe el evento `challenge:show` y pide `next_challenge`.
-4. `db::next_item` elige un ítem vencido (o cualquiera si no hay vencidos) excluyendo el actual y
+2. Comprueba pausa, DND, máximo diario, pantalla completa y si el popup ya está visible.
+3. Según el modo: `show_popup`, `show_widget` o `show_toast`.
+4. La ventana popup/widget recibe el evento `challenge:show` y pide `next_challenge`.
+5. `db::next_item` elige un ítem vencido (o cualquiera si no hay vencidos) excluyendo el actual y
    filtrando plantillas.
-5. El usuario responde → `submit_answer` valida, registra en `review_log`, actualiza `srs_state` y
-   devuelve `AnswerResult`.
-6. El frontend muestra el feedback, el audio y el próximo intervalo.
-7. “Siguiente” pide otro reto; “Ahora no” oculta el popup sin registrar nada.
+6. El usuario responde → `submit_answer` valida, calcula la calidad (1-5), registra en `review_log`,
+   actualiza `srs_state` con SM-2 y devuelve `AnswerResult`.
+7. El frontend muestra el feedback, el audio y el próximo intervalo.
+8. “Siguiente” pide otro reto; “Ahora no”/“Ocultar” oculta la ventana sin registrar nada.
 
 ## Comandos IPC
 
@@ -139,8 +142,9 @@ El audio se extrae una sola vez por nombre; las referencias repetidas cuentan co
 | `get_audio` | `itemId` | `number[] \| null` (bytes del mp3) |
 | `reset_progress` | — | `Stats` |
 | `clear_library` | — | `void` |
-| `practice_now` | — | `void` (abre el popup) |
+| `practice_now` | — | `void` (abre el modo actual: popup/widget/toast) |
 | `close_popup` | — | `void` |
+| `hide_widget` | — | `void` |
 | `show_main_window` | — | `void` |
 
 Tauri convierte los argumentos `snake_case` a `camelCase` en JS (`itemId`, `latencyMs`,
@@ -168,19 +172,21 @@ El popup y la ventana principal comparten el mismo bundle; se distinguen por el 
 
 - Hilo `std::thread` que duerme 10 s entre comprobaciones.
 - `next_run` es un `Instant`; el primer reto se programa a los ~75 s.
-- Antes de mostrar: comprobar que el popup no esté visible, que haya ítems, que no esté pausado,
-  que no sea DND y que no se haya alcanzado `max_per_day`.
+- Antes de mostrar: comprobar que haya ítems, que no esté pausado, que no sea DND, que no se haya
+  alcanzado `max_per_day` y que no haya pantalla completa/presentación si
+  `suppress_fullscreen` está activo.
+- Si el modo es `popup` y el popup ya está visible, espera 45 s.
+- Dispatch por modo: `popup` → `show_popup`; `widget` → `show_widget` (re-emite el reto);
+  `toast` → `show_toast` (notificación nativa).
 - Tras mostrar: `next_run = now + rand(min..=max) minutos`.
 
-## SRS provisional
+## SRS SM-2
 
-```
-INTERVALS_MINUTES = [10, 60, 360, 1440, 4320, 10080, 20160, 43200]
-```
-
-- Acierto: `reps += 1`, intervalo = `INTERVALS[min(reps, 7)]`.
-- Fallo: `reps = 0`, intervalo = 10 min, `lapses += 1`.
-- `ease` se guarda a 2.5 y aún no se usa.
+- Calidad: 5 si acierta en ≤ 5 s, 4 si acierta más lento, 2 si falla, 1 si no lo sabe.
+- `ease += 0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)`, con suelo 1.3.
+- Aprendizaje: primer acierto → 10 min; segundo → 1 día; después intervalo × `ease`.
+- Fallo: `reps = 0`, intervalo 10 min, `lapses += 1`.
+- `due_at` se guarda en Unix UTC.
 
 ## Settings por defecto
 
@@ -193,6 +199,8 @@ INTERVALS_MINUTES = [10, 60, 360, 1440, 4320, 10080, 20160, 43200]
 | `dnd_enabled` | `true` |
 | `dnd_start` / `dnd_end` | `22:00` / `08:00` |
 | `audio_autoplay` | `true` |
+| `mode` | `popup` (`popup` \| `widget` \| `toast`) |
+| `suppress_fullscreen` | `true` |
 | `direction_mode` | `random` (`random` \| `alternate`) |
 | `include_patterns` | `false` |
 | `launch_at_startup` | `false` |
@@ -212,7 +220,26 @@ INTERVALS_MINUTES = [10, 60, 360, 1440, 4320, 10080, 20160, 43200]
 
 - `main`: 1120×780 lógica, mínimo 820×600, oculta hasta decidir si hay biblioteca.
 - `popup`: 392×280, frameless, transparente, always-on-top, skip-taskbar, sin foco inicial.
+- `widget`: 340×248, frameless, transparente, always-on-top, persistente; se crea al arrancar si
+  el modo es widget o al cambiar de modo.
 - Capabilities: `core:default`, show/hide/close/set-focus/start-dragging, `dialog:default`,
-  `autostart:default`.
+  `autostart:default`, `notification:default`.
 - `csp: null` por comodidad de desarrollo; no hay contenido remoto.
 - El audio no usa `assetProtocol`: se sirve como bytes por IPC y se reproduce con Blob URL.
+
+## Modos de aparición y foco
+
+| Modo | Ventana | Comportamiento |
+|---|---|---|
+| `popup` | `popup` | Aparece cada intervalo; se oculta al responder o cerrar |
+| `widget` | `widget` | Permanece visible; el scheduler reemite retos en la misma ventana |
+| `toast` | ninguna | Notificación nativa; el click abre el popup |
+
+- **No robar foco:** `shell::show_without_activation` llama a `window.show()` para inicializar el
+  webview, fuerza topmost con `SetWindowPos(SWP_NOACTIVATE)` y devuelve el foco a la ventana anterior
+  con `SetForegroundWindow`.
+- **Pantalla completa:** `SHQueryUserNotificationState` detecta presentaciones, juegos, apps a
+  pantalla completa y modo silencio. El scheduler no muestra nada en esos estados si
+  `suppress_fullscreen` está activo.
+- **Visibilidad:** `AppState.popup_visible` y `widget_visible` son la fuente de verdad para el
+  scheduler; no se depende de `is_visible()` porque el show nativo se hace por Win32.
