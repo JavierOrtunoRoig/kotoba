@@ -30,7 +30,7 @@ archivos.
 | `main.rs` | Entrada binaria; llama a `kotoba_lib::run()` |
 | `lib.rs` | Estado de la app, comandos Tauri, setup, ventanas, plugins |
 | `models.rs` | Structs serde compartidos con el frontend |
-| `db.rs` | Conexión SQLite, esquema, migraciones, settings, ítems, repasos, SRS SM-2 y estadísticas |
+| `db.rs` | Conexión SQLite, esquema, migraciones, settings, ítems, repasos, SRS SM-2 y estadísticas (global, por lección y difíciles) |
 | `import.rs` | Importador `.apkg` / `.txt`, deduplicación y extracción de audio |
 | `media.rs` | Parser del mapa de medios (protobuf de Anki + fallback JSON) |
 | `text.rs` | Limpieza de HTML, normalización y validación de respuestas |
@@ -135,7 +135,7 @@ El audio se extrae una sola vez por nombre; las referencias repetidas cuentan co
 | `bootstrap` | — | `Bootstrap { item_count, settings, stats }` |
 | `get_settings` | — | `Settings` |
 | `update_settings` | `settings` | `Settings` saneado |
-| `get_stats` | — | `Stats` con actividad de 14 días |
+| `get_stats` | — | `Stats` con actividad de 14 días, progreso por lección y palabras difíciles |
 | `import_deck` | `path` | `ImportSummary` |
 | `next_challenge` | `excludeId?` | `Challenge \| null` |
 | `submit_answer` | `itemId`, `direction`, `answer`, `latencyMs` | `AnswerResult` |

@@ -25,10 +25,12 @@ Lo que ya funciona:
 - **Tres modos de aparición**: popup, widget persistente y toast nativo de Windows.
 - **SM-2 completo** con calidad de respuesta, `ease` y pasos de aprendizaje.
 - **No robar foco** al mostrar el popup, con detección de pantalla completa/presentación.
+- **Normalización** validada contra 2.369 respuestas reales del mazo.
+- **Progreso por lección** y palabras difíciles.
 - Pantallas de importación, progreso y ajustes.
 
-Pendiente para el resto de la Fase 2: normalización más robusta, estadísticas ampliadas,
-importación por eventos, limpieza de medios y logging.
+Pendiente para el resto de la Fase 2: importación por eventos, limpieza de medios, logging/backup,
+romaji opcional y exportación de estadísticas.
 
 ## Stack
 

@@ -14,6 +14,8 @@ Completado en esta iteración:
 - **No robar foco**: show + devolución del foco a la ventana anterior.
 - **Detección de pantalla completa/presentación** con `SHQueryUserNotificationState`.
 - **Migraciones versionadas** con `PRAGMA user_version` (añadido `review_log.quality`).
+- **Normalización validada** contra 2.369 respuestas reales del mazo.
+- **Estadísticas ampliadas** con progreso por lección y palabras difíciles.
 
 La Fase 1 sigue funcionando: importación, repaso bidireccional, bandeja, scheduler, popup,
 progreso y ajustes.
@@ -30,7 +32,8 @@ progreso y ajustes.
 | Plantillas (`is_pattern`) | 66 |
 | Avisos de importación | 0 |
 | RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 19 OK (+1 ignored de importación real) |
+| Tests unitarios Rust | 19 OK (+2 ignored: importación y normalización real) |
+| Respuestas reales validadas | 2.369 |
 | Typecheck / build frontend | OK |
 
 ## Verificación funcional realizada
@@ -55,6 +58,9 @@ progreso y ajustes.
 - **Foco:** `GetForegroundWindow` antes y después de mostrar el popup devuelve el mismo handle;
   el popup no roba el foco.
 - Migración de la base existente: `user_version = 1` y columna `quality` presente.
+- **Normalización:** test contra el mazo real con **2.369 respuestas** (kanji, lecturas y
+  significados) sin fallos.
+- **Estadísticas:** progreso por lección y palabras difíciles renderizados con datos reales.
 
 ## Datos de prueba en el equipo
 
@@ -89,13 +95,12 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 
 | Prioridad | Tema | Detalle |
 |---|---|---|
-| Alta | Normalización | Casos límite con partículas, `...`, paréntesis y variantes de IME |
-| Alta | Tests de normalización real | Falta validar las 1.012 entradas del mazo, no solo casos sintéticos |
-| Media | Estadísticas | Falta progreso por lección, palabras difíciles y exportación |
+| Media | Romaji | No se acepta romaji si el usuario lo escribe |
+| Media | Exportación | Falta exportar historial y progreso |
 | Media | Importación bloqueante | El comando es síncrono; el usuario solo ve un spinner |
 | Media | Limpieza de medios | Borrar/reimportar no elimina audios huérfanos de `media/` |
 | Media | `.txt` sin audio | El fallback no puede extraer mp3 |
-| Media | Detección de pantalla completa | Implementada, pero no probada contra un juego/presentación real |
+| Media | Pantalla completa real | Implementada, pero no probada contra un juego/presentación real |
 | Baja | Icono | Sigue el icono por defecto de Tauri |
 | Baja | Logging | No hay log a archivo ni pantalla de diagnóstico |
 | Baja | Accesibilidad | Foco y navegación por teclado mejorables |
@@ -103,10 +108,10 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 
 ## Próximos pasos recomendados
 
-1. **Fase 2.4 — Normalización:** tests sobre las 1.012 entradas reales y casos de IME.
-2. **Fase 2.5 — Estadísticas:** progreso por lección, palabras difíciles y exportación.
-3. **Fase 2.6 — Importación:** progreso por eventos y limpieza de medios huérfanos.
-4. **Fase 2.7 — Robustez:** logging, backup/exportación y manejo de errores con reintento.
+1. **Fase 2.5 — Importación:** progreso por eventos y limpieza de medios huérfanos.
+2. **Fase 2.6 — Robustez:** logging, backup/exportación y manejo de errores con reintento.
+3. **Fase 2.7 — Normalización fina:** romaji opcional y más variantes de IME.
+4. **Fase 2.8 — Estadísticas:** exportar historial y objetivos configurables.
 5. **Fase 3:** AnkiConnect, más mazos, distribución e instalador.
 
 ## Cómo actualizar este documento

@@ -63,6 +63,16 @@ cargo test --lib imports_real_genki_deck -- --ignored --nocapture
 Comprueba: 1.076 notas, al menos 1.000 ítems, al menos 700 audios y 1.076 fuentes. Imprime el
 `ImportSummary` completo.
 
+### Test de normalización contra el mazo real
+
+```powershell
+cd src-tauri
+cargo test --lib normalizes_real_deck_answers -- --ignored --nocapture
+```
+
+Valida **2.369 respuestas** generadas desde el mazo real (kanji, lecturas y significados) y falla si
+alguna forma plausible es rechazada o si se acepta basura.
+
 ## Inspeccionar la base de datos local
 
 ```powershell

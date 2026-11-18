@@ -199,15 +199,15 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 ## RF2-04 — Normalización robusta
 
-- [ ] Manejar partículas y anotaciones del significado de forma más fina.
+- [x] Manejar partículas, anotaciones y placeholders del significado.
 - [ ] Aceptar romaji si el usuario lo escribe.
-- [ ] Normalizar variantes de IME (medias anchuras, kana repetido, etc.).
-- [ ] Tests con las 1.012 entradas reales.
+- [x] Normalizar variantes de IME (NFKC, medias anchuras, espacios ideográficos).
+- [x] Tests con las 1.012 entradas reales: **2.369 respuestas validadas**.
 
 ## RF2-05 — Estadísticas ampliadas
 
-- [ ] Progreso por lección (`L00`…`L12`).
-- [ ] Palabras difíciles / más falladas.
+- [x] Progreso por lección (`L00`…`L12`).
+- [x] Palabras difíciles / más falladas.
 - [ ] Historial detallado y exportable.
 - [ ] Rachas y objetivos configurables.
 
