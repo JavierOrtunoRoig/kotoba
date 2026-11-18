@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
 import { api, type ImportProgress, type ImportSummary } from "./api";
-import { IconArrow, IconCheck, IconImport } from "./Icons";
+import { IconArrow, IconCheck, IconImport, IconRefresh } from "./Icons";
 
 type Props = {
   onImported: () => Promise<void> | void;
@@ -111,7 +111,19 @@ export default function ImportPanel({ onImported }: Props) {
               )}
             </button>
 
-            {error && <p className="inline-error">{error}</p>}
+            {error && (
+              <div className="import-error">
+                <p className="inline-error">{error}</p>
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() => void pick()}
+                >
+                  <IconRefresh size={16} />
+                  Reintentar
+                </button>
+              </div>
+            )}
 
             <ul className="import-notes">
               <li>

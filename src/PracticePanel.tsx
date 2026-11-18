@@ -10,7 +10,7 @@ import {
   type Settings,
 } from "./api";
 import { playAudio } from "./audio";
-import { IconArrow, IconEye, IconSound } from "./Icons";
+import { IconArrow, IconEye, IconRefresh, IconSound } from "./Icons";
 
 type Props = {
   settings: Settings;
@@ -136,6 +136,12 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
             {error ??
               "Importa un mazo desde Ajustes o espera a que haya ítems disponibles."}
           </p>
+          <div className="empty-actions">
+            <button type="button" className="ghost" onClick={() => void load()}>
+              <IconRefresh size={16} />
+              Reintentar
+            </button>
+          </div>
         </div>
       </section>
     );

@@ -780,6 +780,24 @@ body.popup-window::before {
   margin: 0;
 }
 
+.empty-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.import-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.import-error .inline-error {
+  flex: 1;
+  margin: 0;
+}
+
 .inline-error {
   color: var(--error);
   font-size: 12.5px;
