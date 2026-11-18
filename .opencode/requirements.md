@@ -260,9 +260,36 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 ## RF3-04 — Gamificación
 
-- [ ] Rachas visibles y logros.
-- [ ] Objetivos semanales.
-- [ ] Notificaciones de progreso.
+**Carácter:** híbrido. Silenciosa por defecto; las notificaciones de hito son opt-in y respetan
+pausa, DND y pantalla completa. Racha flexible. Todo local, sin cuentas ni social.
+
+**Guardarraíles:** el XP solo premia calidad (no volumen); la racha no genera culpa; los premios no
+pueden incentivar respuestas rápidas/malas que rompan el SM-2.
+
+### R3-04a — MVG (implementado)
+
+- [x] Perfil `profile` con `xp_total`, `level` y `streak_best` (migración v2).
+- [x] XP solo por aciertos: quality 3→+1, 4→+2, 5→+3; fallo → 0.
+- [x] Niveles por umbrales de XP (12 niveles).
+- [x] Racha flexible + mejor racha histórica.
+- [x] Objetivo semanal configurable (default 30; 0 = sin objetivo).
+- [x] Pantalla Progreso: nivel, XP, barra de nivel, racha/mejor racha y objetivo semanal.
+- [x] Feedback: `+X XP` y aviso de subida de nivel en práctica y popup.
+- [x] Notificación nativa al completar el objetivo semanal, opt-in, respeta pausa/DND/pantalla
+  completa y nunca avisa de “racha en peligro”.
+- [x] Tests de XP, niveles, racha, objetivo y migración.
+
+### R3-04b — Logros y maestría (pendiente)
+
+- [ ] Catálogo de logros (~15 hitos): dominadas, racha, lecciones y repasos.
+- [ ] Maestría por lección (umbral configurable, por defecto ≥ 90 % con intervalo ≥ 7 días).
+- [ ] Pantalla de logros y notificaciones opt-in al desbloquear.
+
+### R3-04c — Refinamiento (pendiente)
+
+- [ ] Congelar/reparar racha con un salvavidas ganado al completar el objetivo semanal.
+- [ ] Curva de niveles y recompensas refinadas.
+- [ ] Métricas de retención y objetivos a medio plazo.
 
 ---
 

@@ -209,3 +209,15 @@ aproximado, con variantes para vocales largas (`ou`/`oo` → `o`), kunrei (`shi`
 (`nb` → `mb`) y は final → wa.
 **Consecuencias:** se puede practicar sin IME. Algunas variantes pueden aceptar una forma poco
 ortodoxa (por ejemplo, を como `o`), pero la lectura en kana sigue siendo la fuente principal.
+
+## D-026 — Gamificación silenciosa y XP por calidad
+
+**Contexto:** la gamificación clásica (rachas con urgencia, XP por volumen, notificaciones de
+“racha en peligro”) choca con la identidad pasiva de kotoba y puede corromper el SM-2.
+**Decisión:** gamificación híbrida. El XP solo se gana por aciertos ponderados por `quality`
+(3→+1, 4→+2, 5→+3); la racha es flexible y sin castigo; las notificaciones de hito son opt-in y
+respetan pausa/DND/pantalla completa; sin cuentas ni social. Se entrega en fases: **R3-04a**
+racha + objetivo semanal + XP/nivel, **R3-04b** logros/maestría y **R3-04c** congelar racha y
+refinamiento.
+**Consecuencias:** se puede retener sin convertir la app en una obligación diaria. La curva de
+niveles y el catálogo de logros quedan para b/c; el XP no incentiva responder rápido o mal.

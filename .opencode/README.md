@@ -32,7 +32,9 @@ La visión de producto sigue estando en [`../docs/plan.md`](../docs/plan.md).
   contra 2.629 respuestas reales (incluido romaji), estadísticas por lección/palabras difíciles,
   copia de seguridad, restauración, historial CSV, progreso de importación, logs a archivo, icono
   propio, reintento de errores, instaladores MSI/NSIS y limpieza de audios huérfanos.
+- **Fase 3 (extras): en curso.** R3-04a completada: XP por calidad, niveles, racha flexible,
+  objetivo semanal y notificación opt-in.
 - Importación real del mazo `Genki 1.apkg`: **1.076 notas → 1.012 ítems**, **827 audios**,
   **66 plantillas**.
 - Windows only, Tauri 2 + React 19 + SQLite, sin red.
-- Pendiente de distribución: firmar el instalador y añadir CI.
+- Pendiente: R3-04b/c (logros, maestría, congelar racha), AnkiConnect, más mazos, firma/CI.

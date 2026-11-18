@@ -25,6 +25,13 @@ Completado en la fase:
 La Fase 1 sigue funcionando: importación, repaso bidireccional, bandeja, scheduler, popup,
 progreso y ajustes.
 
+**Fase 3 — Extras: en curso.** R3-04a (gamificación) completada:
+
+- Perfil `profile` con XP, nivel y mejor racha (migración v2).
+- XP solo por aciertos ponderados por `quality`; niveles por umbrales.
+- Racha flexible y objetivo semanal configurable (default 30).
+- Notificación de objetivo semanal opt-in, sujeta a pausa/DND/pantalla completa.
+
 ## Métricas verificadas
 
 | Métrica | Valor |
@@ -37,7 +44,7 @@ progreso y ajustes.
 | Plantillas (`is_pattern`) | 66 |
 | Avisos de importación | 0 |
 | RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 24 OK (+3 ignored: importación, normalización y progreso reales) |
+| Tests unitarios Rust | 29 OK (+3 ignored: importación, normalización y progreso reales) |
 | Respuestas reales validadas | 2.629 |
 | Copia de seguridad | SQLite + 827 audios |
 | Typecheck / build frontend | OK |
@@ -79,10 +86,19 @@ progreso y ajustes.
 - **Reintento:** botón en el estado vacío de práctica y en errores de importación.
 - **Limpieza de medios:** test unitario que conserva el audio referenciado y borra el huérfano.
 
+**Fase 3**
+
+- **Gamificación R3-04a:** perfil, XP por calidad, nivel, racha/mejor racha y objetivo semanal
+  renderizados en Progreso.
+- 3 aciertos consecutivos → **9 XP**; el nivel sigue en 1 (umbral 100).
+- **Notificación de objetivo semanal:** suprimida con DND activo; emitida con DND desactivado
+  (verificado en `kotoba.log`: `objetivo semanal completado: 12 repasos`).
+
 ## Datos de prueba en el equipo
 
-La app tiene importado el mazo en `%APPDATA%\com.kotoba.app` y **2 repasos de prueba** (anteriores
-a SM-2, con `quality = 0`). El modo se dejó en `popup`.
+La app tiene importado el mazo en `%APPDATA%\com.kotoba.app` y **12 repasos de prueba**, **15 XP**,
+nivel 1, racha/mejor 1, objetivo semanal 30 y notificaciones de hito desactivadas. El modo se dejó en
+`popup` y el DND en 22:00–08:00.
 
 Para dejarlo limpio:
 
@@ -115,13 +131,16 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 | Media | `.txt` sin audio | El fallback no puede extraer mp3 |
 | Media | Pantalla completa real | Implementada, pero no probada contra un juego/presentación real |
 | Baja | Accesibilidad | Foco y navegación por teclado mejorables |
+| Baja | Gamificación b/c | Logros, maestría por lección y congelar racha pendientes |
 | Baja | CI / firma | El instalador funciona, pero no está firmado ni hay pipeline |
 
 ## Próximos pasos recomendados
 
-1. **Fase 2.6 — Distribución:** firmar el instalador y añadir CI.
-2. **Fase 2.7 — Pantalla completa real:** probar contra un juego/presentación.
+1. **R3-04b — Gamificación:** logros/insignias y maestría por lección.
+2. **R3-04c — Gamificación:** congelar/reparar racha y refinamiento.
 3. **Fase 3:** AnkiConnect, más mazos y gramática.
+4. **Distribución:** firmar el instalador y añadir CI.
+5. **Pantalla completa real:** probar contra un juego/presentación.
 
 ## Cómo actualizar este documento
 
