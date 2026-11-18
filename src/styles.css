@@ -691,6 +691,7 @@ body.popup-window::before {
 .feedback-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 22px;
 }
@@ -699,6 +700,29 @@ body.popup-window::before {
   margin-left: auto;
   font-size: 11px;
   color: var(--ink-faint);
+}
+
+.xp-badge {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--gold);
+  border: 1px solid rgba(164, 122, 60, 0.25);
+  background: rgba(164, 122, 60, 0.08);
+  padding: 4px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.level-up {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vermilion);
+  border: 1px solid rgba(192, 59, 37, 0.25);
+  background: rgba(192, 59, 37, 0.07);
+  padding: 4px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 /* ---------- Skeletons y vacíos ---------- */
@@ -1112,6 +1136,98 @@ body.popup-window::before {
 .stat-s {
   font-size: 10.5px;
   color: var(--ink-faint);
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.level-panel {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.level-badge {
+  width: 62px;
+  height: 62px;
+  flex: none;
+  border-radius: 18px;
+  background: var(--ink);
+  color: var(--paper-raised);
+  display: grid;
+  place-items: center;
+  font-family: var(--serif);
+  font-size: 30px;
+  box-shadow: 0 12px 24px -14px rgba(32, 29, 25, 0.8);
+}
+
+.level-info {
+  flex: 1;
+  display: grid;
+  gap: 6px;
+}
+
+.level-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: var(--serif);
+  font-size: 18px;
+}
+
+.level-xp {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+.level-bar {
+  height: 8px;
+  background: var(--paper-deep);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.level-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--vermilion));
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.goal-panel .panel-head {
+  margin-bottom: 10px;
+}
+
+.goal-bar {
+  height: 8px;
+  background: var(--paper-deep);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.goal-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--moss), #7a9a6f);
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.goal-done {
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--success);
+  border: 1px solid rgba(63, 107, 79, 0.3);
+  background: rgba(63, 107, 79, 0.08);
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 .panel {
@@ -1720,6 +1836,13 @@ input[type="time"]:disabled {
   color: var(--ink-soft);
 }
 
+.pf-xp {
+  margin: 0 0 2px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--gold);
+}
+
 .popup-empty {
   align-items: center;
   justify-content: center;
@@ -1803,6 +1926,10 @@ input[type="time"]:disabled {
   }
 
   .stats-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .game-grid {
     grid-template-columns: 1fr;
   }
 

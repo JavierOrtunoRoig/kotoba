@@ -297,6 +297,12 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
                   <IconSound size={16} />
                   Oír
                 </button>
+                {result.xp_gained > 0 && (
+                  <span className="xp-badge">+{result.xp_gained} XP</span>
+                )}
+                {result.leveled_up && (
+                  <span className="level-up">¡Nivel {result.level}!</span>
+                )}
                 <span className="next-interval">
                   Vuelve en {formatInterval(result.next_interval_minutes)}
                 </span>

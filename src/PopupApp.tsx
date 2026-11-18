@@ -270,6 +270,12 @@ export default function PopupApp({ variant }: Props) {
                     </span>
                   </p>
                   <p className="pf-meaning">{result.meaning}</p>
+                  {result.xp_gained > 0 && (
+                    <p className="pf-xp">
+                      +{result.xp_gained} XP
+                      {result.leveled_up && ` · ¡Nivel ${result.level}!`}
+                    </p>
+                  )}
                   <div className="popup-actions">
                     <button
                       type="button"

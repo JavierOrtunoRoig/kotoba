@@ -87,6 +87,7 @@ export default function StatsPanel({ onPractice }: Props) {
           </span>
           <span className="stat-s">
             {stats.streak_days === 1 ? "día seguido" : "días seguidos"}
+            {stats.streak_best > 0 && ` · mejor ${stats.streak_best}`}
           </span>
         </article>
 
@@ -102,6 +103,67 @@ export default function StatsPanel({ onPractice }: Props) {
           <span className="stat-k">Pendientes</span>
           <span className="stat-v">{stats.due_now}</span>
           <span className="stat-s">{stats.total_items} palabras en total</span>
+        </article>
+      </div>
+
+      <div className="game-grid">
+        <article className="panel level-panel">
+          <div className="level-badge">{stats.level}</div>
+          <div className="level-info">
+            <div className="level-title">
+              <span>Nivel {stats.level}</span>
+              <span className="level-xp">{stats.xp_total} XP</span>
+            </div>
+            <div className="level-bar">
+              <div
+                className="level-fill"
+                style={{ width: `${stats.level_progress}%` }}
+              />
+            </div>
+            <div className="muted small">
+              {stats.next_level_xp
+                ? `${Math.max(0, stats.next_level_xp - stats.xp_total)} XP para el siguiente nivel`
+                : "Nivel máximo"}
+            </div>
+          </div>
+        </article>
+
+        <article className="panel goal-panel">
+          <div className="panel-head">
+            <div>
+              <h2>Objetivo semanal</h2>
+              <p className="muted">
+                {stats.week_reviews} /{" "}
+                {stats.weekly_goal === 0 ? "∞" : stats.weekly_goal} repasos
+              </p>
+            </div>
+            {stats.weekly_goal > 0 &&
+              stats.week_reviews >= stats.weekly_goal && (
+                <span className="goal-done">Completado</span>
+              )}
+          </div>
+          <div className="goal-bar">
+            <div
+              className="goal-fill"
+              style={{
+                width: `${
+                  stats.weekly_goal > 0
+                    ? Math.min(
+                        100,
+                        (stats.week_reviews / stats.weekly_goal) * 100,
+                      )
+                    : 0
+                }%`,
+              }}
+            />
+          </div>
+          <span className="muted small">
+            {stats.weekly_goal === 0
+              ? "Sin objetivo: repasa a tu ritmo."
+              : stats.week_reviews >= stats.weekly_goal
+                ? "Objetivo cumplido. Sigue así."
+                : "Cada repaso cuenta, también los fallos."}
+          </span>
         </article>
       </div>
 

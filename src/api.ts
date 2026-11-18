@@ -18,6 +18,8 @@ export interface Settings {
   direction_mode: DirectionMode;
   include_patterns: boolean;
   launch_at_startup: boolean;
+  weekly_goal: number;
+  milestone_notifications: boolean;
 }
 
 export interface Item {
@@ -47,6 +49,10 @@ export interface AnswerResult {
   kanji_gloss: string | null;
   has_audio: boolean;
   next_interval_minutes: number;
+  xp_gained: number;
+  xp_total: number;
+  level: number;
+  leveled_up: boolean;
 }
 
 export interface DayCount {
@@ -86,6 +92,13 @@ export interface Stats {
   activity: DayCount[];
   lessons: LessonStat[];
   difficult: DifficultItem[];
+  xp_total: number;
+  level: number;
+  level_progress: number;
+  next_level_xp: number | null;
+  streak_best: number;
+  week_reviews: number;
+  weekly_goal: number;
 }
 
 export interface Bootstrap {

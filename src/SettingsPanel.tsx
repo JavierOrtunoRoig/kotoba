@@ -399,6 +399,54 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
       <article className="panel">
         <div className="panel-head">
           <div>
+            <h2>Progreso</h2>
+            <p className="muted">Nivel, racha y objetivo semanal.</p>
+          </div>
+        </div>
+
+        <div className="field">
+          <div>
+            <div className="field-label">Objetivo semanal</div>
+            <div className="field-desc">
+              Repasos por semana. 0 = sin objetivo.
+            </div>
+          </div>
+          <div className="range-control single">
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={settings.weekly_goal}
+              onChange={(event) =>
+                update("weekly_goal", Number(event.currentTarget.value))
+              }
+            />
+            <output>
+              {settings.weekly_goal === 0 ? "∞" : settings.weekly_goal}
+            </output>
+          </div>
+        </div>
+
+        <div className="field">
+          <div>
+            <div className="field-label">Notificaciones de hitos</div>
+            <div className="field-desc">
+              Avisar al completar el objetivo semanal. Respeta el modo no molestar
+              y la pantalla completa.
+            </div>
+          </div>
+          <Toggle
+            checked={settings.milestone_notifications}
+            onChange={(value) => update("milestone_notifications", value)}
+            label="Notificaciones de hitos"
+          />
+        </div>
+      </article>
+
+      <article className="panel">
+        <div className="panel-head">
+          <div>
             <h2>Aparición</h2>
             <p className="muted">Cómo y dónde aparece el micro-reto.</p>
           </div>
