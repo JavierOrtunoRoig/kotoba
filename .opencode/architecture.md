@@ -144,6 +144,8 @@ El audio se extrae una sola vez por nombre; las referencias repetidas cuentan co
 | `reset_progress` | — | `Stats` |
 | `clear_library` | — | `void` (borra ítems, progreso y audios huérfanos) |
 | `export_backup` | `destination` | ruta de la carpeta creada |
+| `restore_backup` | `source` | `Settings` restaurados (reemplaza DB y audio) |
+| `export_history` | `destination` | ruta del CSV de `review_log` |
 | `practice_now` | — | `void` (abre el modo actual: popup/widget/toast) |
 | `close_popup` | — | `void` |
 | `hide_widget` | — | `void` |
@@ -221,6 +223,8 @@ El popup y la ventana principal comparten el mismo bundle; se distinguen por el 
 Ajustes → Datos → **Exportar copia** crea `kotoba-backup-<timestamp>/` con `kotoba.sqlite3` y
 `media/`. Antes de copiar se hace `PRAGMA wal_checkpoint(TRUNCATE)` para que la base sea consistente.
 La limpieza de medios se ejecuta al borrar la biblioteca y al terminar una importación.
+**Restaurar copia** valida el SQLite, cierra la conexión viva, reemplaza base y `media/`, y reabre la
+conexión. **Exportar historial** genera un CSV de `review_log` con fecha local y datos del ítem.
 
 ## Ventanas y capacidades
 

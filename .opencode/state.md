@@ -64,6 +64,10 @@ progreso y ajustes.
   significados) sin fallos.
 - **Estadísticas:** progreso por lección y palabras difíciles renderizados con datos reales.
 - **Copia de seguridad:** exportación a carpeta con `kotoba.sqlite3` y 827 audios.
+- **Restauración:** borrado completo de la biblioteca y restauración desde la copia; vuelve a 1.012
+  ítems y 827 audios.
+- **Historial:** exportación CSV de `review_log` con fecha local, lectura, significado, dirección,
+  resultado, calidad y latencia.
 - **Limpieza de medios:** test unitario que conserva el audio referenciado y borra el huérfano.
 
 ## Datos de prueba en el equipo
@@ -100,8 +104,6 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 | Prioridad | Tema | Detalle |
 |---|---|---|
 | Media | Romaji | No se acepta romaji si el usuario lo escribe |
-| Media | Restaurar copia | La copia se puede crear, pero no restaurar desde la app |
-| Media | Exportar historial | Falta CSV/JSON de `review_log` |
 | Media | Importación bloqueante | El comando es síncrono; el usuario solo ve un spinner |
 | Media | `.txt` sin audio | El fallback no puede extraer mp3 |
 | Media | Pantalla completa real | Implementada, pero no probada contra un juego/presentación real |
@@ -113,10 +115,10 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 ## Próximos pasos recomendados
 
 1. **Fase 2.6 — Importación:** progreso por eventos.
-2. **Fase 2.7 — Robustez:** logging, restauración de copia y manejo de errores con reintento.
-3. **Fase 2.8 — Exportación:** historial de repasos en CSV/JSON.
-4. **Fase 2.9 — Normalización fina:** romaji opcional y más variantes de IME.
-5. **Fase 3:** AnkiConnect, más mazos, distribución e instalador.
+2. **Fase 2.7 — Robustez:** logging y manejo de errores con reintento.
+3. **Fase 2.8 — Normalización fina:** romaji opcional y más variantes de IME.
+4. **Fase 2.9 — Distribución:** icono propio, instalador y CI.
+5. **Fase 3:** AnkiConnect, más mazos y gramática.
 
 ## Cómo actualizar este documento
 

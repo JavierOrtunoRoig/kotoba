@@ -90,6 +90,10 @@ Desde **Ajustes → Datos → Exportar copia** se elige una carpeta y se crea
 `kotoba-backup-<timestamp>/` con `kotoba.sqlite3` y `media/`. La base se copia tras un
 `PRAGMA wal_checkpoint(TRUNCATE)` para que sea consistente.
 
+**Restaurar copia** reemplaza la base y el audio actuales por los de la carpeta elegida.
+**Exportar historial** guarda un CSV de `review_log` con fecha local, lectura, significado,
+dirección, resultado, calidad y latencia.
+
 ## Borrar datos locales
 
 Primero cerrar la app (menú de bandeja → Salir).

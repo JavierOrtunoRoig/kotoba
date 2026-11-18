@@ -27,11 +27,12 @@ Lo que ya funciona:
 - **No robar foco** al mostrar el popup, con detección de pantalla completa/presentación.
 - **Normalización** validada contra 2.369 respuestas reales del mazo.
 - **Progreso por lección** y palabras difíciles.
-- **Copia de seguridad** a carpeta (SQLite + audio) y limpieza de audios huérfanos.
+- **Copia de seguridad** a carpeta (SQLite + audio), **restauración** y limpieza de audios huérfanos.
+- **Exportación del historial** de repasos a CSV.
 - Pantallas de importación, progreso y ajustes.
 
-Pendiente para el resto de la Fase 2: importación por eventos, logging/restauración de copia,
-romaji opcional y exportación de estadísticas.
+Pendiente para el resto de la Fase 2: importación por eventos, logging/errores con reintento,
+romaji opcional, icono propio e instalador.
 
 ## Stack
 

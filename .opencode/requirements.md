@@ -229,10 +229,10 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 - [x] Migraciones versionadas (`PRAGMA user_version` + `ensure_column`).
 - [x] Copia de seguridad a carpeta (SQLite + `media/`).
-- [ ] Restaurar una copia desde la app.
+- [x] Restaurar una copia desde la app (reemplaza base y audio).
 - [ ] Logging a archivo y pantalla de diagnóstico.
 - [ ] Manejo de errores con reintento.
-- [ ] Exportar historial de repasos.
+- [x] Exportar historial de repasos (CSV).
 
 ---
 
