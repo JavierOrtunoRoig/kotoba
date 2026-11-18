@@ -16,6 +16,7 @@ Completado en esta iteración:
 - **Migraciones versionadas** con `PRAGMA user_version` (añadido `review_log.quality`).
 - **Normalización validada** contra 2.629 respuestas reales del mazo, incluido romaji.
 - **Entrada en romaji** (Hepburn, kunrei, vocales largas y は→wa).
+- **Icono propio** generado con `tauri icon` (sello 言).
 - **Estadísticas ampliadas** con progreso por lección y palabras difíciles.
 - **Gestión de datos**: limpieza de audios huérfanos y copia de seguridad a carpeta.
 
@@ -71,6 +72,7 @@ progreso y ajustes.
   resultado, calidad y latencia.
 - **Progreso de importación:** evento `import:progress` cada 25 notas y test del callback.
 - **Logs:** `tauri-plugin-log` escribe en `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`.
+- **Icono:** sello 言 generado en todos los tamaños de escritorio con `tauri icon`.
 - **Limpieza de medios:** test unitario que conserva el audio referenciado y borra el huérfano.
 
 ## Datos de prueba en el equipo
@@ -108,7 +110,6 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 |---|---|---|
 | Media | `.txt` sin audio | El fallback no puede extraer mp3 |
 | Media | Pantalla completa real | Implementada, pero no probada contra un juego/presentación real |
-| Baja | Icono | Sigue el icono por defecto de Tauri |
 | Baja | Errores con reintento | Los errores se muestran, pero no hay reintento automático |
 | Baja | Accesibilidad | Foco y navegación por teclado mejorables |
 | Baja | CI / firma | No hay pipeline ni instalador firmado |
@@ -116,7 +117,7 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 ## Próximos pasos recomendados
 
 1. **Fase 2.6 — Robustez:** manejo de errores con reintento.
-2. **Fase 2.7 — Distribución:** icono propio, instalador y CI.
+2. **Fase 2.7 — Distribución:** instalador y CI.
 3. **Fase 2.8 — Pantalla completa real:** probar contra un juego/presentación.
 4. **Fase 3:** AnkiConnect, más mazos y gramática.
 

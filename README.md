@@ -27,6 +27,7 @@ Lo que ya funciona:
 - **No robar foco** al mostrar el popup, con detección de pantalla completa/presentación.
 - **Normalización** validada contra 2.629 respuestas reales del mazo.
 - **Entrada en romaji** además de kanji y kana.
+- **Icono propio** (sello 言) en la bandeja y el instalador.
 - **Progreso por lección** y palabras difíciles.
 - **Copia de seguridad** a carpeta (SQLite + audio), **restauración** y limpieza de audios huérfanos.
 - **Exportación del historial** de repasos a CSV.
@@ -34,7 +35,7 @@ Lo que ya funciona:
 - **Logs a archivo** con acceso desde Ajustes.
 - Pantallas de importación, progreso y ajustes.
 
-Pendiente para el resto de la Fase 2: manejo de errores con reintento, icono propio e instalador.
+Pendiente para el resto de la Fase 2: manejo de errores con reintento e instalador.
 
 ## Stack
 

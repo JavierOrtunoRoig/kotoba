@@ -220,7 +220,7 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 ## RF2-07 — UX y accesibilidad
 
-- [ ] Icono e identidad visual propios (no el icono por defecto de Tauri).
+- [x] Icono e identidad visual propios (sello 言).
 - [ ] Navegación completa por teclado y foco visible.
 - [ ] Textos de UI en japonés/inglés además de español.
 - [ ] Ajustes de tamaño de fuente.
