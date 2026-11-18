@@ -148,6 +148,7 @@ export const api = {
   closePopup: () => invoke<void>("close_popup"),
   hideWidget: () => invoke<void>("hide_widget"),
   showMainWindow: () => invoke<void>("show_main_window"),
+  openLogs: () => invoke<void>("open_logs"),
 };
 
 export function japaneseDisplay(item: Item): string {

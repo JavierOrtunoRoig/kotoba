@@ -82,7 +82,7 @@ pub fn apply_mode(app: &AppHandle, mode: &str) {
         "widget" => {
             close_popup(app);
             if let Err(error) = show_widget(app) {
-                eprintln!("no se pudo mostrar el widget: {error}");
+                log::warn!("no se pudo mostrar el widget: {error}");
             }
         }
         "toast" => {

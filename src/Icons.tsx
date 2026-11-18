@@ -183,3 +183,11 @@ export function IconUpload(props: IconProps) {
     </svg>
   );
 }
+
+export function IconFolder(props: IconProps) {
+  return (
+    <svg {...svgProps(props)}>
+      <path d="M3 6h7l2 2h9v11H3z" />
+    </svg>
+  );
+}

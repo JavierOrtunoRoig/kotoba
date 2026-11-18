@@ -85,6 +85,7 @@ fn import_deck(
     if !path.exists() {
         return Err(format!("No existe el archivo {}", path.display()));
     }
+    log::info!("importando {}", path.display());
 
     let window = app.get_webview_window("main");
     let mut progress = |phase: &str, current: i64, total: i64| {
@@ -104,6 +105,12 @@ fn import_deck(
     let summary = import::import_file(&path, &mut conn, &state.media_dir, &mut progress)
         .map_err(to_err)?;
     let _ = db::cleanup_media(&conn, &state.media_dir);
+    log::info!(
+        "importación completada: {} notas, {} ítems, {} audios",
+        summary.notes,
+        summary.items_inserted,
+        summary.audio_extracted
+    );
     Ok(summary)
 }
 
@@ -236,6 +243,7 @@ fn export_backup(state: State<AppState>, destination: String) -> Result<String, 
     let timestamp = chrono::Local::now().format("%Y%m%d-%H%M%S");
     let folder = destination.join(format!("kotoba-backup-{timestamp}"));
     std::fs::create_dir_all(&folder).map_err(to_err)?;
+    log::info!("exportando copia a {}", folder.display());
 
     let conn = state.db.lock().map_err(to_err)?;
     let _ = conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()));
@@ -276,6 +284,7 @@ fn restore_backup(
     if source_db == live_db {
         return Err("No se puede restaurar la base de datos activa".to_string());
     }
+    log::info!("restaurando copia desde {}", source.display());
 
     {
         let test = rusqlite::Connection::open_with_flags(
@@ -317,6 +326,7 @@ fn restore_backup(
     shell::apply_mode(&app, &settings.mode);
     let _ = app.emit("settings:changed", &settings);
     let _ = app.emit("library:changed", ());
+    log::info!("copia restaurada desde {}", source.display());
     Ok(settings)
 }
 
@@ -328,6 +338,7 @@ fn export_history(state: State<AppState>, destination: String) -> Result<String,
             return Err("La carpeta de destino no existe".to_string());
         }
     }
+    log::info!("exportando historial a {}", destination.display());
 
     let conn = state.db.lock().map_err(to_err)?;
     let mut stmt = conn
@@ -421,11 +432,32 @@ fn show_main_window(app: tauri::AppHandle) {
     shell::show_main(&app);
 }
 
+#[tauri::command]
+fn open_logs(app: tauri::AppHandle) -> Result<(), String> {
+    let dir = app.path().app_log_dir().map_err(to_err)?;
+    std::fs::create_dir_all(&dir).map_err(to_err)?;
+    std::process::Command::new("explorer")
+        .arg(&dir)
+        .spawn()
+        .map_err(to_err)?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .target(tauri_plugin_log::Target::new(
+                    tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some("kotoba".into()),
+                    },
+                ))
+                .level(log::LevelFilter::Info)
+                .build(),
+        )
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
@@ -503,6 +535,7 @@ pub fn run() {
             close_popup,
             hide_widget,
             show_main_window,
+            open_logs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

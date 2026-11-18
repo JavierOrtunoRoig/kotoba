@@ -10,6 +10,7 @@ use tauri::{AppHandle, Manager};
 /// Arranca el planificador pasivo. Revisa cada 10 s si toca mostrar un reto.
 pub fn start(app: AppHandle) {
     std::thread::spawn(move || {
+        log::info!("scheduler iniciado");
         let mut next_run = Instant::now() + Duration::from_secs(75);
 
         loop {

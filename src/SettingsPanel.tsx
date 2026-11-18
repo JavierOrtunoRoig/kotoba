@@ -10,6 +10,7 @@ import { api, type Bootstrap, type ImportProgress, type Settings } from "./api";
 import {
   IconArchive,
   IconDownload,
+  IconFolder,
   IconImport,
   IconRefresh,
   IconTrash,
@@ -100,6 +101,14 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
       onToast(String(caught));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function openLogs() {
+    try {
+      await api.openLogs();
+    } catch (caught) {
+      onToast(String(caught));
     }
   }
 
@@ -541,6 +550,23 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             onChange={(value) => void toggleAutostart(value)}
             label="Arrancar con Windows"
           />
+        </div>
+
+        <div className="field">
+          <div>
+            <div className="field-label">Registro de la app</div>
+            <div className="field-desc">
+              Abre la carpeta con los logs para diagnosticar problemas.
+            </div>
+          </div>
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => void openLogs()}
+          >
+            <IconFolder size={16} />
+            Abrir carpeta
+          </button>
         </div>
       </article>
 
