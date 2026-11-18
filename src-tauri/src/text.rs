@@ -126,7 +126,7 @@ pub fn has_japanese(input: &str) -> bool {
     input.chars().any(has_japanese_char)
 }
 
-fn remove_parentheticals(input: &str) -> String {
+pub fn remove_parentheticals(input: &str) -> String {
     let mut out = String::with_capacity(input.len());
     let mut depth = 0i32;
     for c in input.chars() {

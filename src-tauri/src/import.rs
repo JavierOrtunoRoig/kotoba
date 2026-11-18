@@ -590,4 +590,115 @@ mod tests {
         assert!(summary.audio_extracted >= 700);
         assert_eq!(summary.sources, 1076);
     }
+
+    fn primary_japanese(item: &crate::models::Item) -> Option<String> {
+        if let Some(kanji) = item.kanji.as_deref() {
+            let cleaned = text::clean_display(kanji);
+            let without = text::remove_parentheticals(&cleaned);
+            for token in without.split_whitespace() {
+                let token = token.trim_matches(|c: char| matches!(c, '。' | '.' | ',' | ';' | '、'));
+                if text::has_japanese(token) {
+                    return Some(token.to_string());
+                }
+            }
+        }
+
+        let reading = text::clean_display(&item.reading).replace('*', "");
+        let without = text::remove_parentheticals(&reading);
+        for token in without.split(|c: char| {
+            c == '／' || c == '/' || c == '+' || c.is_whitespace()
+        }) {
+            let token = token.trim_matches(|c: char| {
+                matches!(c, '。' | '.' | ',' | ';' | '、' | '〜')
+            });
+            if text::has_japanese(token) {
+                return Some(token.to_string());
+            }
+        }
+        None
+    }
+
+    fn meaning_candidates(item: &crate::models::Item) -> Vec<String> {
+        let cleaned = text::clean_display(&item.meaning);
+        let without = text::remove_parentheticals(&cleaned);
+        let mut out: Vec<String> = Vec::new();
+
+        for source in [&cleaned, &without] {
+            for part in source.split(';') {
+                for sub in part.split(" / ") {
+                    let sub = sub.replace("...", "").replace('…', "");
+                    let sub = sub.trim_matches(|c: char| {
+                        matches!(c, '。' | '.' | ',' | ';' | ':' | '、' | '—' | '-')
+                            || c.is_whitespace()
+                    });
+                    if !sub.is_empty() && !out.iter().any(|value| value.as_str() == sub) {
+                        out.push(sub.to_string());
+                    }
+                }
+            }
+        }
+
+        out
+    }
+
+    #[test]
+    #[ignore = "requiere el mazo real en el escritorio"]
+    fn normalizes_real_deck_answers() {
+        let path = Path::new(r"D:\Users\Javier\Desktop\Genki 1.apkg");
+        if !path.exists() {
+            eprintln!("mazo no encontrado, se omite");
+            return;
+        }
+
+        let mut conn = Connection::open_in_memory().expect("db");
+        db::migrate(&mut conn).expect("migrate");
+        let dir = tempfile::tempdir().expect("tempdir");
+        import_apkg(path, &mut conn, dir.path()).expect("import");
+
+        let items = db::all_items(&conn).expect("items");
+        assert!(items.len() >= 1000, "se esperaban ~1.012 ítems");
+
+        let mut failures = Vec::new();
+        let mut checked = 0usize;
+
+        for item in &items {
+            if let Some(answer) = primary_japanese(item) {
+                checked += 1;
+                if !text::check_es_to_jp(&answer, item) {
+                    failures.push(format!(
+                        "ES->JP rechazó {answer:?} para {:?} / {:?}",
+                        item.reading, item.meaning
+                    ));
+                }
+            }
+
+            for answer in meaning_candidates(item) {
+                checked += 1;
+                if !text::check_jp_to_es(&answer, item) {
+                    failures.push(format!(
+                        "JP->ES rechazó {answer:?} para {:?} / {:?}",
+                        item.reading, item.meaning
+                    ));
+                }
+            }
+
+            assert!(
+                !text::check_es_to_jp("zzzz", item),
+                "aceptó basura para {:?} / {:?}",
+                item.reading,
+                item.meaning
+            );
+        }
+
+        if !failures.is_empty() {
+            panic!(
+                "{} fallos de {} comprobaciones:\n{}",
+                failures.len(),
+                checked,
+                failures.join("\n")
+            );
+        }
+
+        println!("{checked} respuestas reales validadas");
+    }
 }
