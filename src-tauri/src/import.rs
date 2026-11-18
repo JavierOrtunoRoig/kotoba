@@ -728,6 +728,26 @@ mod tests {
                         item.reading, item.meaning
                     ));
                 }
+
+                let has_kanji = answer.chars().any(|c| {
+                    let value = c as u32;
+                    (0x3400..=0x4DBF).contains(&value) || (0x4E00..=0x9FFF).contains(&value)
+                });
+                let kana_only = answer.chars().all(|c| {
+                    let value = c as u32;
+                    (0x3040..=0x309F).contains(&value) || (0x30A0..=0x30FF).contains(&value)
+                });
+                if !has_kanji && kana_only {
+                    if let Some(romaji) = text::romaji_variants(&answer).into_iter().next() {
+                        checked += 1;
+                        if !text::check_es_to_jp(&romaji, item) {
+                            failures.push(format!(
+                                "ES->JP rechazó romaji {romaji:?} para {:?} / {:?}",
+                                item.reading, item.meaning
+                            ));
+                        }
+                    }
+                }
             }
 
             for answer in meaning_candidates(item) {

@@ -99,7 +99,7 @@ pub fn normalize_key(input: &str) -> String {
 
 const IGNORED_ANSWER_CHARS: &[char] = &[
     '。', '、', '.', ',', ';', '；', ':', '：', '!', '?', '！', '？', '"', '\'', '“', '”', '‘', '’',
-    '*', '〜', '~', '·',
+    '*', '〜', '~', '·', '-',
 ];
 
 /// Normaliza una respuesta para compararla con las variantes aceptadas.
@@ -290,14 +290,316 @@ pub fn meaning_variants(item: &Item) -> Vec<String> {
     out
 }
 
+fn kana_to_hiragana(c: char) -> char {
+    let code = c as u32;
+    if (0x30A1..=0x30F6).contains(&code) {
+        char::from_u32(code - 0x60).unwrap_or(c)
+    } else {
+        c
+    }
+}
+
+fn single_romaji(c: char) -> Option<&'static str> {
+    Some(match c {
+        'あ' => "a",
+        'い' => "i",
+        'う' => "u",
+        'え' => "e",
+        'お' => "o",
+        'か' => "ka",
+        'き' => "ki",
+        'く' => "ku",
+        'け' => "ke",
+        'こ' => "ko",
+        'さ' => "sa",
+        'し' => "shi",
+        'す' => "su",
+        'せ' => "se",
+        'そ' => "so",
+        'た' => "ta",
+        'ち' => "chi",
+        'つ' => "tsu",
+        'て' => "te",
+        'と' => "to",
+        'な' => "na",
+        'に' => "ni",
+        'ぬ' => "nu",
+        'ね' => "ne",
+        'の' => "no",
+        'は' => "ha",
+        'ひ' => "hi",
+        'ふ' => "fu",
+        'へ' => "he",
+        'ほ' => "ho",
+        'ま' => "ma",
+        'み' => "mi",
+        'む' => "mu",
+        'め' => "me",
+        'も' => "mo",
+        'や' => "ya",
+        'ゆ' => "yu",
+        'よ' => "yo",
+        'ら' => "ra",
+        'り' => "ri",
+        'る' => "ru",
+        'れ' => "re",
+        'ろ' => "ro",
+        'わ' => "wa",
+        'を' => "o",
+        'ん' => "n",
+        'が' => "ga",
+        'ぎ' => "gi",
+        'ぐ' => "gu",
+        'げ' => "ge",
+        'ご' => "go",
+        'ざ' => "za",
+        'じ' => "ji",
+        'ず' => "zu",
+        'ぜ' => "ze",
+        'ぞ' => "zo",
+        'だ' => "da",
+        'ぢ' => "ji",
+        'づ' => "zu",
+        'で' => "de",
+        'ど' => "do",
+        'ば' => "ba",
+        'び' => "bi",
+        'ぶ' => "bu",
+        'べ' => "be",
+        'ぼ' => "bo",
+        'ぱ' => "pa",
+        'ぴ' => "pi",
+        'ぷ' => "pu",
+        'ぺ' => "pe",
+        'ぽ' => "po",
+        'ゔ' => "vu",
+        'ゐ' => "wi",
+        'ゑ' => "we",
+        _ => return None,
+    })
+}
+
+const DIGRAPHS: &[(&str, &str)] = &[
+    ("きゃ", "kya"),
+    ("きゅ", "kyu"),
+    ("きょ", "kyo"),
+    ("しゃ", "sha"),
+    ("しゅ", "shu"),
+    ("しょ", "sho"),
+    ("ちゃ", "cha"),
+    ("ちゅ", "chu"),
+    ("ちょ", "cho"),
+    ("にゃ", "nya"),
+    ("にゅ", "nyu"),
+    ("にょ", "nyo"),
+    ("ひゃ", "hya"),
+    ("ひゅ", "hyu"),
+    ("ひょ", "hyo"),
+    ("みゃ", "mya"),
+    ("みゅ", "myu"),
+    ("みょ", "myo"),
+    ("りゃ", "rya"),
+    ("りゅ", "ryu"),
+    ("りょ", "ryo"),
+    ("ぎゃ", "gya"),
+    ("ぎゅ", "gyu"),
+    ("ぎょ", "gyo"),
+    ("じゃ", "ja"),
+    ("じゅ", "ju"),
+    ("じょ", "jo"),
+    ("びゃ", "bya"),
+    ("びゅ", "byu"),
+    ("びょ", "byo"),
+    ("ぴゃ", "pya"),
+    ("ぴゅ", "pyu"),
+    ("ぴょ", "pyo"),
+    ("ふぁ", "fa"),
+    ("ふぃ", "fi"),
+    ("ふぇ", "fe"),
+    ("ふぉ", "fo"),
+    ("てぃ", "ti"),
+    ("でぃ", "di"),
+    ("しぇ", "she"),
+    ("じぇ", "je"),
+    ("ちぇ", "che"),
+    ("いぇ", "ye"),
+    ("きぇ", "kye"),
+    ("ぎぇ", "gye"),
+    ("にぇ", "nye"),
+    ("ひぇ", "hye"),
+    ("びぇ", "bye"),
+    ("ぴぇ", "pye"),
+    ("みぇ", "mye"),
+    ("りぇ", "rye"),
+    ("うぃ", "wi"),
+    ("うぇ", "we"),
+    ("うぉ", "wo"),
+    ("ゔぁ", "va"),
+    ("ゔぃ", "vi"),
+    ("ゔぇ", "ve"),
+    ("ゔぉ", "vo"),
+];
+
+/// Convierte kana a romaji (Hepburn aproximado). Los kanji se dejan intactos.
+pub fn to_romaji(input: &str) -> String {
+    let normalized: String = input.nfkc().collect();
+    let chars: Vec<char> = normalized.chars().map(kana_to_hiragana).collect();
+    let mut out = String::with_capacity(chars.len() * 2);
+    let mut i = 0;
+    let mut double_next = false;
+
+    while i < chars.len() {
+        let c = chars[i];
+
+        if c == 'っ' {
+            double_next = true;
+            i += 1;
+            continue;
+        }
+
+        if c == 'ー' {
+            if let Some(vowel) = out
+                .chars()
+                .rev()
+                .find(|ch| matches!(ch, 'a' | 'i' | 'u' | 'e' | 'o'))
+            {
+                out.push(vowel);
+            }
+            i += 1;
+            continue;
+        }
+
+        if c == 'ん' {
+            out.push('n');
+            i += 1;
+            continue;
+        }
+
+        let digraph = chars.get(i + 1).and_then(|next| {
+            let key: String = [c, *next].iter().collect();
+            DIGRAPHS
+                .iter()
+                .find(|(kana, _)| *kana == key.as_str())
+                .map(|(_, romaji)| *romaji)
+        });
+
+        let (romaji, consumed) = match digraph {
+            Some(romaji) => (romaji, 2),
+            None => match single_romaji(c) {
+                Some(romaji) => (romaji, 1),
+                None => {
+                    out.push(c);
+                    i += 1;
+                    continue;
+                }
+            },
+        };
+
+        if double_next {
+            if romaji.starts_with("ch") {
+                out.push('t');
+            } else if let Some(first) = romaji.chars().next() {
+                out.push(first);
+            }
+            double_next = false;
+        }
+
+        out.push_str(romaji);
+        i += consumed;
+    }
+
+    out
+}
+
+/// Variantes romaji aceptables: Hepburn, vocales largas colapsadas, kunrei y nasal.
+pub fn romaji_variants(input: &str) -> Vec<String> {
+    let base = to_romaji(input);
+    if base.is_empty() {
+        return Vec::new();
+    }
+
+    let mut out = vec![base.clone()];
+
+    let mut collapsed = base.clone();
+    for (from, to) in [
+        ("ou", "o"),
+        ("oo", "o"),
+        ("aa", "a"),
+        ("uu", "u"),
+        ("ee", "e"),
+        ("ei", "e"),
+    ] {
+        collapsed = collapsed.replace(from, to);
+    }
+    if !out.contains(&collapsed) {
+        out.push(collapsed.clone());
+    }
+
+    let mut kunrei = collapsed.clone();
+    for (from, to) in [
+        ("shi", "si"),
+        ("chi", "ti"),
+        ("tsu", "tu"),
+        ("fu", "hu"),
+        ("ji", "zi"),
+        ("sha", "sya"),
+        ("shu", "syu"),
+        ("sho", "syo"),
+        ("cha", "tya"),
+        ("chu", "tyu"),
+        ("cho", "tyo"),
+        ("ja", "zya"),
+        ("ju", "zyu"),
+        ("jo", "zyo"),
+    ] {
+        kunrei = kunrei.replace(from, to);
+    }
+    if !out.contains(&kunrei) {
+        out.push(kunrei);
+    }
+
+    let mut nasal = collapsed.clone();
+    for (from, to) in [("nb", "mb"), ("np", "mp"), ("nm", "mm")] {
+        nasal = nasal.replace(from, to);
+    }
+    if !out.contains(&nasal) {
+        out.push(nasal);
+    }
+
+    if base.ends_with("ha") {
+        let wa = format!("{}wa", &base[..base.len() - 2]);
+        if !out.contains(&wa) {
+            out.push(wa);
+        }
+    }
+
+    out
+}
+
 pub fn check_es_to_jp(answer: &str, item: &Item) -> bool {
     let answer = normalize_answer(answer);
     if answer.is_empty() {
         return false;
     }
-    japanese_variants(item)
+
+    let variants = japanese_variants(item);
+    if variants
         .iter()
         .any(|variant| normalize_answer(variant) == answer)
+    {
+        return true;
+    }
+
+    // Si no es romaji, no hay nada más que probar.
+    if !answer.chars().all(|c| c.is_ascii_alphabetic()) {
+        return false;
+    }
+
+    variants.iter().any(|variant| {
+        romaji_variants(variant)
+            .iter()
+            .any(|romaji| normalize_answer(romaji) == answer)
+    })
 }
 
 pub fn check_jp_to_es(answer: &str, item: &Item) -> bool {
@@ -386,5 +688,38 @@ mod tests {
         assert!(check_es_to_jp("暑い", &item));
         assert!(check_es_to_jp("熱い", &item));
         assert!(check_es_to_jp("あつい", &item));
+    }
+
+    #[test]
+    fn romanizes_kana() {
+        assert_eq!(to_romaji("がっこう"), "gakkou");
+        assert_eq!(to_romaji("しゃしん"), "shashin");
+        assert_eq!(to_romaji("コーヒー"), "koohii");
+        assert_eq!(to_romaji("こんにちは"), "konnichiha");
+        assert!(romaji_variants("こんにちは").contains(&"konnichiwa".to_string()));
+    }
+
+    #[test]
+    fn accepts_romaji_answers() {
+        let item = item(Some("おはよう"), "おはよう", "Buenos días.");
+        assert!(check_es_to_jp("ohayou", &item));
+        assert!(check_es_to_jp("ohayo", &item));
+        assert!(check_es_to_jp("Ohayō", &item));
+        assert!(!check_es_to_jp("ohayouu", &item));
+    }
+
+    #[test]
+    fn accepts_romaji_long_vowels_and_small_tsu() {
+        let item = item(Some("学校"), "がっこう", "escuela");
+        assert!(check_es_to_jp("gakkou", &item));
+        assert!(check_es_to_jp("gakko", &item));
+        assert!(check_es_to_jp("gakkō", &item));
+    }
+
+    #[test]
+    fn accepts_romaji_ha_as_wa() {
+        let item = item(None, "こんにちは", "Buenas tardes.");
+        assert!(check_es_to_jp("konnichiha", &item));
+        assert!(check_es_to_jp("konnichiwa", &item));
     }
 }

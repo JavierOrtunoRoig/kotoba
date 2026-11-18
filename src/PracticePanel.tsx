@@ -210,7 +210,7 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
               placeholder={
                 direction === "jp_to_es"
                   ? "Escribe el significado…"
-                  : "Escribe en japonés…"
+                  : "Kanji, kana o romaji…"
               }
               lang={direction === "es_to_jp" ? "ja" : "es"}
               autoComplete="off"

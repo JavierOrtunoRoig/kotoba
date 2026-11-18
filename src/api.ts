@@ -163,7 +163,7 @@ export function directionLabel(direction: Direction): string {
 export function directionHint(direction: Direction): string {
   return direction === "jp_to_es"
     ? "Escribe el significado en español"
-    : "Escribe la palabra en japonés (kanji o kana)";
+    : "Escribe la palabra en japonés (kanji, kana o romaji)";
 }
 
 export function formatInterval(minutes: number): string {
