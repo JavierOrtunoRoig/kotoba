@@ -3,6 +3,7 @@ use crate::models::Settings;
 use crate::{shell, AppState};
 use chrono::Timelike;
 use rand::Rng;
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
 
@@ -18,6 +19,7 @@ pub fn start(app: AppHandle) {
             }
 
             let state = app.state::<AppState>();
+            let popup_visible = state.popup_visible.load(Ordering::Relaxed);
             let Ok(conn) = state.db.lock() else {
                 next_run = Instant::now() + Duration::from_secs(60);
                 continue;
@@ -27,11 +29,9 @@ pub fn start(app: AppHandle) {
             let reviews_today = db::reviews_today(&conn).unwrap_or(0);
             drop(conn);
 
-            if let Some(window) = app.get_webview_window("popup") {
-                if window.is_visible().unwrap_or(false) {
-                    next_run = Instant::now() + Duration::from_secs(45);
-                    continue;
-                }
+            if settings.mode == "popup" && popup_visible {
+                next_run = Instant::now() + Duration::from_secs(45);
+                continue;
             }
 
             let max_reached = settings.max_per_day > 0 && reviews_today >= settings.max_per_day;
@@ -40,7 +40,20 @@ pub fn start(app: AppHandle) {
                 continue;
             }
 
-            let _ = shell::show_popup(&app);
+            if settings.suppress_fullscreen && shell::fullscreen_or_busy() {
+                next_run = Instant::now() + Duration::from_secs(60);
+                continue;
+            }
+
+            match settings.mode.as_str() {
+                "widget" => {
+                    let _ = shell::show_widget(&app);
+                }
+                "toast" => shell::show_toast(&app),
+                _ => {
+                    let _ = shell::show_popup(&app);
+                }
+            }
 
             let min = settings.interval_min_minutes.max(1) as u64;
             let max = settings.interval_max_minutes.max(settings.interval_min_minutes) as u64;

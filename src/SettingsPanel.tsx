@@ -318,6 +318,76 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
       <article className="panel">
         <div className="panel-head">
           <div>
+            <h2>Aparición</h2>
+            <p className="muted">Cómo y dónde aparece el micro-reto.</p>
+          </div>
+        </div>
+
+        <div className="field">
+          <div>
+            <div className="field-label">Modo</div>
+            <div className="field-desc">
+              Popup: tarjeta flotante. Widget: ventana siempre visible. Toast:
+              notificación nativa de Windows.
+            </div>
+          </div>
+          <div className="segmented" role="group" aria-label="Modo de aparición">
+            <button
+              type="button"
+              className={settings.mode === "popup" ? "active" : ""}
+              onClick={() => update("mode", "popup")}
+            >
+              Popup
+            </button>
+            <button
+              type="button"
+              className={settings.mode === "widget" ? "active" : ""}
+              onClick={() => update("mode", "widget")}
+            >
+              Widget
+            </button>
+            <button
+              type="button"
+              className={settings.mode === "toast" ? "active" : ""}
+              onClick={() => update("mode", "toast")}
+            >
+              Toast
+            </button>
+          </div>
+        </div>
+
+        <div className="field">
+          <div>
+            <div className="field-label">Silenciar en pantalla completa</div>
+            <div className="field-desc">
+              No interrumpir juegos, vídeos, presentaciones ni el modo silencio
+              de Windows.
+            </div>
+          </div>
+          <Toggle
+            checked={settings.suppress_fullscreen}
+            onChange={(value) => update("suppress_fullscreen", value)}
+            label="Silenciar en pantalla completa"
+          />
+        </div>
+
+        {settings.mode === "toast" && (
+          <p className="small muted">
+            El toast es una notificación nativa: toca la notificación o el icono
+            de la bandeja para abrir el reto.
+          </p>
+        )}
+        {settings.mode === "widget" && (
+          <p className="small muted">
+            El widget aparece en la esquina inferior derecha. Puedes arrastrarlo
+            y ocultarlo cuando quieras.
+          </p>
+        )}
+      </article>
+
+      <article className="panel">
+        <div className="panel-head">
+          <div>
             <h2>Contenido</h2>
             <p className="muted">Qué se pregunta y cómo.</p>
           </div>

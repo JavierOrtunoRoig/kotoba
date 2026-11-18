@@ -14,7 +14,11 @@ import { IconArrow, IconClose, IconSound } from "./Icons";
 
 type Status = "loading" | "ready" | "answered" | "empty";
 
-export default function PopupApp() {
+type Props = {
+  variant: "popup" | "widget";
+};
+
+export default function PopupApp({ variant }: Props) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [status, setStatus] = useState<Status>("loading");
@@ -89,15 +93,23 @@ export default function PopupApp() {
     }
   }, [status]);
 
+  const dismiss = useCallback(() => {
+    if (variant === "widget") {
+      void api.hideWidget();
+    } else {
+      void api.closePopup();
+    }
+  }, [variant]);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        void api.closePopup();
+        dismiss();
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [dismiss]);
 
   const submit = useCallback(
     async (override?: string) => {
@@ -132,20 +144,16 @@ export default function PopupApp() {
     void load(challenge?.item.id);
   }, [challenge?.item.id, load]);
 
-  const close = () => {
-    void api.closePopup();
-  };
-
   const openApp = async () => {
     await api.showMainWindow();
-    await api.closePopup();
+    dismiss();
   };
 
   const direction = challenge?.direction;
 
   return (
     <div className="popup-shell">
-      <article className="popup-card">
+      <article className={`popup-card ${variant}`}>
         <header className="popup-top" data-tauri-drag-region>
           <span className="drag" data-tauri-drag-region>
             <span className="popup-seal" data-tauri-drag-region>
@@ -159,8 +167,8 @@ export default function PopupApp() {
           <button
             type="button"
             className="popup-close"
-            onClick={close}
-            aria-label="Cerrar"
+            onClick={dismiss}
+            aria-label={variant === "widget" ? "Ocultar widget" : "Cerrar"}
           >
             <IconClose size={14} />
           </button>
@@ -230,9 +238,9 @@ export default function PopupApp() {
                   <button
                     type="button"
                     className="ghost small"
-                    onClick={close}
+                    onClick={dismiss}
                   >
-                    Ahora no
+                    {variant === "widget" ? "Ocultar" : "Ahora no"}
                   </button>
                   <button
                     type="submit"

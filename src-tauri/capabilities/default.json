@@ -11,6 +11,7 @@
     "core:window:allow-set-focus",
     "core:window:allow-start-dragging",
     "dialog:default",
-    "autostart:default"
+    "autostart:default",
+    "notification:default"
   ]
 }

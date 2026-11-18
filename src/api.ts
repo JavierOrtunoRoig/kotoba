@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 export type Direction = "jp_to_es" | "es_to_jp";
 export type DirectionMode = "random" | "alternate";
+export type AppearanceMode = "popup" | "widget" | "toast";
 
 export interface Settings {
   interval_min_minutes: number;
@@ -12,6 +13,8 @@ export interface Settings {
   dnd_start: string;
   dnd_end: string;
   audio_autoplay: boolean;
+  mode: AppearanceMode;
+  suppress_fullscreen: boolean;
   direction_mode: DirectionMode;
   include_patterns: boolean;
   launch_at_startup: boolean;
@@ -110,6 +113,7 @@ export const api = {
   clearLibrary: () => invoke<void>("clear_library"),
   practiceNow: () => invoke<void>("practice_now"),
   closePopup: () => invoke<void>("close_popup"),
+  hideWidget: () => invoke<void>("hide_widget"),
   showMainWindow: () => invoke<void>("show_main_window"),
 };
 

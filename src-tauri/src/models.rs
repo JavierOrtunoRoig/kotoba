@@ -13,6 +13,10 @@ pub struct Settings {
     pub dnd_end: String,
     /// Reproducir el audio automáticamente en la dirección JP → ES.
     pub audio_autoplay: bool,
+    /// `popup`, `widget` o `toast`.
+    pub mode: String,
+    /// No mostrar retos si hay una app a pantalla completa o una presentación.
+    pub suppress_fullscreen: bool,
     /// `random` o `alternate`.
     pub direction_mode: String,
     /// Incluir notas de gramática/plantillas (〜, +, ...).
@@ -31,6 +35,8 @@ impl Default for Settings {
             dnd_start: "22:00".to_string(),
             dnd_end: "08:00".to_string(),
             audio_autoplay: true,
+            mode: "popup".to_string(),
+            suppress_fullscreen: true,
             direction_mode: "random".to_string(),
             include_patterns: false,
             launch_at_startup: false,
@@ -47,6 +53,9 @@ impl Settings {
         self.max_per_day = self.max_per_day.clamp(0, 500);
         if !matches!(self.direction_mode.as_str(), "random" | "alternate") {
             self.direction_mode = "random".to_string();
+        }
+        if !matches!(self.mode.as_str(), "popup" | "widget" | "toast") {
+            self.mode = "popup".to_string();
         }
         if !is_hhmm(&self.dnd_start) {
             self.dnd_start = "22:00".to_string();
@@ -153,4 +162,41 @@ pub struct ImportSummary {
     pub patterns: i64,
     pub deck_name: String,
     pub warnings: Vec<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanitizes_invalid_mode_and_intervals() {
+        let settings = Settings {
+            mode: "nope".to_string(),
+            direction_mode: "sideways".to_string(),
+            interval_min_minutes: 60,
+            interval_max_minutes: 5,
+            max_per_day: 999,
+            dnd_start: "99:99".to_string(),
+            ..Default::default()
+        }
+        .sanitize();
+
+        assert_eq!(settings.mode, "popup");
+        assert_eq!(settings.direction_mode, "random");
+        assert!(settings.interval_max_minutes >= settings.interval_min_minutes);
+        assert_eq!(settings.max_per_day, 500);
+        assert_eq!(settings.dnd_start, "22:00");
+    }
+
+    #[test]
+    fn keeps_valid_modes() {
+        for mode in ["popup", "widget", "toast"] {
+            let settings = Settings {
+                mode: mode.to_string(),
+                ..Default::default()
+            }
+            .sanitize();
+            assert_eq!(settings.mode, mode);
+        }
+    }
 }

@@ -4,20 +4,23 @@ import MainApp from "./MainApp";
 import PopupApp from "./PopupApp";
 import "./styles.css";
 
-export function isPopupWindow(): boolean {
+function currentWindowLabel(): string {
   try {
-    return getCurrentWindow().label === "popup";
+    return getCurrentWindow().label;
   } catch {
-    return false;
+    return "main";
   }
 }
 
 export default function App() {
-  const popup = isPopupWindow();
+  const label = currentWindowLabel();
+  const variant: "popup" | "widget" | null =
+    label === "popup" ? "popup" : label === "widget" ? "widget" : null;
 
   useEffect(() => {
-    document.body.classList.toggle("popup-window", popup);
-  }, [popup]);
+    document.body.classList.toggle("popup-window", variant !== null);
+    document.body.classList.toggle("widget-window", label === "widget");
+  }, [variant, label]);
 
-  return popup ? <PopupApp /> : <MainApp />;
+  return variant ? <PopupApp variant={variant} /> : <MainApp />;
 }

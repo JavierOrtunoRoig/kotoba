@@ -10,12 +10,15 @@ mod tray;
 use models::{AnswerResult, Bootstrap, Challenge, ImportSummary, Settings, Stats};
 use rusqlite::OptionalExtension;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use tauri::{Manager, State};
+use tauri::{Emitter, Manager, State};
 
 pub struct AppState {
     pub db: Mutex<rusqlite::Connection>,
     pub media_dir: PathBuf,
+    pub popup_visible: AtomicBool,
+    pub widget_visible: AtomicBool,
 }
 
 fn to_err(error: impl std::fmt::Display) -> String {
@@ -42,9 +45,25 @@ fn get_settings(state: State<AppState>) -> Result<Settings, String> {
 }
 
 #[tauri::command]
-fn update_settings(state: State<AppState>, settings: Settings) -> Result<Settings, String> {
-    let conn = state.db.lock().map_err(to_err)?;
-    db::save_settings(&conn, &settings).map_err(to_err)
+fn update_settings(
+    app: tauri::AppHandle,
+    state: State<AppState>,
+    settings: Settings,
+) -> Result<Settings, String> {
+    let (previous_mode, saved) = {
+        let conn = state.db.lock().map_err(to_err)?;
+        let previous = db::load_settings(&conn).map_err(to_err)?;
+        let saved = db::save_settings(&conn, &settings).map_err(to_err)?;
+        (previous.mode, saved)
+    };
+
+    if previous_mode != saved.mode {
+        let handle = app.clone();
+        let mode = saved.mode.clone();
+        std::thread::spawn(move || shell::apply_mode(&handle, &mode));
+    }
+    let _ = app.emit("settings:changed", &saved);
+    Ok(saved)
 }
 
 #[tauri::command]
@@ -183,12 +202,33 @@ fn clear_library(state: State<AppState>) -> Result<(), String> {
 
 #[tauri::command]
 fn practice_now(app: tauri::AppHandle) -> Result<(), String> {
-    shell::show_popup(&app).map_err(to_err)
+    let state = app.state::<AppState>();
+    let mode = {
+        let conn = state.db.lock().map_err(to_err)?;
+        db::load_settings(&conn).map_err(to_err)?.mode
+    };
+
+    // Crear ventanas desde el hilo del comando puede bloquear el webview.
+    std::thread::spawn(move || match mode.as_str() {
+        "widget" => {
+            let _ = shell::show_widget(&app);
+        }
+        "toast" => shell::show_toast(&app),
+        _ => {
+            let _ = shell::show_popup(&app);
+        }
+    });
+    Ok(())
 }
 
 #[tauri::command]
 fn close_popup(app: tauri::AppHandle) {
     shell::close_popup(&app);
+}
+
+#[tauri::command]
+fn hide_widget(app: tauri::AppHandle) {
+    shell::hide_widget(&app);
 }
 
 #[tauri::command]
@@ -200,6 +240,7 @@ fn show_main_window(app: tauri::AppHandle) {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
@@ -213,26 +254,48 @@ pub fn run() {
             let db_path = data_dir.join("kotoba.sqlite3");
             let conn = db::open(&db_path)?;
             let has_items = db::count_items(&conn)? > 0;
+            let settings = db::load_settings(&conn)?;
 
             app.manage(AppState {
                 db: Mutex::new(conn),
                 media_dir,
+                popup_visible: AtomicBool::new(false),
+                widget_visible: AtomicBool::new(false),
             });
+
+            {
+                use tauri_plugin_notification::NotificationExt;
+                let handle = app.handle().clone();
+                app.notification().on_action(move |action| {
+                    if action.action_id() == "tap" {
+                        let _ = shell::show_popup(&handle);
+                    }
+                })?;
+            }
 
             tray::setup(app.handle())?;
             scheduler::start(app.handle().clone());
 
             if !has_items {
                 shell::show_main(app.handle());
+            } else if settings.mode == "widget" {
+                let _ = shell::show_widget(app.handle());
             }
 
             Ok(())
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                if matches!(window.label(), "main" | "popup") {
+                if matches!(window.label(), "main" | "popup" | "widget") {
                     api.prevent_close();
                     let _ = window.hide();
+                    if let Some(state) = window.app_handle().try_state::<AppState>() {
+                        match window.label() {
+                            "popup" => state.popup_visible.store(false, Ordering::Relaxed),
+                            "widget" => state.widget_visible.store(false, Ordering::Relaxed),
+                            _ => {}
+                        }
+                    }
                 }
             }
         })
@@ -249,6 +312,7 @@ pub fn run() {
             clear_library,
             practice_now,
             close_popup,
+            hide_widget,
             show_main_window,
         ])
         .run(tauri::generate_context!())

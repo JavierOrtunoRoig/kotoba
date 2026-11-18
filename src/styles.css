@@ -1584,6 +1584,28 @@ input[type="time"]:disabled {
   gap: 8px;
 }
 
+/* Widget persistente: misma tarjeta, algo más compacta. */
+.popup-card.widget .popup-top {
+  padding: 8px 10px 6px 12px;
+}
+
+.popup-card.widget .popup-body {
+  padding: 0 14px 12px;
+  gap: 8px;
+}
+
+.popup-card.widget .popup-prompt.jp {
+  font-size: 30px;
+}
+
+.popup-card.widget .popup-prompt.es {
+  font-size: 20px;
+}
+
+.popup-card.widget .popup-input {
+  font-size: 17px;
+}
+
 /* ---------- Adaptación ---------- */
 
 @media (max-width: 860px) {
