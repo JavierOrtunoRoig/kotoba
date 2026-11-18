@@ -10,6 +10,9 @@ const LEARNING_INTERVAL_MINUTES: i64 = 10;
 const FIRST_REVIEW_INTERVAL_MINUTES: i64 = 1440;
 pub const MAX_QUALITY: u8 = 5;
 
+/// Intervalo máximo: 10 años, para evitar intervalos absurdos y desbordamientos.
+const MAX_INTERVAL_MINUTES: i64 = 3650 * 1440;
+
 /// Calcula el siguiente estado SM-2.
 ///
 /// `quality`: 0-5 (5 = acierto rápido, 4 = acierto, 2 = fallo, 1 = no lo sé).
@@ -33,11 +36,57 @@ pub fn sm2_next(
         _ => {
             let days = (interval_minutes as f64 / 1440.0) * ease;
             let interval = (days * 1440.0).round().max(1440.0) as i64;
-            (reps + 1, interval)
+            (reps + 1, interval.min(MAX_INTERVAL_MINUTES))
         }
     };
 
     (reps, interval, ease)
+}
+
+/// XP por respuesta correcta según la calidad SM-2. Un fallo no da XP.
+pub fn xp_for_quality(quality: u8) -> i64 {
+    match quality {
+        5 => 3,
+        4 => 2,
+        3 => 1,
+        _ => 0,
+    }
+}
+
+/// Umbrales absolutos de XP para cada nivel.
+const LEVEL_THRESHOLDS: [i64; 12] = [
+    0, 100, 250, 500, 900, 1500, 2400, 3600, 5200, 7200, 9800, 13000,
+];
+
+pub fn level_for_xp(xp: i64) -> i64 {
+    LEVEL_THRESHOLDS
+        .iter()
+        .rposition(|threshold| xp >= *threshold)
+        .map(|index| index as i64 + 1)
+        .unwrap_or(1)
+}
+
+/// Devuelve `(nivel, progreso 0-100, xp del siguiente nivel)`.
+pub fn level_progress(xp: i64) -> (i64, f64, Option<i64>) {
+    let level = level_for_xp(xp);
+    let current = LEVEL_THRESHOLDS[(level - 1) as usize];
+    let next = LEVEL_THRESHOLDS.get(level as usize).copied();
+    let progress = match next {
+        Some(next) => {
+            let span = (next - current).max(1) as f64;
+            ((xp - current) as f64 / span * 100.0).clamp(0.0, 100.0)
+        }
+        None => 100.0,
+    };
+    (level, progress, next)
+}
+
+pub struct ReviewOutcome {
+    pub next_interval_minutes: i64,
+    pub xp_gained: i64,
+    pub xp_total: i64,
+    pub level: i64,
+    pub leveled_up: bool,
 }
 
 pub fn open(path: &Path) -> Result<Connection> {
@@ -102,6 +151,16 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
             value TEXT NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS profile (
+            id          INTEGER PRIMARY KEY CHECK (id = 1),
+            xp_total    INTEGER NOT NULL DEFAULT 0,
+            level       INTEGER NOT NULL DEFAULT 1,
+            streak_best INTEGER NOT NULL DEFAULT 0
+        );
+
+        INSERT OR IGNORE INTO profile (id, xp_total, level, streak_best)
+        VALUES (1, 0, 1, 0);
+
         CREATE INDEX IF NOT EXISTS idx_srs_due ON srs_state(due_at);
         CREATE INDEX IF NOT EXISTS idx_review_answered ON review_log(answered_at);
         CREATE INDEX IF NOT EXISTS idx_items_pattern ON items(is_pattern);
@@ -113,6 +172,14 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
     if version < 1 {
         ensure_column(conn, "review_log", "quality", "INTEGER NOT NULL DEFAULT 0")?;
         conn.pragma_update(None, "user_version", 1)?;
+    }
+    if version < 2 {
+        let current = streak_days(conn)?;
+        conn.execute(
+            "UPDATE profile SET streak_best = MAX(streak_best, ?1) WHERE id = 1",
+            [current],
+        )?;
+        conn.pragma_update(None, "user_version", 2)?;
     }
 
     Ok(())
@@ -142,6 +209,40 @@ pub fn today_start_ts() -> i64 {
         .and_then(|dt| Local.from_local_datetime(&dt).single())
         .unwrap_or(now);
     start.timestamp()
+}
+
+/// Lunes a las 00:00 local.
+pub fn week_start_ts() -> i64 {
+    use chrono::Datelike;
+
+    let today = Local::now().date_naive();
+    let days_from_monday = today.weekday().num_days_from_monday() as i64;
+    let monday = today - chrono::Duration::days(days_from_monday);
+    monday
+        .and_hms_opt(0, 0, 0)
+        .and_then(|dt| Local.from_local_datetime(&dt).single())
+        .map(|dt| dt.timestamp())
+        .unwrap_or_else(today_start_ts)
+}
+
+pub fn reviews_since(conn: &Connection, since: i64) -> Result<i64> {
+    Ok(conn.query_row(
+        "SELECT COUNT(*) FROM review_log WHERE answered_at >= ?1",
+        [since],
+        |row| row.get(0),
+    )?)
+}
+
+pub fn reviews_this_week(conn: &Connection) -> Result<i64> {
+    reviews_since(conn, week_start_ts())
+}
+
+pub fn profile(conn: &Connection) -> Result<(i64, i64, i64)> {
+    Ok(conn.query_row(
+        "SELECT xp_total, level, streak_best FROM profile WHERE id = 1",
+        [],
+        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+    )?)
 }
 
 pub fn count_items(conn: &Connection) -> Result<i64> {
@@ -267,11 +368,7 @@ pub fn due_count(conn: &Connection, include_patterns: bool) -> Result<i64> {
 }
 
 pub fn reviews_today(conn: &Connection) -> Result<i64> {
-    Ok(conn.query_row(
-        "SELECT COUNT(*) FROM review_log WHERE answered_at >= ?1",
-        [today_start_ts()],
-        |row| row.get(0),
-    )?)
+    reviews_since(conn, today_start_ts())
 }
 
 pub fn last_direction(conn: &Connection) -> Result<Option<String>> {
@@ -290,9 +387,10 @@ pub fn record_review(
     quality: u8,
     direction: &str,
     latency_ms: i64,
-) -> Result<i64> {
+) -> Result<ReviewOutcome> {
     let now = now_ts();
     let correct = quality >= 3;
+    let xp_gained = xp_for_quality(quality);
     let tx = conn.transaction()?;
 
     tx.execute(
@@ -336,11 +434,36 @@ pub fn record_review(
         params![item_id, interval, ease, due_at, reps, lapses],
     )?;
 
+    let (old_xp, old_level, old_best): (i64, i64, i64) = tx
+        .query_row(
+            "SELECT xp_total, level, streak_best FROM profile WHERE id = 1",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .optional()?
+        .unwrap_or((0, 1, 0));
+
+    let xp_total = old_xp + xp_gained;
+    let level = level_for_xp(xp_total);
+    let current_streak = streak_days(&tx)?;
+    let streak_best = old_best.max(current_streak);
+
+    tx.execute(
+        "UPDATE profile SET xp_total = ?1, level = ?2, streak_best = ?3 WHERE id = 1",
+        params![xp_total, level, streak_best],
+    )?;
+
     tx.commit()?;
-    Ok(interval)
+    Ok(ReviewOutcome {
+        next_interval_minutes: interval,
+        xp_gained,
+        xp_total,
+        level,
+        leveled_up: level > old_level,
+    })
 }
 
-pub fn stats(conn: &Connection, include_patterns: bool) -> Result<Stats> {
+pub fn stats(conn: &Connection, include_patterns: bool, weekly_goal: i64) -> Result<Stats> {
     let total_items = count_items(conn)?;
     let total_reviews: i64 =
         conn.query_row("SELECT COUNT(*) FROM review_log", [], |row| row.get(0))?;
@@ -371,18 +494,31 @@ pub fn stats(conn: &Connection, include_patterns: bool) -> Result<Stats> {
         |row| row.get(0),
     )?;
 
+    let (xp_total, _stored_level, stored_best) = profile(conn).unwrap_or((0, 1, 0));
+    let (level, level_progress_value, next_level_xp) = level_progress(xp_total);
+    let current_streak = streak_days(conn)?;
+    let streak_best = stored_best.max(current_streak);
+    let week_reviews = reviews_this_week(conn)?;
+
     Ok(Stats {
         total_items,
         total_reviews,
         reviewed_today,
         correct_today,
         accuracy_today,
-        streak_days: streak_days(conn)?,
+        streak_days: current_streak,
         mastered,
         due_now,
         activity: activity(conn)?,
         lessons: lessons(conn)?,
         difficult: difficult(conn)?,
+        xp_total,
+        level,
+        level_progress: level_progress_value,
+        next_level_xp,
+        streak_best,
+        week_reviews,
+        weekly_goal,
     })
 }
 
@@ -562,7 +698,11 @@ fn streak_days(conn: &Connection) -> Result<i64> {
 }
 
 pub fn reset_progress(conn: &Connection) -> Result<()> {
-    conn.execute_batch("DELETE FROM review_log; DELETE FROM srs_state;")?;
+    conn.execute_batch(
+        "DELETE FROM review_log;
+         DELETE FROM srs_state;
+         UPDATE profile SET xp_total = 0, level = 1, streak_best = 0 WHERE id = 1;",
+    )?;
     Ok(())
 }
 
@@ -571,7 +711,8 @@ pub fn clear_library(conn: &mut Connection) -> Result<()> {
         "DELETE FROM review_log;
          DELETE FROM srs_state;
          DELETE FROM item_sources;
-         DELETE FROM items;",
+         DELETE FROM items;
+         UPDATE profile SET xp_total = 0, level = 1, streak_best = 0 WHERE id = 1;",
     )?;
     Ok(())
 }
@@ -730,6 +871,12 @@ mod tests {
     }
 
     #[test]
+    fn sm2_caps_interval() {
+        let (_, interval, _) = sm2_next(5, 40, MAX_INTERVAL_MINUTES, 2.5);
+        assert_eq!(interval, MAX_INTERVAL_MINUTES);
+    }
+
+    #[test]
     fn cleans_unreferenced_media() {
         let mut conn = Connection::open_in_memory().expect("db");
         migrate(&mut conn).expect("migrate");
@@ -750,5 +897,58 @@ mod tests {
         assert_eq!(removed, 1);
         assert!(dir.path().join("keep.mp3").exists());
         assert!(!dir.path().join("orphan.mp3").exists());
+    }
+
+    #[test]
+    fn xp_only_for_correct_quality() {
+        assert_eq!(xp_for_quality(5), 3);
+        assert_eq!(xp_for_quality(4), 2);
+        assert_eq!(xp_for_quality(3), 1);
+        assert_eq!(xp_for_quality(2), 0);
+        assert_eq!(xp_for_quality(1), 0);
+    }
+
+    #[test]
+    fn levels_scale_with_xp() {
+        assert_eq!(level_for_xp(0), 1);
+        assert_eq!(level_for_xp(99), 1);
+        assert_eq!(level_for_xp(100), 2);
+        assert_eq!(level_for_xp(249), 2);
+        assert_eq!(level_for_xp(250), 3);
+        assert_eq!(level_for_xp(13000), 12);
+        assert_eq!(level_for_xp(99999), 12);
+    }
+
+    #[test]
+    fn records_xp_and_levels_up() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        conn.execute(
+            "INSERT INTO items
+             (source_uid, reading, meaning, meaning_plain, dedup_key, created_at)
+             VALUES ('u1', 'a', 'b', 'b', 'a|b', 0)",
+            [],
+        )
+        .expect("item");
+
+        let outcome = record_review(&mut conn, 1, 5, "es_to_jp", 1000).expect("review");
+        assert_eq!(outcome.xp_gained, 3);
+        assert_eq!(outcome.xp_total, 3);
+        assert_eq!(outcome.level, 1);
+        assert!(!outcome.leveled_up);
+
+        let mut last = outcome;
+        for _ in 0..33 {
+            last = record_review(&mut conn, 1, 5, "es_to_jp", 1000).expect("review");
+        }
+
+        assert_eq!(last.xp_total, 102);
+        assert_eq!(last.level, 2);
+        assert!(last.leveled_up);
+
+        let (xp, level, best) = profile(&conn).expect("profile");
+        assert_eq!(xp, 102);
+        assert_eq!(level, 2);
+        assert_eq!(best, 1);
     }
 }

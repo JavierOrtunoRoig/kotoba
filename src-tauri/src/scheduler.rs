@@ -64,7 +64,7 @@ pub fn start(app: AppHandle) {
     });
 }
 
-fn in_dnd(settings: &Settings) -> bool {
+pub(crate) fn in_dnd(settings: &Settings) -> bool {
     if !settings.dnd_enabled {
         return false;
     }

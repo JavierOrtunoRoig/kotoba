@@ -32,7 +32,8 @@ fn bootstrap(state: State<AppState>) -> Result<Bootstrap, String> {
     let conn = state.db.lock().map_err(to_err)?;
     let item_count = db::count_items(&conn).map_err(to_err)?;
     let settings = db::load_settings(&conn).map_err(to_err)?;
-    let stats = db::stats(&conn, settings.include_patterns).map_err(to_err)?;
+    let stats = db::stats(&conn, settings.include_patterns, settings.weekly_goal)
+        .map_err(to_err)?;
     Ok(Bootstrap {
         item_count,
         settings,
@@ -72,7 +73,7 @@ fn update_settings(
 fn get_stats(state: State<AppState>) -> Result<Stats, String> {
     let conn = state.db.lock().map_err(to_err)?;
     let settings = db::load_settings(&conn).map_err(to_err)?;
-    db::stats(&conn, settings.include_patterns).map_err(to_err)
+    db::stats(&conn, settings.include_patterns, settings.weekly_goal).map_err(to_err)
 }
 
 #[tauri::command]
@@ -148,6 +149,7 @@ fn next_challenge(
 
 #[tauri::command]
 fn submit_answer(
+    app: tauri::AppHandle,
     state: State<AppState>,
     item_id: i64,
     direction: String,
@@ -156,6 +158,8 @@ fn submit_answer(
 ) -> Result<AnswerResult, String> {
     let mut conn = state.db.lock().map_err(to_err)?;
     let item = db::item_by_id(&conn, item_id).map_err(to_err)?;
+    let settings = db::load_settings(&conn).map_err(to_err)?;
+    let week_before = db::reviews_this_week(&conn).map_err(to_err)?;
 
     let correct = if direction == "jp_to_es" {
         text::check_jp_to_es(&answer, &item)
@@ -175,8 +179,26 @@ fn submit_answer(
         2
     };
 
-    let next_interval_minutes =
-        db::record_review(&mut conn, item_id, quality, &direction, latency_ms).map_err(to_err)?;
+    let outcome = db::record_review(&mut conn, item_id, quality, &direction, latency_ms)
+        .map_err(to_err)?;
+    let week_after = db::reviews_this_week(&conn).map_err(to_err)?;
+    drop(conn);
+
+    if settings.weekly_goal > 0
+        && week_before < settings.weekly_goal
+        && week_after >= settings.weekly_goal
+        && settings.milestone_notifications
+        && !settings.paused
+        && !scheduler::in_dnd(&settings)
+        && !(settings.suppress_fullscreen && shell::fullscreen_or_busy())
+    {
+        shell::show_notification(
+            &app,
+            "Objetivo semanal completado",
+            &format!("{week_after} repasos esta semana. ¡Bien hecho!"),
+        );
+        log::info!("objetivo semanal completado: {week_after} repasos");
+    }
 
     let expected = if direction == "jp_to_es" {
         text::meaning_variants(&item)
@@ -191,7 +213,11 @@ fn submit_answer(
         meaning: item.meaning,
         kanji_gloss: item.kanji_gloss,
         has_audio: item.has_audio,
-        next_interval_minutes,
+        next_interval_minutes: outcome.next_interval_minutes,
+        xp_gained: outcome.xp_gained,
+        xp_total: outcome.xp_total,
+        level: outcome.level,
+        leveled_up: outcome.leveled_up,
     })
 }
 
@@ -222,7 +248,7 @@ fn reset_progress(state: State<AppState>) -> Result<Stats, String> {
     let conn = state.db.lock().map_err(to_err)?;
     db::reset_progress(&conn).map_err(to_err)?;
     let settings = db::load_settings(&conn).map_err(to_err)?;
-    db::stats(&conn, settings.include_patterns).map_err(to_err)
+    db::stats(&conn, settings.include_patterns, settings.weekly_goal).map_err(to_err)
 }
 
 #[tauri::command]

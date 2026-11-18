@@ -22,6 +22,10 @@ pub struct Settings {
     /// Incluir notas de gramática/plantillas (〜, +, ...).
     pub include_patterns: bool,
     pub launch_at_startup: bool,
+    /// Repasos objetivo por semana (0 = sin objetivo).
+    pub weekly_goal: i64,
+    /// Notificar hitos como completar el objetivo semanal.
+    pub milestone_notifications: bool,
 }
 
 impl Default for Settings {
@@ -40,6 +44,8 @@ impl Default for Settings {
             direction_mode: "random".to_string(),
             include_patterns: false,
             launch_at_startup: false,
+            weekly_goal: 30,
+            milestone_notifications: false,
         }
     }
 }
@@ -51,6 +57,7 @@ impl Settings {
             .interval_max_minutes
             .clamp(self.interval_min_minutes, 480);
         self.max_per_day = self.max_per_day.clamp(0, 500);
+        self.weekly_goal = self.weekly_goal.clamp(0, 500);
         if !matches!(self.direction_mode.as_str(), "random" | "alternate") {
             self.direction_mode = "random".to_string();
         }
@@ -122,6 +129,14 @@ pub struct AnswerResult {
     pub has_audio: bool,
     /// Minutos hasta el próximo repaso de este ítem.
     pub next_interval_minutes: i64,
+    /// XP ganado en este repaso (0 si falló).
+    pub xp_gained: i64,
+    /// XP total acumulado.
+    pub xp_total: i64,
+    /// Nivel actual.
+    pub level: i64,
+    /// Si este repaso ha subido de nivel.
+    pub leveled_up: bool,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -165,6 +180,20 @@ pub struct Stats {
     pub activity: Vec<DayCount>,
     pub lessons: Vec<LessonStat>,
     pub difficult: Vec<DifficultItem>,
+    /// XP acumulado.
+    pub xp_total: i64,
+    /// Nivel actual.
+    pub level: i64,
+    /// Progreso 0-100 hacia el siguiente nivel.
+    pub level_progress: f64,
+    /// XP absoluto del siguiente nivel (null si es el máximo).
+    pub next_level_xp: Option<i64>,
+    /// Mejor racha histórica.
+    pub streak_best: i64,
+    /// Repasos de la semana actual.
+    pub week_reviews: i64,
+    /// Objetivo semanal configurado (0 = sin objetivo).
+    pub weekly_goal: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -228,5 +257,22 @@ mod tests {
             .sanitize();
             assert_eq!(settings.mode, mode);
         }
+    }
+
+    #[test]
+    fn clamps_weekly_goal() {
+        let high = Settings {
+            weekly_goal: 999,
+            ..Default::default()
+        }
+        .sanitize();
+        assert_eq!(high.weekly_goal, 500);
+
+        let low = Settings {
+            weekly_goal: -5,
+            ..Default::default()
+        }
+        .sanitize();
+        assert_eq!(low.weekly_goal, 0);
     }
 }

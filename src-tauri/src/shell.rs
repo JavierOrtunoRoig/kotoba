@@ -66,13 +66,17 @@ pub fn hide_widget(app: &AppHandle) {
 
 /// Notificación nativa. El click se gestiona en `setup` mediante `on_action`.
 pub fn show_toast(app: &AppHandle) {
+    show_notification(app, "kotoba", "Toca para repasar una palabra");
+}
+
+pub fn show_notification(app: &AppHandle, title: &str, body: &str) {
     use tauri_plugin_notification::NotificationExt;
 
     let _ = app
         .notification()
         .builder()
-        .title("kotoba")
-        .body("Toca para repasar una palabra")
+        .title(title)
+        .body(body)
         .show();
 }
 
