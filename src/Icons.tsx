@@ -155,3 +155,13 @@ export function IconSeed(props: IconProps) {
     </svg>
   );
 }
+
+export function IconArchive(props: IconProps) {
+  return (
+    <svg {...svgProps(props)}>
+      <path d="M4 8h16v12H4z" />
+      <path d="M3 5h18v3H3z" />
+      <path d="M10 12h4" />
+    </svg>
+  );
+}

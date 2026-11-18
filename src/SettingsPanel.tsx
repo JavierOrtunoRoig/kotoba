@@ -7,6 +7,7 @@ import {
 } from "@tauri-apps/plugin-autostart";
 import { api, type Bootstrap, type Settings } from "./api";
 import {
+  IconArchive,
   IconImport,
   IconRefresh,
   IconTrash,
@@ -129,8 +130,22 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     }
   }
 
-  async function resetProgress() {
-    if (
+  async function exportBackup() {
+    const selected = await open({ directory: true, multiple: false });
+    if (!selected || Array.isArray(selected)) return;
+
+    setBusy(true);
+    try {
+      const folder = await api.exportBackup(selected);
+      onToast(`Copia guardada en ${folder}`);
+    } catch (caught) {
+      onToast(String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resetProgress() {    if (
       !window.confirm(
         "¿Reiniciar el repaso? Se borra el historial y los intervalos, pero se conservan las palabras.",
       )
@@ -492,6 +507,15 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
           >
             <IconImport size={16} />
             Reimportar mazo
+          </button>
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => void exportBackup()}
+            disabled={busy}
+          >
+            <IconArchive size={16} />
+            Exportar copia
           </button>
           <button
             type="button"

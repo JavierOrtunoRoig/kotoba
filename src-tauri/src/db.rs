@@ -576,6 +576,34 @@ pub fn clear_library(conn: &mut Connection) -> Result<()> {
     Ok(())
 }
 
+/// Borra los archivos de `media/` que ya no referencia ningún ítem.
+pub fn cleanup_media(conn: &Connection, media_dir: &Path) -> Result<usize> {
+    let mut stmt =
+        conn.prepare("SELECT audio_file FROM items WHERE audio_file IS NOT NULL AND audio_file <> ''")?;
+    let referenced: HashSet<String> = stmt
+        .query_map([], |row| row.get::<_, String>(0))?
+        .filter_map(|row| row.ok())
+        .collect();
+
+    if !media_dir.exists() {
+        return Ok(0);
+    }
+
+    let mut removed = 0usize;
+    for entry in std::fs::read_dir(media_dir)? {
+        let entry = entry?;
+        if !entry.file_type()?.is_file() {
+            continue;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        if !referenced.contains(&name) {
+            std::fs::remove_file(entry.path())?;
+            removed += 1;
+        }
+    }
+    Ok(removed)
+}
+
 /// Datos para insertar un ítem desde el importador.
 pub struct NewItem<'a> {
     pub source_uid: &'a str,
@@ -699,5 +727,28 @@ mod tests {
     fn sm2_ease_floor() {
         let (_, _, ease) = sm2_next(0, 3, 1440, 1.35);
         assert!((ease - 1.3).abs() < 1e-9);
+    }
+
+    #[test]
+    fn cleans_unreferenced_media() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        let dir = tempfile::tempdir().expect("tempdir");
+
+        std::fs::write(dir.path().join("keep.mp3"), b"keep").expect("keep");
+        std::fs::write(dir.path().join("orphan.mp3"), b"orphan").expect("orphan");
+
+        conn.execute(
+            "INSERT INTO items
+             (source_uid, reading, meaning, meaning_plain, audio_file, dedup_key, created_at)
+             VALUES ('u1', 'a', 'b', 'b', 'keep.mp3', 'a|b', 0)",
+            [],
+        )
+        .expect("item");
+
+        let removed = cleanup_media(&conn, dir.path()).expect("cleanup");
+        assert_eq!(removed, 1);
+        assert!(dir.path().join("keep.mp3").exists());
+        assert!(!dir.path().join("orphan.mp3").exists());
     }
 }

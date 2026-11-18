@@ -132,6 +132,8 @@ export const api = {
   getAudio: (itemId: number) => invoke<number[] | null>("get_audio", { itemId }),
   resetProgress: () => invoke<Stats>("reset_progress"),
   clearLibrary: () => invoke<void>("clear_library"),
+  exportBackup: (destination: string) =>
+    invoke<string>("export_backup", { destination }),
   practiceNow: () => invoke<void>("practice_now"),
   closePopup: () => invoke<void>("close_popup"),
   hideWidget: () => invoke<void>("hide_widget"),

@@ -16,6 +16,7 @@ use tauri::{Emitter, Manager, State};
 
 pub struct AppState {
     pub db: Mutex<rusqlite::Connection>,
+    pub db_path: PathBuf,
     pub media_dir: PathBuf,
     pub popup_visible: AtomicBool,
     pub widget_visible: AtomicBool,
@@ -80,7 +81,9 @@ fn import_deck(state: State<AppState>, path: String) -> Result<ImportSummary, St
         return Err(format!("No existe el archivo {}", path.display()));
     }
     let mut conn = state.db.lock().map_err(to_err)?;
-    import::import_file(&path, &mut conn, &state.media_dir).map_err(to_err)
+    let summary = import::import_file(&path, &mut conn, &state.media_dir).map_err(to_err)?;
+    let _ = db::cleanup_media(&conn, &state.media_dir);
+    Ok(summary)
 }
 
 #[tauri::command]
@@ -197,7 +200,42 @@ fn reset_progress(state: State<AppState>) -> Result<Stats, String> {
 #[tauri::command]
 fn clear_library(state: State<AppState>) -> Result<(), String> {
     let mut conn = state.db.lock().map_err(to_err)?;
-    db::clear_library(&mut conn).map_err(to_err)
+    db::clear_library(&mut conn).map_err(to_err)?;
+    let _ = db::cleanup_media(&conn, &state.media_dir);
+    Ok(())
+}
+
+#[tauri::command]
+fn export_backup(state: State<AppState>, destination: String) -> Result<String, String> {
+    let destination = PathBuf::from(destination);
+    if !destination.is_dir() {
+        return Err("La carpeta de destino no existe".to_string());
+    }
+
+    let timestamp = chrono::Local::now().format("%Y%m%d-%H%M%S");
+    let folder = destination.join(format!("kotoba-backup-{timestamp}"));
+    std::fs::create_dir_all(&folder).map_err(to_err)?;
+
+    let conn = state.db.lock().map_err(to_err)?;
+    let _ = conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()));
+    std::fs::copy(&state.db_path, folder.join("kotoba.sqlite3")).map_err(to_err)?;
+    copy_media(&state.media_dir, &folder.join("media")).map_err(to_err)?;
+
+    Ok(folder.to_string_lossy().to_string())
+}
+
+fn copy_media(source: &std::path::Path, target: &std::path::Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(target)?;
+    if !source.exists() {
+        return Ok(());
+    }
+    for entry in std::fs::read_dir(source)? {
+        let entry = entry?;
+        if entry.file_type()?.is_file() {
+            std::fs::copy(entry.path(), target.join(entry.file_name()))?;
+        }
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -258,6 +296,7 @@ pub fn run() {
 
             app.manage(AppState {
                 db: Mutex::new(conn),
+                db_path,
                 media_dir,
                 popup_visible: AtomicBool::new(false),
                 widget_visible: AtomicBool::new(false),
@@ -310,6 +349,7 @@ pub fn run() {
             get_audio,
             reset_progress,
             clear_library,
+            export_backup,
             practice_now,
             close_popup,
             hide_widget,
