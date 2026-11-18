@@ -15,7 +15,6 @@ pnpm-debug.log*
 # --- Tauri / Rust backend ---
 src-tauri/target/
 src-tauri/gen/
-Cargo.lock
 
 # --- Tauri build artifacts ---
 target/
@@ -26,6 +25,7 @@ target/
 *.msix
 
 # --- Editor / OS ---
+.agents/
 .vscode/*
 !.vscode/extensions.json
 .idea/

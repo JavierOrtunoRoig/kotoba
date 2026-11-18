@@ -1,0 +1,156 @@
+use serde::{Deserialize, Serialize};
+
+/// Configuración persistida. Se guarda como JSON en la tabla `settings`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Settings {
+    pub interval_min_minutes: i64,
+    pub interval_max_minutes: i64,
+    pub max_per_day: i64,
+    pub paused: bool,
+    pub dnd_enabled: bool,
+    pub dnd_start: String,
+    pub dnd_end: String,
+    /// Reproducir el audio automáticamente en la dirección JP → ES.
+    pub audio_autoplay: bool,
+    /// `random` o `alternate`.
+    pub direction_mode: String,
+    /// Incluir notas de gramática/plantillas (〜, +, ...).
+    pub include_patterns: bool,
+    pub launch_at_startup: bool,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            interval_min_minutes: 10,
+            interval_max_minutes: 25,
+            max_per_day: 40,
+            paused: false,
+            dnd_enabled: true,
+            dnd_start: "22:00".to_string(),
+            dnd_end: "08:00".to_string(),
+            audio_autoplay: true,
+            direction_mode: "random".to_string(),
+            include_patterns: false,
+            launch_at_startup: false,
+        }
+    }
+}
+
+impl Settings {
+    pub fn sanitize(mut self) -> Self {
+        self.interval_min_minutes = self.interval_min_minutes.clamp(1, 240);
+        self.interval_max_minutes = self
+            .interval_max_minutes
+            .clamp(self.interval_min_minutes, 480);
+        self.max_per_day = self.max_per_day.clamp(0, 500);
+        if !matches!(self.direction_mode.as_str(), "random" | "alternate") {
+            self.direction_mode = "random".to_string();
+        }
+        if !is_hhmm(&self.dnd_start) {
+            self.dnd_start = "22:00".to_string();
+        }
+        if !is_hhmm(&self.dnd_end) {
+            self.dnd_end = "08:00".to_string();
+        }
+        self
+    }
+}
+
+fn is_hhmm(value: &str) -> bool {
+    let mut parts = value.split(':');
+    let (Some(h), Some(m), None) = (parts.next(), parts.next(), parts.next()) else {
+        return false;
+    };
+    match (h.parse::<u32>(), m.parse::<u32>()) {
+        (Ok(h), Ok(m)) => h < 24 && m < 60,
+        _ => false,
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Item {
+    pub id: i64,
+    pub kanji: Option<String>,
+    pub reading: String,
+    pub meaning: String,
+    pub kanji_gloss: Option<String>,
+    pub lesson: String,
+    pub category: String,
+    pub is_pattern: bool,
+    pub irregular: bool,
+    pub has_audio: bool,
+}
+
+impl Item {
+    /// Forma japonesa que se muestra en JP → ES.
+    #[allow(dead_code)]
+    pub fn japanese_display(&self) -> &str {
+        self.kanji
+            .as_deref()
+            .filter(|k| !k.trim().is_empty())
+            .unwrap_or(&self.reading)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Challenge {
+    pub item: Item,
+    /// `jp_to_es` o `es_to_jp`.
+    pub direction: String,
+    pub due_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnswerResult {
+    pub correct: bool,
+    /// Respuestas aceptadas, la primera es la principal.
+    pub expected: Vec<String>,
+    pub reading: String,
+    pub meaning: String,
+    pub kanji_gloss: Option<String>,
+    pub has_audio: bool,
+    /// Minutos hasta el próximo repaso de este ítem.
+    pub next_interval_minutes: i64,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct DayCount {
+    pub date: String,
+    pub total: i64,
+    pub correct: i64,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Stats {
+    pub total_items: i64,
+    pub total_reviews: i64,
+    pub reviewed_today: i64,
+    pub correct_today: i64,
+    pub accuracy_today: f64,
+    pub streak_days: i64,
+    pub mastered: i64,
+    pub due_now: i64,
+    pub activity: Vec<DayCount>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Bootstrap {
+    pub item_count: i64,
+    pub settings: Settings,
+    pub stats: Stats,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ImportSummary {
+    pub notes: i64,
+    pub items_inserted: i64,
+    pub items_merged: i64,
+    pub sources: i64,
+    pub audio_extracted: i64,
+    pub audio_reused: i64,
+    pub patterns: i64,
+    pub deck_name: String,
+    pub warnings: Vec<String>,
+}
