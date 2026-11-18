@@ -175,6 +175,8 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 # Fase 2 — Pulido
 
+> Estado: completada. Los `[ ]` restantes son opcionales o de distribución (firma/CI).
+
 ## RF2-01 — Los 3 modos de aparición
 
 - [x] Popup (Fase 1).

@@ -10,7 +10,7 @@ El vocabulario se importa desde el mazo de Anki **"Genki 1"** (formato `.apkg` o
 
 ## Estado
 
-**Fase 1 — MVP técnico implementado.** **Fase 2 — Pulido en curso.** Ver
+**Fase 1 — MVP técnico implementado.** **Fase 2 — Pulido completada.** Ver
 [`docs/plan.md`](docs/plan.md).
 
 Lo que ya funciona:

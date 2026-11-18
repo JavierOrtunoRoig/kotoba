@@ -4,9 +4,9 @@
 
 ## Fase actual
 
-**Fase 2 — Pulido: en curso.**
+**Fase 2 — Pulido: completada.**
 
-Completado en esta iteración:
+Completado en la fase:
 
 - **SM-2 completo** con calidad 1-5, `ease`, pasos de aprendizaje y tests.
 - **Tres modos de aparición**: popup, widget persistente y toast nativo.
