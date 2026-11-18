@@ -231,7 +231,7 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 - [x] Copia de seguridad a carpeta (SQLite + `media/`).
 - [x] Restaurar una copia desde la app (reemplaza base y audio).
 - [x] Logging a archivo (`%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`).
-- [ ] Manejo de errores con reintento.
+- [x] Manejo de errores con reintento (práctica e importación).
 - [x] Exportar historial de repasos (CSV).
 
 ---
