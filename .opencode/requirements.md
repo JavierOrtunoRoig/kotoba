@@ -215,7 +215,7 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 - [ ] Progreso de importación por eventos (no bloqueante).
 - [ ] Pantalla de mapeo de campos para mazos no Genki.
-- [ ] Limpieza de audios huérfanos al borrar/reimportar.
+- [x] Limpieza de audios huérfanos al borrar o reimportar.
 - [ ] Importación de mazos distintos a Genki 1.
 
 ## RF2-07 — UX y accesibilidad
@@ -228,9 +228,11 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 ## RF2-08 — Robustez
 
 - [x] Migraciones versionadas (`PRAGMA user_version` + `ensure_column`).
+- [x] Copia de seguridad a carpeta (SQLite + `media/`).
+- [ ] Restaurar una copia desde la app.
 - [ ] Logging a archivo y pantalla de diagnóstico.
 - [ ] Manejo de errores con reintento.
-- [ ] Backup/exportación de la biblioteca y del progreso.
+- [ ] Exportar historial de repasos.
 
 ---
 

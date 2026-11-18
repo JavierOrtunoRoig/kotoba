@@ -84,6 +84,12 @@ sqlite3 $db "select key, value from settings;"
 sqlite3 $db "select id, reading, meaning, lesson, category from items limit 20;"
 ```
 
+## Copia de seguridad
+
+Desde **Ajustes → Datos → Exportar copia** se elige una carpeta y se crea
+`kotoba-backup-<timestamp>/` con `kotoba.sqlite3` y `media/`. La base se copia tras un
+`PRAGMA wal_checkpoint(TRUNCATE)` para que sea consistente.
+
 ## Borrar datos locales
 
 Primero cerrar la app (menú de bandeja → Salir).

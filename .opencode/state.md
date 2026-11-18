@@ -16,6 +16,7 @@ Completado en esta iteración:
 - **Migraciones versionadas** con `PRAGMA user_version` (añadido `review_log.quality`).
 - **Normalización validada** contra 2.369 respuestas reales del mazo.
 - **Estadísticas ampliadas** con progreso por lección y palabras difíciles.
+- **Gestión de datos**: limpieza de audios huérfanos y copia de seguridad a carpeta.
 
 La Fase 1 sigue funcionando: importación, repaso bidireccional, bandeja, scheduler, popup,
 progreso y ajustes.
@@ -32,8 +33,9 @@ progreso y ajustes.
 | Plantillas (`is_pattern`) | 66 |
 | Avisos de importación | 0 |
 | RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 19 OK (+2 ignored: importación y normalización real) |
+| Tests unitarios Rust | 20 OK (+2 ignored: importación y normalización real) |
 | Respuestas reales validadas | 2.369 |
+| Copia de seguridad | SQLite + 827 audios |
 | Typecheck / build frontend | OK |
 
 ## Verificación funcional realizada
@@ -61,6 +63,8 @@ progreso y ajustes.
 - **Normalización:** test contra el mazo real con **2.369 respuestas** (kanji, lecturas y
   significados) sin fallos.
 - **Estadísticas:** progreso por lección y palabras difíciles renderizados con datos reales.
+- **Copia de seguridad:** exportación a carpeta con `kotoba.sqlite3` y 827 audios.
+- **Limpieza de medios:** test unitario que conserva el audio referenciado y borra el huérfano.
 
 ## Datos de prueba en el equipo
 
@@ -96,9 +100,9 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 | Prioridad | Tema | Detalle |
 |---|---|---|
 | Media | Romaji | No se acepta romaji si el usuario lo escribe |
-| Media | Exportación | Falta exportar historial y progreso |
+| Media | Restaurar copia | La copia se puede crear, pero no restaurar desde la app |
+| Media | Exportar historial | Falta CSV/JSON de `review_log` |
 | Media | Importación bloqueante | El comando es síncrono; el usuario solo ve un spinner |
-| Media | Limpieza de medios | Borrar/reimportar no elimina audios huérfanos de `media/` |
 | Media | `.txt` sin audio | El fallback no puede extraer mp3 |
 | Media | Pantalla completa real | Implementada, pero no probada contra un juego/presentación real |
 | Baja | Icono | Sigue el icono por defecto de Tauri |
@@ -108,10 +112,10 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 
 ## Próximos pasos recomendados
 
-1. **Fase 2.5 — Importación:** progreso por eventos y limpieza de medios huérfanos.
-2. **Fase 2.6 — Robustez:** logging, backup/exportación y manejo de errores con reintento.
-3. **Fase 2.7 — Normalización fina:** romaji opcional y más variantes de IME.
-4. **Fase 2.8 — Estadísticas:** exportar historial y objetivos configurables.
+1. **Fase 2.6 — Importación:** progreso por eventos.
+2. **Fase 2.7 — Robustez:** logging, restauración de copia y manejo de errores con reintento.
+3. **Fase 2.8 — Exportación:** historial de repasos en CSV/JSON.
+4. **Fase 2.9 — Normalización fina:** romaji opcional y más variantes de IME.
 5. **Fase 3:** AnkiConnect, más mazos, distribución e instalador.
 
 ## Cómo actualizar este documento

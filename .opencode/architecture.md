@@ -30,7 +30,7 @@ archivos.
 | `main.rs` | Entrada binaria; llama a `kotoba_lib::run()` |
 | `lib.rs` | Estado de la app, comandos Tauri, setup, ventanas, plugins |
 | `models.rs` | Structs serde compartidos con el frontend |
-| `db.rs` | Conexión SQLite, esquema, migraciones, settings, ítems, repasos, SRS SM-2 y estadísticas (global, por lección y difíciles) |
+| `db.rs` | Conexión SQLite, esquema, migraciones, settings, ítems, repasos, SRS SM-2, estadísticas (global, por lección y difíciles) y limpieza de medios |
 | `import.rs` | Importador `.apkg` / `.txt`, deduplicación y extracción de audio |
 | `media.rs` | Parser del mapa de medios (protobuf de Anki + fallback JSON) |
 | `text.rs` | Limpieza de HTML, normalización y validación de respuestas |
@@ -43,6 +43,7 @@ archivos.
 ```rust
 pub struct AppState {
     pub db: Mutex<rusqlite::Connection>,
+    pub db_path: PathBuf,
     pub media_dir: PathBuf,
     pub popup_visible: AtomicBool,
     pub widget_visible: AtomicBool,
@@ -141,7 +142,8 @@ El audio se extrae una sola vez por nombre; las referencias repetidas cuentan co
 | `submit_answer` | `itemId`, `direction`, `answer`, `latencyMs` | `AnswerResult` |
 | `get_audio` | `itemId` | `number[] \| null` (bytes del mp3) |
 | `reset_progress` | — | `Stats` |
-| `clear_library` | — | `void` |
+| `clear_library` | — | `void` (borra ítems, progreso y audios huérfanos) |
+| `export_backup` | `destination` | ruta de la carpeta creada |
 | `practice_now` | — | `void` (abre el modo actual: popup/widget/toast) |
 | `close_popup` | — | `void` |
 | `hide_widget` | — | `void` |
@@ -215,6 +217,10 @@ El popup y la ventana principal comparten el mismo bundle; se distinguen por el 
   media\
     <sha1>.mp3
 ```
+
+Ajustes → Datos → **Exportar copia** crea `kotoba-backup-<timestamp>/` con `kotoba.sqlite3` y
+`media/`. Antes de copiar se hace `PRAGMA wal_checkpoint(TRUNCATE)` para que la base sea consistente.
+La limpieza de medios se ejecuta al borrar la biblioteca y al terminar una importación.
 
 ## Ventanas y capacidades
 
