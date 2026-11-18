@@ -70,7 +70,8 @@ export default function StatsPanel({ onPractice }: Props) {
             <small>%</small>
           </span>
           <span className="stat-s">
-            {stats.correct_today} de {stats.reviewed_today} repasos
+            {stats.correct_today} de {stats.reviewed_today}{" "}
+            {stats.reviewed_today === 1 ? "repaso" : "repasos"}
           </span>
         </article>
 
@@ -111,7 +112,8 @@ export default function StatsPanel({ onPractice }: Props) {
             </p>
           </div>
           <span className="activity-total">
-            {stats.total_reviews} repasos en total
+            {stats.total_reviews}{" "}
+            {stats.total_reviews === 1 ? "repaso" : "repasos"} en total
           </span>
         </div>
 

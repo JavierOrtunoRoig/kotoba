@@ -27,7 +27,7 @@ fn bootstrap(state: State<AppState>) -> Result<Bootstrap, String> {
     let conn = state.db.lock().map_err(to_err)?;
     let item_count = db::count_items(&conn).map_err(to_err)?;
     let settings = db::load_settings(&conn).map_err(to_err)?;
-    let stats = db::stats(&conn).map_err(to_err)?;
+    let stats = db::stats(&conn, settings.include_patterns).map_err(to_err)?;
     Ok(Bootstrap {
         item_count,
         settings,
@@ -50,7 +50,8 @@ fn update_settings(state: State<AppState>, settings: Settings) -> Result<Setting
 #[tauri::command]
 fn get_stats(state: State<AppState>) -> Result<Stats, String> {
     let conn = state.db.lock().map_err(to_err)?;
-    db::stats(&conn).map_err(to_err)
+    let settings = db::load_settings(&conn).map_err(to_err)?;
+    db::stats(&conn, settings.include_patterns).map_err(to_err)
 }
 
 #[tauri::command]
@@ -158,7 +159,8 @@ fn get_audio(state: State<AppState>, item_id: i64) -> Result<Option<Vec<u8>>, St
 fn reset_progress(state: State<AppState>) -> Result<Stats, String> {
     let conn = state.db.lock().map_err(to_err)?;
     db::reset_progress(&conn).map_err(to_err)?;
-    db::stats(&conn).map_err(to_err)
+    let settings = db::load_settings(&conn).map_err(to_err)?;
+    db::stats(&conn, settings.include_patterns).map_err(to_err)
 }
 
 #[tauri::command]

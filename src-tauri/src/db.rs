@@ -271,7 +271,7 @@ pub fn record_review(
     Ok(interval)
 }
 
-pub fn stats(conn: &Connection) -> Result<Stats> {
+pub fn stats(conn: &Connection, include_patterns: bool) -> Result<Stats> {
     let total_items = count_items(conn)?;
     let total_reviews: i64 =
         conn.query_row("SELECT COUNT(*) FROM review_log", [], |row| row.get(0))?;
@@ -295,9 +295,10 @@ pub fn stats(conn: &Connection) -> Result<Stats> {
         r#"
         SELECT COUNT(*) FROM items i
         LEFT JOIN srs_state s ON s.item_id = i.id
-        WHERE s.item_id IS NULL OR s.due_at <= ?1
+        WHERE (?1 = 1 OR i.is_pattern = 0)
+          AND (s.item_id IS NULL OR s.due_at <= ?2)
         "#,
-        [now_ts()],
+        params![include_patterns as i32, now_ts()],
         |row| row.get(0),
     )?;
 
