@@ -106,6 +106,12 @@ export interface ImportSummary {
   warnings: string[];
 }
 
+export interface ImportProgress {
+  phase: string;
+  current: number;
+  total: number;
+}
+
 export const api = {
   bootstrap: () => invoke<Bootstrap>("bootstrap"),
   getSettings: () => invoke<Settings>("get_settings"),

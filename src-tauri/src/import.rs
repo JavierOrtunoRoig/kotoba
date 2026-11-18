@@ -13,15 +13,23 @@ use zip::ZipArchive;
 
 const MAX_WARNINGS: usize = 20;
 
-pub fn import_file(path: &Path, conn: &mut Connection, media_dir: &Path) -> Result<ImportSummary> {
+/// Callback de progreso: `(fase, actual, total)`.
+pub type ProgressFn<'a> = &'a mut dyn FnMut(&str, i64, i64);
+
+pub fn import_file(
+    path: &Path,
+    conn: &mut Connection,
+    media_dir: &Path,
+    progress: ProgressFn<'_>,
+) -> Result<ImportSummary> {
     let extension = path
         .extension()
         .and_then(|value| value.to_str())
         .unwrap_or_default()
         .to_lowercase();
     match extension.as_str() {
-        "apkg" => import_apkg(path, conn, media_dir),
-        "txt" | "tsv" | "csv" => import_txt(path, conn),
+        "apkg" => import_apkg(path, conn, media_dir, progress),
+        "txt" | "tsv" | "csv" => import_txt(path, conn, progress),
         other => Err(anyhow!(
             "Formato no soportado: {other}. Usa un .apkg o un .txt exportado de Anki."
         )),
@@ -39,6 +47,7 @@ pub fn import_apkg(
     path: &Path,
     conn: &mut Connection,
     media_dir: &Path,
+    progress: ProgressFn<'_>,
 ) -> Result<ImportSummary> {
     let file = File::open(path)
         .with_context(|| format!("No se pudo abrir {}", path.display()))?;
@@ -72,10 +81,16 @@ pub fn import_apkg(
         ..Default::default()
     };
 
+    let total_notes = notes.len() as i64;
+    progress("notes", 0, total_notes);
+
     let tx = conn.transaction()?;
     let mut audio_cache: HashMap<String, Option<String>> = HashMap::new();
 
-    for note in &notes {
+    for (index, note) in notes.iter().enumerate() {
+        if index % 25 == 0 {
+            progress("notes", index as i64, total_notes);
+        }
         let values: Vec<&str> = note.flds.split('\u{1f}').collect();
         let lower_names: Vec<String> = fields_by_mid
             .get(&note.mid)
@@ -213,6 +228,7 @@ pub fn import_apkg(
     }
 
     tx.commit()?;
+    progress("done", total_notes, total_notes);
     Ok(summary)
 }
 
@@ -405,7 +421,11 @@ fn push_warning(summary: &mut ImportSummary, message: String) {
     }
 }
 
-pub fn import_txt(path: &Path, conn: &mut Connection) -> Result<ImportSummary> {
+pub fn import_txt(
+    path: &Path,
+    conn: &mut Connection,
+    progress: ProgressFn<'_>,
+) -> Result<ImportSummary> {
     let content = std::fs::read_to_string(path)
         .with_context(|| format!("No se pudo leer {}", path.display()))?;
 
@@ -445,8 +465,14 @@ pub fn import_txt(path: &Path, conn: &mut Connection) -> Result<ImportSummary> {
         ..Default::default()
     };
 
+    let total_lines = data_lines.len() as i64;
+    progress("notes", 0, total_lines);
+
     let tx = conn.transaction()?;
     for (line_index, line) in data_lines.iter().enumerate() {
+        if line_index % 25 == 0 {
+            progress("notes", line_index as i64, total_lines);
+        }
         let values: Vec<&str> = line.split(separator).collect();
         if values.len() < 3 {
             push_warning(
@@ -535,6 +561,7 @@ pub fn import_txt(path: &Path, conn: &mut Connection) -> Result<ImportSummary> {
         summary.sources += 1;
     }
     tx.commit()?;
+    progress("done", total_lines, total_lines);
 
     Ok(summary)
 }
@@ -583,12 +610,42 @@ mod tests {
         let mut conn = Connection::open_in_memory().expect("db");
         db::migrate(&mut conn).expect("migrate");
         let dir = tempfile::tempdir().expect("tempdir");
-        let summary = import_apkg(path, &mut conn, dir.path()).expect("import");
+        let mut noop = |_: &str, _: i64, _: i64| {};
+        let summary = import_apkg(path, &mut conn, dir.path(), &mut noop).expect("import");
         println!("{summary:#?}");
         assert_eq!(summary.notes, 1076);
         assert!(summary.items_inserted >= 1000);
         assert!(summary.audio_extracted >= 700);
         assert_eq!(summary.sources, 1076);
+    }
+
+    #[test]
+    #[ignore = "requiere el mazo real en el escritorio"]
+    fn reports_import_progress() {
+        let path = Path::new(r"D:\Users\Javier\Desktop\Genki 1.apkg");
+        if !path.exists() {
+            eprintln!("mazo no encontrado, se omite");
+            return;
+        }
+
+        let mut conn = Connection::open_in_memory().expect("db");
+        db::migrate(&mut conn).expect("migrate");
+        let dir = tempfile::tempdir().expect("tempdir");
+
+        let mut events: Vec<(String, i64, i64)> = Vec::new();
+        {
+            let mut progress = |phase: &str, current: i64, total: i64| {
+                events.push((phase.to_string(), current, total));
+            };
+            import_apkg(path, &mut conn, dir.path(), &mut progress).expect("import");
+        }
+
+        assert!(events.len() > 5, "se esperaban varios eventos de progreso");
+        let (phase, current, total) = events.last().expect("last event");
+        assert_eq!(phase.as_str(), "done");
+        assert_eq!(*current, 1076);
+        assert_eq!(*total, 1076);
+        assert!(events.iter().any(|(_, current, _)| *current > 0));
     }
 
     fn primary_japanese(item: &crate::models::Item) -> Option<String> {
@@ -653,7 +710,8 @@ mod tests {
         let mut conn = Connection::open_in_memory().expect("db");
         db::migrate(&mut conn).expect("migrate");
         let dir = tempfile::tempdir().expect("tempdir");
-        import_apkg(path, &mut conn, dir.path()).expect("import");
+        let mut noop = |_: &str, _: i64, _: i64| {};
+        import_apkg(path, &mut conn, dir.path(), &mut noop).expect("import");
 
         let items = db::all_items(&conn).expect("items");
         assert!(items.len() >= 1000, "se esperaban ~1.012 ítems");

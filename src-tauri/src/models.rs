@@ -187,6 +187,13 @@ pub struct ImportSummary {
     pub warnings: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImportProgress {
+    pub phase: String,
+    pub current: i64,
+    pub total: i64,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

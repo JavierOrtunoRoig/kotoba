@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
-import { api, type ImportSummary } from "./api";
+import { listen } from "@tauri-apps/api/event";
+import { api, type ImportProgress, type ImportSummary } from "./api";
 import { IconArrow, IconCheck, IconImport } from "./Icons";
 
 type Props = {
@@ -11,6 +12,16 @@ export default function ImportPanel({ onImported }: Props) {
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ImportProgress | null>(null);
+
+  useEffect(() => {
+    const unlisten = listen<ImportProgress>("import:progress", (event) => {
+      setProgress(event.payload);
+    });
+    return () => {
+      void unlisten.then((fn) => fn());
+    };
+  }, []);
 
   async function pick() {
     setError(null);
@@ -25,12 +36,14 @@ export default function ImportPanel({ onImported }: Props) {
       if (!selected || Array.isArray(selected)) return;
 
       setBusy(true);
+      setProgress(null);
       const result = await api.importDeck(selected);
       setSummary(result);
     } catch (caught) {
       setError(String(caught));
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   }
 
@@ -65,6 +78,26 @@ export default function ImportPanel({ onImported }: Props) {
                   <strong>Leyendo el mazo…</strong>
                   <span className="small">
                     Extrayendo notas y audio. Puede tardar unos segundos.
+                  </span>
+                  <div className="progress-track">
+                    <div
+                      className="progress-fill"
+                      style={{
+                        width: `${
+                          progress && progress.total > 0
+                            ? Math.min(
+                                100,
+                                (progress.current / progress.total) * 100,
+                              )
+                            : 0
+                        }%`,
+                      }}
+                    />
+                  </div>
+                  <span className="small">
+                    {progress
+                      ? `${progress.current} / ${progress.total}`
+                      : "Preparando…"}
                   </span>
                 </>
               ) : (

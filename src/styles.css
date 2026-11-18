@@ -1008,6 +1008,36 @@ body.popup-window::before {
   animation: spin 0.8s linear infinite;
 }
 
+.progress-track {
+  width: 100%;
+  max-width: 280px;
+  height: 5px;
+  background: var(--paper-deep);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--vermilion), #d7745b);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.inline-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.inline-progress .progress-track {
+  margin-top: 0;
+  flex: 1;
+  max-width: 240px;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

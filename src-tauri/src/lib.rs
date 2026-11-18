@@ -76,13 +76,33 @@ fn get_stats(state: State<AppState>) -> Result<Stats, String> {
 }
 
 #[tauri::command]
-fn import_deck(state: State<AppState>, path: String) -> Result<ImportSummary, String> {
+fn import_deck(
+    app: tauri::AppHandle,
+    state: State<AppState>,
+    path: String,
+) -> Result<ImportSummary, String> {
     let path = PathBuf::from(path);
     if !path.exists() {
         return Err(format!("No existe el archivo {}", path.display()));
     }
+
+    let window = app.get_webview_window("main");
+    let mut progress = |phase: &str, current: i64, total: i64| {
+        if let Some(window) = &window {
+            let _ = window.emit(
+                "import:progress",
+                models::ImportProgress {
+                    phase: phase.to_string(),
+                    current,
+                    total,
+                },
+            );
+        }
+    };
+
     let mut conn = state.db.lock().map_err(to_err)?;
-    let summary = import::import_file(&path, &mut conn, &state.media_dir).map_err(to_err)?;
+    let summary = import::import_file(&path, &mut conn, &state.media_dir, &mut progress)
+        .map_err(to_err)?;
     let _ = db::cleanup_media(&conn, &state.media_dir);
     Ok(summary)
 }

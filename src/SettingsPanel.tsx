@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { open, save as saveDialog } from "@tauri-apps/plugin-dialog";
+import { listen } from "@tauri-apps/api/event";
 import {
   disable as disableAutostart,
   enable as enableAutostart,
   isEnabled as isAutostartEnabled,
 } from "@tauri-apps/plugin-autostart";
-import { api, type Bootstrap, type Settings } from "./api";
+import { api, type Bootstrap, type ImportProgress, type Settings } from "./api";
 import {
   IconArchive,
   IconDownload,
@@ -47,6 +48,16 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState(false);
   const [autostart, setAutostart] = useState(false);
+  const [progress, setProgress] = useState<ImportProgress | null>(null);
+
+  useEffect(() => {
+    const unlisten = listen<ImportProgress>("import:progress", (event) => {
+      setProgress(event.payload);
+    });
+    return () => {
+      void unlisten.then((fn) => fn());
+    };
+  }, []);
 
   useEffect(() => {
     isAutostartEnabled()
@@ -117,6 +128,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     if (!selected || Array.isArray(selected)) return;
 
     setBusy(true);
+    setProgress(null);
     try {
       const summary = await api.importDeck(selected);
       onToast(
@@ -129,6 +141,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
       onToast(String(caught));
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   }
 
@@ -598,6 +611,26 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             Borrar biblioteca
           </button>
         </div>
+
+        {busy && progress && (
+          <div className="inline-progress">
+            <div className="progress-track">
+              <div
+                className="progress-fill"
+                style={{
+                  width: `${
+                    progress.total > 0
+                      ? Math.min(100, (progress.current / progress.total) * 100)
+                      : 0
+                  }%`,
+                }}
+              />
+            </div>
+            <span className="small muted">
+              {progress.current} / {progress.total}
+            </span>
+          </div>
+        )}
       </article>
 
       <div className="settings-actions">
