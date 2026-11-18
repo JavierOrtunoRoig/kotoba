@@ -196,6 +196,16 @@ pub fn item_by_id(conn: &Connection, id: i64) -> Result<Item> {
     Ok(conn.query_row(&sql, [id], map_item)?)
 }
 
+#[cfg(test)]
+pub fn all_items(conn: &Connection) -> Result<Vec<Item>> {
+    let sql = format!("SELECT {ITEM_COLUMNS} FROM items i ORDER BY i.id");
+    let mut stmt = conn.prepare(&sql)?;
+    let items = stmt
+        .query_map([], map_item)?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    Ok(items)
+}
+
 /// Devuelve el siguiente ítem que toca repasar. Si no hay ninguno vencido,
 /// cae a cualquier ítem para que «practicar ahora» siempre funcione.
 pub fn next_item(
@@ -371,7 +381,107 @@ pub fn stats(conn: &Connection, include_patterns: bool) -> Result<Stats> {
         mastered,
         due_now,
         activity: activity(conn)?,
+        lessons: lessons(conn)?,
+        difficult: difficult(conn)?,
     })
+}
+
+fn lessons(conn: &Connection) -> Result<Vec<crate::models::LessonStat>> {
+    let mut stmt = conn.prepare(
+        r#"
+        SELECT i.lesson,
+               COUNT(DISTINCT i.id) AS total,
+               COUNT(DISTINCT CASE WHEN s.item_id IS NOT NULL THEN i.id END) AS reviewed,
+               COUNT(DISTINCT CASE WHEN s.interval_minutes >= 10080 THEN i.id END) AS mastered,
+               COUNT(r.id) AS reviews,
+               COALESCE(SUM(r.result), 0) AS correct
+        FROM items i
+        LEFT JOIN srs_state s ON s.item_id = i.id
+        LEFT JOIN review_log r ON r.item_id = i.id
+        GROUP BY i.lesson
+        ORDER BY i.lesson
+        "#,
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, i64>(1)?,
+            row.get::<_, i64>(2)?,
+            row.get::<_, i64>(3)?,
+            row.get::<_, i64>(4)?,
+            row.get::<_, i64>(5)?,
+        ))
+    })?;
+
+    let mut out = Vec::new();
+    for row in rows {
+        let (lesson, total, reviewed, mastered, reviews, correct) = row?;
+        let accuracy = if reviews > 0 {
+            correct as f64 / reviews as f64 * 100.0
+        } else {
+            0.0
+        };
+        out.push(crate::models::LessonStat {
+            lesson: if lesson.is_empty() {
+                "Sin lección".to_string()
+            } else {
+                lesson
+            },
+            total,
+            reviewed,
+            mastered,
+            reviews,
+            correct,
+            accuracy,
+        });
+    }
+    Ok(out)
+}
+
+fn difficult(conn: &Connection) -> Result<Vec<crate::models::DifficultItem>> {
+    let mut stmt = conn.prepare(
+        r#"
+        SELECT i.id, i.kanji, i.reading, i.meaning,
+               COUNT(r.id) AS attempts,
+               SUM(CASE WHEN r.result = 0 THEN 1 ELSE 0 END) AS failures,
+               COALESCE(s.lapses, 0) AS lapses
+        FROM items i
+        JOIN review_log r ON r.item_id = i.id
+        LEFT JOIN srs_state s ON s.item_id = i.id
+        GROUP BY i.id
+        HAVING failures > 0
+        ORDER BY failures DESC, attempts DESC
+        LIMIT 5
+        "#,
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, i64>(0)?,
+            row.get::<_, Option<String>>(1)?,
+            row.get::<_, String>(2)?,
+            row.get::<_, String>(3)?,
+            row.get::<_, i64>(4)?,
+            row.get::<_, i64>(5)?,
+            row.get::<_, i64>(6)?,
+        ))
+    })?;
+
+    let mut out = Vec::new();
+    for row in rows {
+        let (id, kanji, reading, meaning, attempts, failures, lapses) = row?;
+        let japanese = kanji
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or(reading);
+        out.push(crate::models::DifficultItem {
+            id,
+            japanese,
+            meaning,
+            attempts,
+            failures,
+            lapses,
+        });
+    }
+    Ok(out)
 }
 
 fn activity(conn: &Connection) -> Result<Vec<crate::models::DayCount>> {

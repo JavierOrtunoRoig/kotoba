@@ -55,6 +55,25 @@ export interface DayCount {
   correct: number;
 }
 
+export interface LessonStat {
+  lesson: string;
+  total: number;
+  reviewed: number;
+  mastered: number;
+  reviews: number;
+  correct: number;
+  accuracy: number;
+}
+
+export interface DifficultItem {
+  id: number;
+  japanese: string;
+  meaning: string;
+  attempts: number;
+  failures: number;
+  lapses: number;
+}
+
 export interface Stats {
   total_items: number;
   total_reviews: number;
@@ -65,6 +84,8 @@ export interface Stats {
   mastered: number;
   due_now: number;
   activity: DayCount[];
+  lessons: LessonStat[];
+  difficult: DifficultItem[];
 }
 
 export interface Bootstrap {

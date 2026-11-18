@@ -36,6 +36,12 @@ export default function MainApp() {
   }, [refresh]);
 
   useEffect(() => {
+    if (view === "stats") {
+      void refresh();
+    }
+  }, [view, refresh]);
+
+  useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(null), 4200);
     return () => window.clearTimeout(timer);

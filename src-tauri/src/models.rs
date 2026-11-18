@@ -132,6 +132,27 @@ pub struct DayCount {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct LessonStat {
+    pub lesson: String,
+    pub total: i64,
+    pub reviewed: i64,
+    pub mastered: i64,
+    pub reviews: i64,
+    pub correct: i64,
+    pub accuracy: f64,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct DifficultItem {
+    pub id: i64,
+    pub japanese: String,
+    pub meaning: String,
+    pub attempts: i64,
+    pub failures: i64,
+    pub lapses: i64,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Stats {
     pub total_items: i64,
     pub total_reviews: i64,
@@ -142,6 +163,8 @@ pub struct Stats {
     pub mastered: i64,
     pub due_now: i64,
     pub activity: Vec<DayCount>,
+    pub lessons: Vec<LessonStat>,
+    pub difficult: Vec<DifficultItem>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

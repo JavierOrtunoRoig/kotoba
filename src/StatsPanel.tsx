@@ -41,6 +41,8 @@ export default function StatsPanel({ onPractice }: Props) {
   }
 
   const activity = stats.activity ?? [];
+  const lessons = stats.lessons ?? [];
+  const difficult = stats.difficult ?? [];
   const max = Math.max(1, ...activity.map((day) => day.total));
 
   return (
@@ -150,6 +152,70 @@ export default function StatsPanel({ onPractice }: Props) {
           })}
         </div>
       </article>
+
+      <div className="stats-columns">
+        <article className="panel">
+          <div className="panel-head">
+            <div>
+              <h2>Por lección</h2>
+              <p className="muted">Progreso y precisión de cada capítulo.</p>
+            </div>
+          </div>
+          <div className="lesson-list">
+            {lessons.map((lesson) => {
+              const progress =
+                lesson.total > 0 ? (lesson.mastered / lesson.total) * 100 : 0;
+              return (
+                <div className="lesson-row" key={lesson.lesson}>
+                  <span className="lesson-name">{lesson.lesson}</span>
+                  <div className="lesson-bar">
+                    <div
+                      className="lesson-fill"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <span className="lesson-meta">
+                    {lesson.mastered}/{lesson.total}
+                  </span>
+                  <span className="lesson-accuracy">
+                    {lesson.reviews > 0
+                      ? `${Math.round(lesson.accuracy)}%`
+                      : "—"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </article>
+
+        <article className="panel">
+          <div className="panel-head">
+            <div>
+              <h2>Palabras difíciles</h2>
+              <p className="muted">Las que más fallos acumulan.</p>
+            </div>
+          </div>
+          {difficult.length === 0 ? (
+            <p className="muted small">
+              Aún no hay fallos registrados. Sigue repasando.
+            </p>
+          ) : (
+            <ul className="difficult-list">
+              {difficult.map((item) => (
+                <li key={item.id}>
+                  <span className="difficult-jp" lang="ja">
+                    {item.japanese}
+                  </span>
+                  <span className="difficult-count">
+                    {item.failures} {item.failures === 1 ? "fallo" : "fallos"}
+                  </span>
+                  <span className="difficult-meaning">{item.meaning}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </article>
+      </div>
 
       <div className="stats-actions">
         <p className="muted">
