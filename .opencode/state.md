@@ -14,7 +14,8 @@ Completado en esta iteración:
 - **No robar foco**: show + devolución del foco a la ventana anterior.
 - **Detección de pantalla completa/presentación** con `SHQueryUserNotificationState`.
 - **Migraciones versionadas** con `PRAGMA user_version` (añadido `review_log.quality`).
-- **Normalización validada** contra 2.369 respuestas reales del mazo.
+- **Normalización validada** contra 2.629 respuestas reales del mazo, incluido romaji.
+- **Entrada en romaji** (Hepburn, kunrei, vocales largas y は→wa).
 - **Estadísticas ampliadas** con progreso por lección y palabras difíciles.
 - **Gestión de datos**: limpieza de audios huérfanos y copia de seguridad a carpeta.
 
@@ -33,8 +34,8 @@ progreso y ajustes.
 | Plantillas (`is_pattern`) | 66 |
 | Avisos de importación | 0 |
 | RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 20 OK (+3 ignored: importación, normalización y progreso reales) |
-| Respuestas reales validadas | 2.369 |
+| Tests unitarios Rust | 24 OK (+3 ignored: importación, normalización y progreso reales) |
+| Respuestas reales validadas | 2.629 |
 | Copia de seguridad | SQLite + 827 audios |
 | Typecheck / build frontend | OK |
 
@@ -60,7 +61,7 @@ progreso y ajustes.
 - **Foco:** `GetForegroundWindow` antes y después de mostrar el popup devuelve el mismo handle;
   el popup no roba el foco.
 - Migración de la base existente: `user_version = 1` y columna `quality` presente.
-- **Normalización:** test contra el mazo real con **2.369 respuestas** (kanji, lecturas y
+- **Normalización:** test contra el mazo real con **2.629 respuestas** (kanji, lecturas, romaji y
   significados) sin fallos.
 - **Estadísticas:** progreso por lección y palabras difíciles renderizados con datos reales.
 - **Copia de seguridad:** exportación a carpeta con `kotoba.sqlite3` y 827 audios.
@@ -105,7 +106,6 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 
 | Prioridad | Tema | Detalle |
 |---|---|---|
-| Media | Romaji | No se acepta romaji si el usuario lo escribe |
 | Media | `.txt` sin audio | El fallback no puede extraer mp3 |
 | Media | Pantalla completa real | Implementada, pero no probada contra un juego/presentación real |
 | Baja | Icono | Sigue el icono por defecto de Tauri |
@@ -116,10 +116,9 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 ## Próximos pasos recomendados
 
 1. **Fase 2.6 — Robustez:** manejo de errores con reintento.
-2. **Fase 2.7 — Normalización fina:** romaji opcional y más variantes de IME.
-3. **Fase 2.8 — Distribución:** icono propio, instalador y CI.
-4. **Fase 2.9 — Pantalla completa real:** probar contra un juego/presentación.
-5. **Fase 3:** AnkiConnect, más mazos y gramática.
+2. **Fase 2.7 — Distribución:** icono propio, instalador y CI.
+3. **Fase 2.8 — Pantalla completa real:** probar contra un juego/presentación.
+4. **Fase 3:** AnkiConnect, más mazos y gramática.
 
 ## Cómo actualizar este documento
 

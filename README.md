@@ -25,7 +25,8 @@ Lo que ya funciona:
 - **Tres modos de aparición**: popup, widget persistente y toast nativo de Windows.
 - **SM-2 completo** con calidad de respuesta, `ease` y pasos de aprendizaje.
 - **No robar foco** al mostrar el popup, con detección de pantalla completa/presentación.
-- **Normalización** validada contra 2.369 respuestas reales del mazo.
+- **Normalización** validada contra 2.629 respuestas reales del mazo.
+- **Entrada en romaji** además de kanji y kana.
 - **Progreso por lección** y palabras difíciles.
 - **Copia de seguridad** a carpeta (SQLite + audio), **restauración** y limpieza de audios huérfanos.
 - **Exportación del historial** de repasos a CSV.
@@ -33,8 +34,7 @@ Lo que ya funciona:
 - **Logs a archivo** con acceso desde Ajustes.
 - Pantallas de importación, progreso y ajustes.
 
-Pendiente para el resto de la Fase 2: manejo de errores con reintento, romaji opcional, icono propio
-e instalador.
+Pendiente para el resto de la Fase 2: manejo de errores con reintento, icono propio e instalador.
 
 ## Stack
 

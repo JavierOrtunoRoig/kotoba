@@ -200,3 +200,12 @@ se aplicaba a bases existentes.
 (`ensure_column`). La versión 1 añade `review_log.quality`.
 **Consecuencias:** las bases antiguas se actualizan sin perder datos. Las próximas migraciones
 añaden un bloque `if version < N`.
+
+## D-025 — Romaji como entrada alternativa
+
+**Contexto:** no todos los usuarios tienen un IME japonés activo.
+**Decisión:** en ES → JP se acepta romaji además de kanji y kana. El conversor es Hepburn
+aproximado, con variantes para vocales largas (`ou`/`oo` → `o`), kunrei (`shi`/`si`), nasal
+(`nb` → `mb`) y は final → wa.
+**Consecuencias:** se puede practicar sin IME. Algunas variantes pueden aceptar una forma poco
+ortodoxa (por ejemplo, を como `o`), pero la lectura en kana sigue siendo la fuente principal.

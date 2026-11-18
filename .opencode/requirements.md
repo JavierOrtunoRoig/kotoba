@@ -200,9 +200,9 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 ## RF2-04 — Normalización robusta
 
 - [x] Manejar partículas, anotaciones y placeholders del significado.
-- [ ] Aceptar romaji si el usuario lo escribe.
+- [x] Aceptar romaji (Hepburn, kunrei, vocales largas y は→wa).
 - [x] Normalizar variantes de IME (NFKC, medias anchuras, espacios ideográficos).
-- [x] Tests con las 1.012 entradas reales: **2.369 respuestas validadas**.
+- [x] Tests con las 1.012 entradas reales: **2.629 respuestas validadas** (incluye romaji).
 
 ## RF2-05 — Estadísticas ampliadas
 

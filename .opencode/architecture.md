@@ -33,7 +33,7 @@ archivos.
 | `db.rs` | Conexión SQLite, esquema, migraciones, settings, ítems, repasos, SRS SM-2, estadísticas (global, por lección y difíciles) y limpieza de medios |
 | `import.rs` | Importador `.apkg` / `.txt`, deduplicación y extracción de audio |
 | `media.rs` | Parser del mapa de medios (protobuf de Anki + fallback JSON) |
-| `text.rs` | Limpieza de HTML, normalización y validación de respuestas |
+| `text.rs` | Limpieza de HTML, normalización, kana→romaji y validación de respuestas |
 | `scheduler.rs` | Bucle del planificador pasivo, modos de aparición y DND |
 | `shell.rs` | Mostrar/ocultar popup y widget, toast, foco, posicionamiento y pausa |
 | `tray.rs` | Icono, menú (incluido “Modo”) y eventos de la bandeja |
@@ -129,6 +129,13 @@ El audio se extrae una sola vez por nombre; las referencias repetidas cuentan co
    actualiza `srs_state` con SM-2 y devuelve `AnswerResult`.
 7. El frontend muestra el feedback, el audio y el próximo intervalo.
 8. “Siguiente” pide otro reto; “Ahora no”/“Ocultar” oculta la ventana sin registrar nada.
+
+## Normalización de respuestas
+
+- NFKC, minúsculas, sin diacríticos, espacios ni puntuación.
+- ES → JP: kanji, kana y romaji (Hepburn/kunrei, vocales largas y は final → wa).
+- JP → ES: acepciones separadas por `;`, sin paréntesis ni `...`.
+- El romaji se genera desde las variantes en kana; los kanji no se romanizan.
 
 ## Comandos IPC
 

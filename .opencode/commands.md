@@ -70,8 +70,8 @@ cd src-tauri
 cargo test --lib normalizes_real_deck_answers -- --ignored --nocapture
 ```
 
-Valida **2.369 respuestas** generadas desde el mazo real (kanji, lecturas y significados) y falla si
-alguna forma plausible es rechazada o si se acepta basura.
+Valida **2.629 respuestas** generadas desde el mazo real (kanji, lecturas, romaji y significados) y
+falla si alguna forma plausible es rechazada o si se acepta basura.
 
 ## Inspeccionar la base de datos local
 
