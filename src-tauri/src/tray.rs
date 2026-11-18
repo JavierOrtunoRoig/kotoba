@@ -130,3 +130,11 @@ pub fn sync_mode(app: &AppHandle, mode: &str) {
         let _ = tray.toast_mode.set_checked(mode == "toast");
     }
 }
+
+pub fn sync_pause(app: &AppHandle, paused: bool) {
+    if let Some(tray) = app.try_state::<TrayState>() {
+        let _ = tray
+            .pause_item
+            .set_text(if paused { "Reanudar" } else { "Pausar" });
+    }
+}

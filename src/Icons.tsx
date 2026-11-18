@@ -165,3 +165,21 @@ export function IconArchive(props: IconProps) {
     </svg>
   );
 }
+
+export function IconDownload(props: IconProps) {
+  return (
+    <svg {...svgProps(props)}>
+      <path d="M12 4v10M8 10l4 4 4-4" />
+      <path d="M5 19h14" />
+    </svg>
+  );
+}
+
+export function IconUpload(props: IconProps) {
+  return (
+    <svg {...svgProps(props)}>
+      <path d="M12 16V6M8 10l4-4 4 4" />
+      <path d="M5 19h14" />
+    </svg>
+  );
+}

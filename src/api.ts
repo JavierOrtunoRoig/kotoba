@@ -134,6 +134,10 @@ export const api = {
   clearLibrary: () => invoke<void>("clear_library"),
   exportBackup: (destination: string) =>
     invoke<string>("export_backup", { destination }),
+  restoreBackup: (source: string) =>
+    invoke<Settings>("restore_backup", { source }),
+  exportHistory: (destination: string) =>
+    invoke<string>("export_history", { destination }),
   practiceNow: () => invoke<void>("practice_now"),
   closePopup: () => invoke<void>("close_popup"),
   hideWidget: () => invoke<void>("hide_widget"),

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import {
   disable as disableAutostart,
   enable as enableAutostart,
@@ -8,9 +8,11 @@ import {
 import { api, type Bootstrap, type Settings } from "./api";
 import {
   IconArchive,
+  IconDownload,
   IconImport,
   IconRefresh,
   IconTrash,
+  IconUpload,
 } from "./Icons";
 
 type Props = {
@@ -138,6 +140,48 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     try {
       const folder = await api.exportBackup(selected);
       onToast(`Copia guardada en ${folder}`);
+    } catch (caught) {
+      onToast(String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function restoreBackup() {
+    const selected = await open({ directory: true, multiple: false });
+    if (!selected || Array.isArray(selected)) return;
+    if (
+      !window.confirm(
+        "Se reemplazarán las palabras, el audio y el progreso actuales. ¿Continuar?",
+      )
+    ) {
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const restored = await api.restoreBackup(selected);
+      setSettings(restored);
+      onToast("Copia restaurada");
+      await onChanged();
+    } catch (caught) {
+      onToast(String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function exportHistory() {
+    const selected = await saveDialog({
+      defaultPath: "kotoba-history.csv",
+      filters: [{ name: "CSV", extensions: ["csv"] }],
+    });
+    if (!selected) return;
+
+    setBusy(true);
+    try {
+      const path = await api.exportHistory(selected);
+      onToast(`Historial guardado en ${path}`);
     } catch (caught) {
       onToast(String(caught));
     } finally {
@@ -516,6 +560,24 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
           >
             <IconArchive size={16} />
             Exportar copia
+          </button>
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => void restoreBackup()}
+            disabled={busy}
+          >
+            <IconUpload size={16} />
+            Restaurar copia
+          </button>
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => void exportHistory()}
+            disabled={busy}
+          >
+            <IconDownload size={16} />
+            Exportar historial
           </button>
           <button
             type="button"

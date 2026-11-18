@@ -8,6 +8,7 @@ mod text;
 mod tray;
 
 use models::{AnswerResult, Bootstrap, Challenge, ImportSummary, Settings, Stats};
+use chrono::TimeZone;
 use rusqlite::OptionalExtension;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -239,6 +240,132 @@ fn copy_media(source: &std::path::Path, target: &std::path::Path) -> std::io::Re
 }
 
 #[tauri::command]
+fn restore_backup(
+    app: tauri::AppHandle,
+    state: State<AppState>,
+    source: String,
+) -> Result<Settings, String> {
+    let source = PathBuf::from(source);
+    let backup_db = source.join("kotoba.sqlite3");
+    if !backup_db.is_file() {
+        return Err("La carpeta no contiene kotoba.sqlite3".to_string());
+    }
+
+    let source_db = std::fs::canonicalize(&backup_db).map_err(to_err)?;
+    let live_db = std::fs::canonicalize(&state.db_path).map_err(to_err)?;
+    if source_db == live_db {
+        return Err("No se puede restaurar la base de datos activa".to_string());
+    }
+
+    {
+        let test = rusqlite::Connection::open_with_flags(
+            &backup_db,
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )
+        .map_err(to_err)?;
+        test.query_row("SELECT COUNT(*) FROM items", [], |_| Ok(()))
+            .map_err(|_| "La base de la copia no es válida".to_string())?;
+    }
+
+    let backup_media = source.join("media");
+    let mut conn = state.db.lock().map_err(to_err)?;
+
+    // Cerrar la base viva antes de reemplazar el archivo.
+    let placeholder = rusqlite::Connection::open_in_memory().map_err(to_err)?;
+    let old = std::mem::replace(&mut *conn, placeholder);
+    drop(old);
+
+    std::fs::copy(&backup_db, &state.db_path).map_err(to_err)?;
+    let _ = std::fs::remove_file(state.db_path.with_extension("sqlite3-wal"));
+    let _ = std::fs::remove_file(state.db_path.with_extension("sqlite3-shm"));
+
+    if backup_media.is_dir() {
+        let _ = std::fs::remove_dir_all(&state.media_dir);
+        std::fs::create_dir_all(&state.media_dir).map_err(to_err)?;
+        copy_media(&backup_media, &state.media_dir).map_err(to_err)?;
+    }
+
+    let new_conn = db::open(&state.db_path).map_err(to_err)?;
+    let settings = db::load_settings(&new_conn).map_err(to_err)?;
+    *conn = new_conn;
+    drop(conn);
+
+    shell::close_popup(&app);
+    shell::hide_widget(&app);
+    crate::tray::sync_mode(&app, &settings.mode);
+    crate::tray::sync_pause(&app, settings.paused);
+    shell::apply_mode(&app, &settings.mode);
+    let _ = app.emit("settings:changed", &settings);
+    let _ = app.emit("library:changed", ());
+    Ok(settings)
+}
+
+#[tauri::command]
+fn export_history(state: State<AppState>, destination: String) -> Result<String, String> {
+    let destination = PathBuf::from(destination);
+    if let Some(parent) = destination.parent() {
+        if !parent.as_os_str().is_empty() && !parent.is_dir() {
+            return Err("La carpeta de destino no existe".to_string());
+        }
+    }
+
+    let conn = state.db.lock().map_err(to_err)?;
+    let mut stmt = conn
+        .prepare(
+            "SELECT r.answered_at, r.item_id, i.reading, i.meaning, r.direction,
+                    r.result, r.quality, r.latency_ms
+             FROM review_log r
+             JOIN items i ON i.id = r.item_id
+             ORDER BY r.answered_at",
+        )
+        .map_err(to_err)?;
+    let mut rows = stmt.query([]).map_err(to_err)?;
+
+    let mut csv = String::from(
+        "answered_at,item_id,reading,meaning,direction,result,quality,latency_ms\n",
+    );
+    while let Some(row) = rows.next().map_err(to_err)? {
+        let answered_at: i64 = row.get(0).map_err(to_err)?;
+        let item_id: i64 = row.get(1).map_err(to_err)?;
+        let reading: String = row.get(2).map_err(to_err)?;
+        let meaning: String = row.get(3).map_err(to_err)?;
+        let direction: String = row.get(4).map_err(to_err)?;
+        let result: i64 = row.get(5).map_err(to_err)?;
+        let quality: i64 = row.get(6).map_err(to_err)?;
+        let latency_ms: i64 = row.get(7).map_err(to_err)?;
+
+        let answered = chrono::Local
+            .timestamp_opt(answered_at, 0)
+            .single()
+            .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+            .unwrap_or_else(|| answered_at.to_string());
+
+        csv.push_str(&format!(
+            "{},{},{},{},{},{},{},{}\n",
+            csv_escape(&answered),
+            item_id,
+            csv_escape(&reading),
+            csv_escape(&meaning),
+            csv_escape(&direction),
+            result,
+            quality,
+            latency_ms
+        ));
+    }
+
+    std::fs::write(&destination, csv).map_err(to_err)?;
+    Ok(destination.to_string_lossy().to_string())
+}
+
+fn csv_escape(value: &str) -> String {
+    if value.chars().any(|c| matches!(c, ',' | '"' | '\n' | '\r')) {
+        format!("\"{}\"", value.replace('"', "\"\""))
+    } else {
+        value.to_string()
+    }
+}
+
+#[tauri::command]
 fn practice_now(app: tauri::AppHandle) -> Result<(), String> {
     let state = app.state::<AppState>();
     let mode = {
@@ -350,6 +477,8 @@ pub fn run() {
             reset_progress,
             clear_library,
             export_backup,
+            restore_backup,
+            export_history,
             practice_now,
             close_popup,
             hide_widget,
