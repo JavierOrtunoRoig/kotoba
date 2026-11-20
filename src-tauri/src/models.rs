@@ -290,11 +290,63 @@ pub struct ImportSummary {
     pub warnings: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ImportProgress {
     pub phase: String,
     pub current: i64,
     pub total: i64,
+}
+
+/// Índices de columna/campo que alimentan cada dato de kotoba.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct FieldMapping {
+    pub reading: Option<usize>,
+    pub kanji: Option<usize>,
+    pub meaning: Option<usize>,
+    pub gloss: Option<usize>,
+    pub audio: Option<usize>,
+    pub uid: Option<usize>,
+    pub tags: Option<usize>,
+    pub lesson: Option<usize>,
+    pub category: Option<usize>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NoteTypeMapping {
+    pub mid: i64,
+    pub mapping: FieldMapping,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ImportMapping {
+    /// Mapeo del archivo `.txt` (columnas posicionales).
+    pub txt: Option<FieldMapping>,
+    /// Mapeo por tipo de nota de Anki.
+    pub note_types: Vec<NoteTypeMapping>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct NoteTypeInfo {
+    pub mid: i64,
+    pub name: String,
+    pub fields: Vec<String>,
+    pub count: i64,
+    pub sample: Vec<Vec<String>>,
+    pub suggested: FieldMapping,
+}
+
+/// Resultado de inspeccionar un mazo antes de importarlo.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ImportInspection {
+    /// `txt` o `apkg`.
+    pub kind: String,
+    pub deck_name: String,
+    pub total_notes: i64,
+    /// Columnas del `.txt` (vacío en `.apkg`).
+    pub columns: Vec<String>,
+    pub sample: Vec<Vec<String>>,
+    pub suggested: Option<FieldMapping>,
+    pub note_types: Vec<NoteTypeInfo>,
 }
 
 #[cfg(test)]

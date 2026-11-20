@@ -1,6 +1,8 @@
 use crate::db::{self, InsertOutcome, NewItem};
 use crate::media::{self, MediaEntry};
-use crate::models::ImportSummary;
+use crate::models::{
+    FieldMapping, ImportInspection, ImportMapping, ImportSummary, NoteTypeInfo,
+};
 use crate::text;
 use anyhow::{anyhow, Context, Result};
 use rusqlite::Connection;
@@ -21,6 +23,7 @@ pub fn import_file(
     conn: &mut Connection,
     media_dir: &Path,
     progress: ProgressFn<'_>,
+    mapping: Option<&ImportMapping>,
 ) -> Result<ImportSummary> {
     let extension = path
         .extension()
@@ -28,8 +31,26 @@ pub fn import_file(
         .unwrap_or_default()
         .to_lowercase();
     match extension.as_str() {
-        "apkg" => import_apkg(path, conn, media_dir, progress),
-        "txt" | "tsv" | "csv" => import_txt(path, conn, progress),
+        "apkg" => import_apkg(path, conn, media_dir, progress, mapping),
+        "txt" | "tsv" | "csv" => {
+            import_txt(path, conn, progress, mapping.and_then(|m| m.txt.as_ref()))
+        }
+        other => Err(anyhow!(
+            "Formato no soportado: {other}. Usa un .apkg o un .txt exportado de Anki."
+        )),
+    }
+}
+
+/// Inspecciona un mazo sin importarlo para ofrecer el mapeo de campos.
+pub fn inspect_file(path: &Path) -> Result<ImportInspection> {
+    let extension = path
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default()
+        .to_lowercase();
+    match extension.as_str() {
+        "apkg" => inspect_apkg(path),
+        "txt" | "tsv" | "csv" => inspect_txt(path),
         other => Err(anyhow!(
             "Formato no soportado: {other}. Usa un .apkg o un .txt exportado de Anki."
         )),
@@ -48,6 +69,7 @@ pub fn import_apkg(
     conn: &mut Connection,
     media_dir: &Path,
     progress: ProgressFn<'_>,
+    mapping: Option<&ImportMapping>,
 ) -> Result<ImportSummary> {
     let file = File::open(path)
         .with_context(|| format!("No se pudo abrir {}", path.display()))?;
@@ -58,7 +80,7 @@ pub fn import_apkg(
     let tmp_db = tmp.path().join("collection.sqlite");
     std::fs::write(&tmp_db, &db_bytes)?;
 
-    let src = Connection::open(&tmp_db)?;
+    let src = open_source(&tmp_db)?;
     let fields_by_mid = read_fields(&src).unwrap_or_default();
     let decks_by_note = read_note_decks(&src).unwrap_or_default();
     let notes = read_notes(&src)?;
@@ -92,33 +114,27 @@ pub fn import_apkg(
             progress("notes", index as i64, total_notes);
         }
         let values: Vec<&str> = note.flds.split('\u{1f}').collect();
-        let lower_names: Vec<String> = fields_by_mid
-            .get(&note.mid)
-            .map(|names| names.iter().map(|n| n.trim().to_lowercase()).collect())
-            .unwrap_or_default();
+        let field_names = fields_by_mid.get(&note.mid).cloned().unwrap_or_default();
+        let map = mapping
+            .and_then(|mapping| {
+                mapping
+                    .note_types
+                    .iter()
+                    .find(|note_type| note_type.mid == note.mid)
+            })
+            .map(|note_type| note_type.mapping.clone())
+            .unwrap_or_else(|| suggest_mapping(&field_names, values.len(), false));
 
-        let reading_raw =
-            field(&values, &lower_names, &["kana", "reading", "lectura"], Some(0));
-        let kanji_raw = field(&values, &lower_names, &["kanjis", "kanji", "word"], Some(1));
-        let meaning_raw = field(
-            &values,
-            &lower_names,
-            &["español", "espanol", "meaning"],
-            Some(3),
-        )
-        .or_else(|| field(&values, &lower_names, &["significado", "definition"], Some(3)));
-        let gloss_raw = field(
-            &values,
-            &lower_names,
-            &["significado", "kanji meaning", "gloss"],
-            Some(4),
-        );
-        let audio_raw = field(&values, &lower_names, &["sonido", "audio", "sound"], Some(5));
-        let uid_raw = field(&values, &lower_names, &["uid", "guid"], Some(7));
+        let reading_raw = mapped_value(&values, map.reading).unwrap_or_default();
+        let kanji_raw = mapped_value(&values, map.kanji).unwrap_or_default();
+        let meaning_raw = mapped_value(&values, map.meaning).unwrap_or_default();
+        let gloss_raw = mapped_value(&values, map.gloss).unwrap_or_default();
+        let audio_raw = mapped_value(&values, map.audio);
+        let uid_raw = mapped_value(&values, map.uid).unwrap_or_default();
 
-        let reading = text::clean_display(reading_raw.unwrap_or_default());
-        let kanji_text = text::clean_display(kanji_raw.unwrap_or_default());
-        let meaning = text::clean_display(meaning_raw.unwrap_or_default());
+        let reading = text::clean_display(reading_raw);
+        let kanji_text = text::clean_display(kanji_raw);
+        let meaning = text::clean_display(meaning_raw);
 
         let Some(meaning) = non_empty(meaning) else {
             push_warning(
@@ -140,7 +156,7 @@ pub fn import_apkg(
             continue;
         }
 
-        let gloss = non_empty(text::clean_display(gloss_raw.unwrap_or_default()));
+        let gloss = non_empty(text::clean_display(gloss_raw));
         let gloss = if gloss.as_deref() == Some(meaning.as_str()) {
             None
         } else {
@@ -149,13 +165,25 @@ pub fn import_apkg(
         let kanji = non_empty(kanji_text);
 
         let deck_name = decks_by_note.get(&note.id).cloned().unwrap_or_default();
-        let (lesson, category) = if deck_name.is_empty() {
-            parse_uid(uid_raw.unwrap_or_default())
+        let (mut lesson, mut category) = if deck_name.is_empty() {
+            parse_uid(uid_raw)
         } else {
             parse_deck(&deck_name)
         };
+        if let Some(value) = mapped_value(&values, map.lesson) {
+            let value = text::clean_display(value);
+            if !value.is_empty() {
+                lesson = value;
+            }
+        }
+        if let Some(value) = mapped_value(&values, map.category) {
+            let value = text::clean_display(value);
+            if !value.is_empty() {
+                category = value;
+            }
+        }
 
-        let uid = non_empty(uid_raw.unwrap_or_default().to_string())
+        let uid = non_empty(uid_raw.to_string())
             .unwrap_or_else(|| format!("{deck_name}::{}", note.id));
 
         let is_pattern = reading.contains('〜')
@@ -192,7 +220,12 @@ pub fn import_apkg(
             None => None,
         };
 
-        let tags = note.tags.trim().to_string();
+        let mapped_tags = mapped_value(&values, map.tags).unwrap_or("").trim();
+        let tags = if mapped_tags.is_empty() {
+            note.tags.trim().to_string()
+        } else {
+            mapped_tags.to_string()
+        };
         let dedup_key = format!(
             "{}|{}",
             text::normalize_key(&reading),
@@ -250,6 +283,15 @@ fn read_collection(archive: &mut ZipArchive<File>) -> Result<Vec<u8>> {
     Err(anyhow!(
         "El .apkg no contiene una base de datos compatible. Expórtalo de nuevo con una versión reciente de Anki."
     ))
+}
+
+fn open_source(path: &Path) -> Result<Connection> {
+    let conn = Connection::open(path)?;
+    // Anki usa la colación `unicase` en `fields.name` y `notetypes.name`.
+    conn.create_collation("unicase", |left, right| {
+        left.to_lowercase().cmp(&right.to_lowercase())
+    })?;
+    Ok(conn)
 }
 
 fn read_fields(src: &Connection) -> Result<HashMap<i64, Vec<String>>> {
@@ -353,22 +395,6 @@ fn ensure_audio(
     Ok(Some((filename, is_new)))
 }
 
-fn field<'a>(
-    values: &[&'a str],
-    lower_names: &[String],
-    candidates: &[&str],
-    fallback: Option<usize>,
-) -> Option<&'a str> {
-    for candidate in candidates {
-        if let Some(index) = lower_names.iter().position(|name| name == candidate) {
-            if let Some(value) = values.get(index).copied() {
-                return Some(value);
-            }
-        }
-    }
-    fallback.and_then(|index| values.get(index).copied())
-}
-
 fn non_empty(value: String) -> Option<String> {
     let trimmed = value.trim();
     if trimmed.is_empty() {
@@ -376,6 +402,182 @@ fn non_empty(value: String) -> Option<String> {
     } else {
         Some(trimmed.to_string())
     }
+}
+
+fn mapped_value<'a>(values: &[&'a str], index: Option<usize>) -> Option<&'a str> {
+    index.and_then(|index| values.get(index).copied())
+}
+
+/// Sugiere índices a partir de los nombres de campo y del ancho del mazo.
+fn suggest_mapping(fields: &[String], width: usize, is_txt: bool) -> FieldMapping {
+    let lower: Vec<String> = fields
+        .iter()
+        .map(|field| field.trim().to_lowercase())
+        .collect();
+    let lookup = |names: &[&str]| {
+        lower
+            .iter()
+            .position(|field| names.iter().any(|name| field == name))
+    };
+
+    let reading =
+        lookup(&["kana", "reading", "lectura"]).or(if width > 0 { Some(0) } else { None });
+    let kanji =
+        lookup(&["kanjis", "kanji", "word"]).or(if width > 1 { Some(1) } else { None });
+    let meaning = lookup(&["español", "espanol", "meaning", "significado", "definition"])
+        .or(if width > 3 {
+            Some(3)
+        } else if width > 2 {
+            Some(2)
+        } else {
+            None
+        });
+    let gloss = lookup(&["significado", "kanji meaning", "gloss"])
+        .filter(|index| Some(*index) != meaning)
+        .or(if width > 4 && Some(4) != meaning {
+            Some(4)
+        } else {
+            None
+        });
+    let audio = if is_txt {
+        None
+    } else {
+        lookup(&["sonido", "audio", "sound"]).or(if width > 5 { Some(5) } else { None })
+    };
+    let uid = lookup(&["uid", "guid"]).or(if width > 7 { Some(7) } else { None });
+
+    FieldMapping {
+        reading,
+        kanji,
+        meaning,
+        gloss,
+        audio,
+        uid,
+        tags: None,
+        lesson: None,
+        category: None,
+    }
+}
+
+fn preview(value: &str) -> String {
+    let clean = text::clean_display(value);
+    let mut out: String = clean.chars().take(80).collect();
+    if clean.chars().count() > 80 {
+        out.push('…');
+    }
+    out
+}
+
+fn read_note_type_names(src: &Connection) -> Result<HashMap<i64, String>> {
+    let mut stmt = src.prepare("SELECT id, name FROM notetypes")?;
+    let rows = stmt.query_map([], |row| {
+        Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+    })?;
+    let mut map = HashMap::new();
+    for row in rows {
+        let (mid, name) = row?;
+        map.insert(mid, name);
+    }
+    Ok(map)
+}
+
+fn inspect_txt(path: &Path) -> Result<ImportInspection> {
+    let table = parse_txt_table(path)?;
+    let sample = table
+        .lines
+        .iter()
+        .take(3)
+        .map(|line| {
+            let values: Vec<&str> = line.split(table.separator).collect();
+            table
+                .columns
+                .iter()
+                .enumerate()
+                .map(|(index, _)| preview(values.get(index).copied().unwrap_or_default()))
+                .collect()
+        })
+        .collect();
+
+    Ok(ImportInspection {
+        kind: "txt".to_string(),
+        deck_name: txt_deck_name(path),
+        total_notes: table.lines.len() as i64,
+        suggested: Some(suggest_mapping(
+            &table.columns,
+            table.columns.len(),
+            true,
+        )),
+        columns: table.columns,
+        sample,
+        note_types: Vec::new(),
+    })
+}
+
+fn inspect_apkg(path: &Path) -> Result<ImportInspection> {
+    let file = File::open(path)
+        .with_context(|| format!("No se pudo abrir {}", path.display()))?;
+    let mut archive = ZipArchive::new(file).context("El archivo no es un .apkg válido")?;
+    let db_bytes = read_collection(&mut archive)?;
+    let tmp = tempfile::tempdir()?;
+    let tmp_db = tmp.path().join("collection.sqlite");
+    std::fs::write(&tmp_db, &db_bytes)?;
+    let src = open_source(&tmp_db)?;
+
+    let fields_by_mid = read_fields(&src).unwrap_or_default();
+    let names_by_mid = read_note_type_names(&src).unwrap_or_default();
+    let decks_by_note = read_note_decks(&src).unwrap_or_default();
+    let notes = read_notes(&src)?;
+
+    let mut order: Vec<i64> = Vec::new();
+    let mut counts: HashMap<i64, i64> = HashMap::new();
+    let mut samples: HashMap<i64, Vec<Vec<String>>> = HashMap::new();
+
+    for note in &notes {
+        let values: Vec<&str> = note.flds.split('\u{1f}').collect();
+        if !counts.contains_key(&note.mid) {
+            order.push(note.mid);
+        }
+        *counts.entry(note.mid).or_insert(0) += 1;
+        let sample = samples.entry(note.mid).or_default();
+        if sample.len() < 2 {
+            sample.push(values.iter().map(|value| preview(value)).collect());
+        }
+    }
+
+    let mut note_types = Vec::with_capacity(order.len());
+    for mid in order {
+        let sample = samples.remove(&mid).unwrap_or_default();
+        let mut fields = fields_by_mid.get(&mid).cloned().unwrap_or_default();
+        let width = sample.first().map(|row| row.len()).unwrap_or(0);
+        while fields.len() < width {
+            fields.push(format!("Campo {}", fields.len() + 1));
+        }
+        note_types.push(NoteTypeInfo {
+            mid,
+            name: names_by_mid.get(&mid).cloned().unwrap_or_default(),
+            fields: fields.clone(),
+            count: counts.get(&mid).copied().unwrap_or(0),
+            sample,
+            suggested: suggest_mapping(&fields, fields.len(), false),
+        });
+    }
+
+    let deck_name = notes
+        .iter()
+        .find_map(|note| decks_by_note.get(&note.id))
+        .and_then(|name| name.split('\u{1f}').next())
+        .unwrap_or("Anki")
+        .to_string();
+
+    Ok(ImportInspection {
+        kind: "apkg".to_string(),
+        deck_name,
+        total_notes: notes.len() as i64,
+        columns: Vec::new(),
+        sample: Vec::new(),
+        suggested: None,
+        note_types,
+    })
 }
 
 fn sound_name(value: &str) -> Option<String> {
@@ -421,17 +623,21 @@ fn push_warning(summary: &mut ImportSummary, message: String) {
     }
 }
 
-pub fn import_txt(
-    path: &Path,
-    conn: &mut Connection,
-    progress: ProgressFn<'_>,
-) -> Result<ImportSummary> {
+struct TxtTable {
+    separator: char,
+    tags_column: Option<usize>,
+    columns: Vec<String>,
+    lines: Vec<String>,
+}
+
+fn parse_txt_table(path: &Path) -> Result<TxtTable> {
     let content = std::fs::read_to_string(path)
         .with_context(|| format!("No se pudo leer {}", path.display()))?;
 
     let mut separator = '\t';
     let mut tags_column: Option<usize> = None;
-    let mut data_lines = Vec::new();
+    let mut columns: Vec<String> = Vec::new();
+    let mut lines = Vec::new();
 
     for line in content.lines() {
         if let Some(header) = line.strip_prefix('#') {
@@ -443,56 +649,90 @@ pub fn import_txt(
                     _ => '\t',
                 };
             } else if let Some(value) = header.strip_prefix("tags column:") {
-                tags_column = value.trim().parse::<usize>().ok().map(|n| n.saturating_sub(1));
+                tags_column = value
+                    .trim()
+                    .parse::<usize>()
+                    .ok()
+                    .map(|n| n.saturating_sub(1));
+            } else if let Some(value) = header.strip_prefix("columns:") {
+                let mut names: Vec<String> = value
+                    .split(separator)
+                    .map(|name| name.trim().to_string())
+                    .collect();
+                if names.len() <= 1 && value.contains('\t') {
+                    names = value.split('\t').map(|name| name.trim().to_string()).collect();
+                }
+                columns = names;
             }
             continue;
         }
         if line.trim().is_empty() {
             continue;
         }
-        data_lines.push(line);
+        lines.push(line.to_string());
     }
 
-    let deck_name = path
-        .file_stem()
+    let width = lines
+        .iter()
+        .take(50)
+        .map(|line| line.split(separator).count())
+        .max()
+        .unwrap_or(columns.len());
+    while columns.len() < width {
+        columns.push(format!("Columna {}", columns.len() + 1));
+    }
+
+    Ok(TxtTable {
+        separator,
+        tags_column,
+        columns,
+        lines,
+    })
+}
+
+fn txt_deck_name(path: &Path) -> String {
+    path.file_stem()
         .and_then(|value| value.to_str())
         .unwrap_or("Anki")
-        .to_string();
+        .to_string()
+}
+
+pub fn import_txt(
+    path: &Path,
+    conn: &mut Connection,
+    progress: ProgressFn<'_>,
+    mapping: Option<&FieldMapping>,
+) -> Result<ImportSummary> {
+    let table = parse_txt_table(path)?;
+    let deck_name = txt_deck_name(path);
+    let map = mapping
+        .cloned()
+        .unwrap_or_else(|| suggest_mapping(&table.columns, table.columns.len(), true));
 
     let mut summary = ImportSummary {
-        notes: data_lines.len() as i64,
+        notes: table.lines.len() as i64,
         deck_name: deck_name.clone(),
         ..Default::default()
     };
 
-    let total_lines = data_lines.len() as i64;
+    let total_lines = table.lines.len() as i64;
     progress("notes", 0, total_lines);
 
     let tx = conn.transaction()?;
-    for (line_index, line) in data_lines.iter().enumerate() {
+    for (line_index, line) in table.lines.iter().enumerate() {
         if line_index % 25 == 0 {
             progress("notes", line_index as i64, total_lines);
         }
-        let values: Vec<&str> = line.split(separator).collect();
-        if values.len() < 3 {
-            push_warning(
-                &mut summary,
-                format!("Línea {} con menos de 3 columnas, se omite.", line_index + 1),
-            );
+        let values: Vec<&str> = line.split(table.separator).collect();
+        if values.is_empty() {
             continue;
         }
 
-        let (reading_raw, kanji_raw, meaning_raw, gloss_raw, uid_raw) = if values.len() >= 8 {
-            (
-                values[0],
-                values[1],
-                values[3],
-                Some(values[4]),
-                Some(values[7]),
-            )
-        } else {
-            (values[0], values[1], values[2], None, None)
-        };
+        let reading_raw = mapped_value(&values, map.reading).unwrap_or_default();
+        let kanji_raw = mapped_value(&values, map.kanji).unwrap_or_default();
+        let meaning_raw = mapped_value(&values, map.meaning).unwrap_or_default();
+        let gloss_raw = mapped_value(&values, map.gloss);
+        let uid_raw = mapped_value(&values, map.uid);
 
         let reading = text::clean_display(reading_raw);
         let kanji_text = text::clean_display(kanji_raw);
@@ -509,7 +749,7 @@ pub fn import_txt(
             continue;
         }
         let gloss = gloss_raw
-            .map(|value| text::clean_display(value))
+            .map(text::clean_display)
             .and_then(non_empty);
         let kanji = non_empty(kanji_text);
 
@@ -517,6 +757,15 @@ pub fn import_txt(
             .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty())
             .unwrap_or_else(|| format!("{deck_name}::txt::{line_index}"));
+
+        let lesson = mapped_value(&values, map.lesson)
+            .map(text::clean_display)
+            .filter(|value| !value.is_empty())
+            .unwrap_or_else(|| deck_name.clone());
+        let category = mapped_value(&values, map.category)
+            .map(text::clean_display)
+            .filter(|value| !value.is_empty())
+            .unwrap_or_default();
 
         let is_pattern = reading.contains('〜')
             || reading.contains('+')
@@ -529,9 +778,17 @@ pub fn import_txt(
             text::normalize_key(&meaning)
         );
         let meaning_plain = text::normalize_key(&meaning);
-        let tags = tags_column
-            .and_then(|index| values.get(index))
-            .map(|value| value.trim().to_string())
+        let mapped_tags = mapped_value(&values, map.tags)
+            .map(str::trim)
+            .filter(|value| !value.is_empty());
+        let tags = mapped_tags
+            .map(str::to_string)
+            .or_else(|| {
+                table
+                    .tags_column
+                    .and_then(|index| values.get(index))
+                    .map(|value| value.trim().to_string())
+            })
             .unwrap_or_default();
 
         let new_item = NewItem {
@@ -542,8 +799,8 @@ pub fn import_txt(
             meaning_plain: meaning_plain.as_str(),
             kanji_gloss: gloss.as_deref(),
             audio_file: None,
-            lesson: deck_name.as_str(),
-            category: "",
+            lesson: lesson.as_str(),
+            category: category.as_str(),
             tags: tags.as_str(),
             is_pattern,
             irregular,
@@ -600,6 +857,94 @@ mod tests {
     }
 
     #[test]
+    fn suggests_mapping_from_names_and_positions() {
+        let empty = suggest_mapping(&[], 8, true);
+        assert_eq!(empty.reading, Some(0));
+        assert_eq!(empty.kanji, Some(1));
+        assert_eq!(empty.meaning, Some(3));
+        assert_eq!(empty.gloss, Some(4));
+        assert_eq!(empty.uid, Some(7));
+        assert_eq!(empty.audio, None);
+
+        let short = suggest_mapping(&[], 3, true);
+        assert_eq!(short.meaning, Some(2));
+        assert_eq!(short.gloss, None);
+
+        let fields = vec![
+            "Kana".to_string(),
+            "Kanji".to_string(),
+            "Significado".to_string(),
+            "Sonido".to_string(),
+            "UID".to_string(),
+        ];
+        let named = suggest_mapping(&fields, fields.len(), false);
+        assert_eq!(named.reading, Some(0));
+        assert_eq!(named.kanji, Some(1));
+        assert_eq!(named.meaning, Some(2));
+        assert_eq!(named.audio, Some(3));
+        assert_eq!(named.uid, Some(4));
+    }
+
+    #[test]
+    fn inspects_and_imports_txt_with_custom_mapping() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("custom.txt");
+        std::fs::write(
+            &path,
+            "#separator:semicolon\n#columns:Significado;Lectura;Kanji\nhola;こんにちは;今日は\nadiós;さようなら;左様なら\n",
+        )
+        .expect("txt");
+
+        let inspection = inspect_file(&path).expect("inspect");
+        assert_eq!(inspection.kind, "txt");
+        assert_eq!(
+            inspection.columns,
+            vec!["Significado", "Lectura", "Kanji"]
+        );
+        let suggested = inspection.suggested.expect("suggested");
+        assert_eq!(suggested.meaning, Some(0));
+        assert_eq!(suggested.reading, Some(1));
+        assert_eq!(suggested.kanji, Some(2));
+        assert_eq!(inspection.sample[0], vec!["hola", "こんにちは", "今日は"]);
+
+        let mut conn = Connection::open_in_memory().expect("db");
+        db::migrate(&mut conn).expect("migrate");
+        let mut noop = |_: &str, _: i64, _: i64| {};
+        let mapping = ImportMapping {
+            txt: Some(suggested),
+            note_types: Vec::new(),
+        };
+        import_file(&path, &mut conn, dir.path(), &mut noop, Some(&mapping))
+            .expect("import");
+
+        let items = db::all_items(&conn).expect("items");
+        let item = items
+            .iter()
+            .find(|item| item.reading == "こんにちは")
+            .expect("item");
+        assert_eq!(item.meaning, "hola");
+        assert_eq!(item.kanji.as_deref(), Some("今日は"));
+    }
+
+    #[test]
+    #[ignore = "requiere el mazo real en el escritorio"]
+    fn inspects_real_deck_note_types() {
+        let path = Path::new(r"D:\Users\Javier\Desktop\Genki 1.apkg");
+        if !path.exists() {
+            eprintln!("mazo no encontrado, se omite");
+            return;
+        }
+        let inspection = inspect_file(path).expect("inspect");
+        assert_eq!(inspection.kind, "apkg");
+        assert!(!inspection.note_types.is_empty());
+        let note_type = &inspection.note_types[0];
+        assert!(!note_type.fields.is_empty());
+        assert!(note_type.fields.iter().any(|field| field == "kana"));
+        assert!(note_type.suggested.reading.is_some());
+        assert!(note_type.suggested.meaning.is_some());
+    }
+
+    #[test]
     #[ignore = "requiere el mazo real en el escritorio"]
     fn imports_real_genki_deck() {
         let path = Path::new(r"D:\Users\Javier\Desktop\Genki 1.apkg");
@@ -611,7 +956,7 @@ mod tests {
         db::migrate(&mut conn).expect("migrate");
         let dir = tempfile::tempdir().expect("tempdir");
         let mut noop = |_: &str, _: i64, _: i64| {};
-        let summary = import_apkg(path, &mut conn, dir.path(), &mut noop).expect("import");
+        let summary = import_apkg(path, &mut conn, dir.path(), &mut noop, None).expect("import");
         println!("{summary:#?}");
         assert_eq!(summary.notes, 1076);
         assert!(summary.items_inserted >= 1000);
@@ -637,7 +982,7 @@ mod tests {
             let mut progress = |phase: &str, current: i64, total: i64| {
                 events.push((phase.to_string(), current, total));
             };
-            import_apkg(path, &mut conn, dir.path(), &mut progress).expect("import");
+            import_apkg(path, &mut conn, dir.path(), &mut progress, None).expect("import");
         }
 
         assert!(events.len() > 5, "se esperaban varios eventos de progreso");
@@ -711,7 +1056,7 @@ mod tests {
         db::migrate(&mut conn).expect("migrate");
         let dir = tempfile::tempdir().expect("tempdir");
         let mut noop = |_: &str, _: i64, _: i64| {};
-        import_apkg(path, &mut conn, dir.path(), &mut noop).expect("import");
+        import_apkg(path, &mut conn, dir.path(), &mut noop, None).expect("import");
 
         let items = db::all_items(&conn).expect("items");
         assert!(items.len() >= 1000, "se esperaban ~1.012 ítems");

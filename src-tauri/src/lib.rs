@@ -106,6 +106,7 @@ fn import_deck(
     app: tauri::AppHandle,
     state: State<AppState>,
     path: String,
+    mapping: Option<models::ImportMapping>,
 ) -> Result<ImportSummary, String> {
     let path = PathBuf::from(path);
     if !path.exists() {
@@ -128,8 +129,14 @@ fn import_deck(
     };
 
     let mut conn = state.db.lock().map_err(to_err)?;
-    let summary = import::import_file(&path, &mut conn, &state.media_dir, &mut progress)
-        .map_err(to_err)?;
+    let summary = import::import_file(
+        &path,
+        &mut conn,
+        &state.media_dir,
+        &mut progress,
+        mapping.as_ref(),
+    )
+    .map_err(to_err)?;
     let _ = db::cleanup_media(&conn, &state.media_dir);
     log::info!(
         "importación completada: {} notas, {} ítems, {} audios",
@@ -138,6 +145,11 @@ fn import_deck(
         summary.audio_extracted
     );
     Ok(summary)
+}
+
+#[tauri::command]
+fn inspect_import(path: String) -> Result<models::ImportInspection, String> {
+    import::inspect_file(&PathBuf::from(path)).map_err(to_err)
 }
 
 #[tauri::command]
@@ -623,6 +635,7 @@ pub fn run() {
             update_settings,
             get_stats,
             import_deck,
+            inspect_import,
             next_challenge,
             submit_answer,
             get_audio,
