@@ -4,6 +4,11 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Entrenador pasivo de vocabulario japonés para Windows",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JavierOrtunoRoig/kotoba.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

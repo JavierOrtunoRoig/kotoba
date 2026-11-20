@@ -2,7 +2,9 @@
 name = "kotoba"
 version = "0.1.0"
 description = "Entrenador pasivo de vocabulario japonés para Windows"
-authors = ["Javier"]
+authors = ["Javier Ortuño Roig"]
+license = "MIT"
+repository = "https://github.com/JavierOrtunoRoig/kotoba"
 edition = "2024"
 
 [lib]
