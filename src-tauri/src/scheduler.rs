@@ -28,6 +28,16 @@ pub fn start(app: AppHandle) {
             let settings = db::load_settings(&conn).unwrap_or_default();
             let item_count = db::count_items(&conn).unwrap_or(0);
             let reviews_today = db::reviews_today(&conn).unwrap_or(0);
+            let has_next = db::next_item(
+                &conn,
+                0,
+                settings.include_patterns,
+                settings.new_per_day,
+                settings.new_mix_percent,
+                false,
+            )
+            .map(|item| item.is_some())
+            .unwrap_or(false);
             drop(conn);
 
             if settings.mode == "popup" && popup_visible {
@@ -36,7 +46,12 @@ pub fn start(app: AppHandle) {
             }
 
             let max_reached = settings.max_per_day > 0 && reviews_today >= settings.max_per_day;
-            if item_count == 0 || settings.paused || in_dnd(&settings) || max_reached {
+            if item_count == 0
+                || settings.paused
+                || in_dnd(&settings)
+                || max_reached
+                || !has_next
+            {
                 next_run = Instant::now() + Duration::from_secs(60);
                 continue;
             }

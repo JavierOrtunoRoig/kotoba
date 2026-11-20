@@ -281,7 +281,7 @@ fn read_note_decks(src: &Connection) -> Result<HashMap<i64, String>> {
 }
 
 fn read_notes(src: &Connection) -> Result<Vec<NoteRow>> {
-    let mut stmt = src.prepare("SELECT id, mid, flds, tags FROM notes")?;
+    let mut stmt = src.prepare("SELECT id, mid, flds, tags FROM notes ORDER BY id ASC")?;
     let rows = stmt.query_map([], |row| {
         Ok(NoteRow {
             id: row.get(0)?,

@@ -38,6 +38,7 @@ fn bootstrap(state: State<AppState>) -> Result<Bootstrap, String> {
         settings.include_patterns,
         settings.weekly_goal,
         settings.lesson_mastery_percent,
+        settings.new_per_day,
     )
     .map_err(to_err)?;
     Ok(Bootstrap {
@@ -95,6 +96,7 @@ fn get_stats(state: State<AppState>) -> Result<Stats, String> {
         settings.include_patterns,
         settings.weekly_goal,
         settings.lesson_mastery_percent,
+        settings.new_per_day,
     )
     .map_err(to_err)
 }
@@ -145,8 +147,15 @@ fn next_challenge(
 ) -> Result<Option<Challenge>, String> {
     let conn = state.db.lock().map_err(to_err)?;
     let settings = db::load_settings(&conn).map_err(to_err)?;
-    let Some(item) = db::next_item(&conn, exclude_id.unwrap_or(0), settings.include_patterns)
-        .map_err(to_err)?
+    let Some(item) = db::next_item(
+        &conn,
+        exclude_id.unwrap_or(0),
+        settings.include_patterns,
+        settings.new_per_day,
+        settings.new_mix_percent,
+        true,
+    )
+    .map_err(to_err)?
     else {
         return Ok(None);
     };
@@ -163,10 +172,12 @@ fn next_challenge(
     };
 
     let due_count = db::due_count(&conn, settings.include_patterns).map_err(to_err)?;
+    let new_count = db::new_count(&conn, settings.include_patterns).map_err(to_err)?;
     Ok(Some(Challenge {
         item,
         direction: direction.to_string(),
         due_count,
+        new_count,
     }))
 }
 
@@ -309,6 +320,7 @@ fn reset_progress(state: State<AppState>) -> Result<Stats, String> {
         settings.include_patterns,
         settings.weekly_goal,
         settings.lesson_mastery_percent,
+        settings.new_per_day,
     )
     .map_err(to_err)
 }

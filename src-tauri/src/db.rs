@@ -675,62 +675,174 @@ pub fn all_items(conn: &Connection) -> Result<Vec<Item>> {
     Ok(items)
 }
 
-/// Devuelve el siguiente ítem que toca repasar. Si no hay ninguno vencido,
-/// cae a cualquier ítem para que «practicar ahora» siempre funcione.
+/// Devuelve el siguiente ítem que toca repasar.
+///
+/// Prioridad: repasos vencidos antes que palabras nuevas. `new_mix_percent`
+/// permite mezclar nuevas cuando también hay repasos. Las nuevas siguen el
+/// orden del mazo: lección, subapartado y orden de importación. `allow_extra`
+/// permite reutilizar una palabra ya vista cuando no hay nada vencido.
 pub fn next_item(
     conn: &Connection,
     exclude_id: i64,
     include_patterns: bool,
+    new_per_day: i64,
+    new_mix_percent: i64,
+    allow_extra: bool,
 ) -> Result<Option<Item>> {
-    let due_sql = format!(
-        r#"
-        SELECT {ITEM_COLUMNS}
-        FROM items i
-        LEFT JOIN srs_state s ON s.item_id = i.id
-        WHERE (?1 = 1 OR i.is_pattern = 0)
-          AND i.id <> ?2
-          AND (s.item_id IS NULL OR s.due_at <= ?3)
-        ORDER BY COALESCE(s.due_at, 0) ASC, RANDOM()
-        LIMIT 1
-        "#
-    );
-    let found = conn
-        .query_row(
-            &due_sql,
-            params![include_patterns as i32, exclude_id, now_ts()],
-            map_item,
-        )
-        .optional()?;
-    if found.is_some() {
-        return Ok(found);
+    let due_reviews = due_count(conn, include_patterns)?;
+    let new_available = new_count(conn, include_patterns)?;
+    let introduced_today = new_today_count(conn)?;
+    let new_remaining = (new_per_day - introduced_today).max(0);
+    let can_new = new_available > 0 && new_remaining > 0;
+
+    let pick_new = can_new
+        && (due_reviews == 0
+            || (new_mix_percent > 0 && (rand::random::<u8>() % 100) < new_mix_percent as u8));
+
+    if pick_new {
+        if let Some(item) = query_new(conn, exclude_id, include_patterns)? {
+            return Ok(Some(item));
+        }
     }
 
-    let any_sql = format!(
+    if due_reviews > 0 {
+        if let Some(item) = query_due(conn, exclude_id, include_patterns)? {
+            return Ok(Some(item));
+        }
+    }
+
+    if can_new {
+        if let Some(item) = query_new(conn, exclude_id, include_patterns)? {
+            return Ok(Some(item));
+        }
+    }
+
+    if allow_extra {
+        return query_seen_early(conn, exclude_id, include_patterns);
+    }
+
+    Ok(None)
+}
+
+fn new_item_sql() -> String {
+    format!(
         r#"
         SELECT {ITEM_COLUMNS}
         FROM items i
         LEFT JOIN srs_state s ON s.item_id = i.id
         WHERE (?1 = 1 OR i.is_pattern = 0)
           AND i.id <> ?2
-        ORDER BY COALESCE(s.due_at, 0) ASC, RANDOM()
+          AND s.item_id IS NULL
+        ORDER BY i.lesson ASC, i.category ASC, i.id ASC
+        LIMIT 1
+        "#
+    )
+}
+
+fn query_new(
+    conn: &Connection,
+    exclude_id: i64,
+    include_patterns: bool,
+) -> Result<Option<Item>> {
+    Ok(conn
+        .query_row(
+            &new_item_sql(),
+            params![include_patterns as i32, exclude_id],
+            map_item,
+        )
+        .optional()?)
+}
+
+fn query_due(
+    conn: &Connection,
+    exclude_id: i64,
+    include_patterns: bool,
+) -> Result<Option<Item>> {
+    let sql = format!(
+        r#"
+        SELECT {ITEM_COLUMNS}
+        FROM items i
+        JOIN srs_state s ON s.item_id = i.id
+        WHERE (?1 = 1 OR i.is_pattern = 0)
+          AND i.id <> ?2
+          AND s.due_at <= ?3
+        ORDER BY s.due_at ASC, RANDOM()
         LIMIT 1
         "#
     );
     Ok(conn
-        .query_row(&any_sql, params![include_patterns as i32, exclude_id], map_item)
+        .query_row(
+            &sql,
+            params![include_patterns as i32, exclude_id, now_ts()],
+            map_item,
+        )
         .optional()?)
 }
 
+fn query_seen_early(
+    conn: &Connection,
+    exclude_id: i64,
+    include_patterns: bool,
+) -> Result<Option<Item>> {
+    let sql = format!(
+        r#"
+        SELECT {ITEM_COLUMNS}
+        FROM items i
+        JOIN srs_state s ON s.item_id = i.id
+        WHERE (?1 = 1 OR i.is_pattern = 0)
+          AND i.id <> ?2
+        ORDER BY s.due_at ASC, RANDOM()
+        LIMIT 1
+        "#
+    );
+    Ok(conn
+        .query_row(&sql, params![include_patterns as i32, exclude_id], map_item)
+        .optional()?)
+}
+
+/// Repasos vencidos, sin contar palabras nuevas.
 pub fn due_count(conn: &Connection, include_patterns: bool) -> Result<i64> {
+    Ok(conn.query_row(
+        r#"
+        SELECT COUNT(*)
+        FROM items i
+        JOIN srs_state s ON s.item_id = i.id
+        WHERE (?1 = 1 OR i.is_pattern = 0)
+          AND s.due_at <= ?2
+        "#,
+        params![include_patterns as i32, now_ts()],
+        |row| row.get(0),
+    )?)
+}
+
+/// Palabras que aún no se han mostrado nunca.
+pub fn new_count(conn: &Connection, include_patterns: bool) -> Result<i64> {
     Ok(conn.query_row(
         r#"
         SELECT COUNT(*)
         FROM items i
         LEFT JOIN srs_state s ON s.item_id = i.id
         WHERE (?1 = 1 OR i.is_pattern = 0)
-          AND (s.item_id IS NULL OR s.due_at <= ?2)
+          AND s.item_id IS NULL
         "#,
-        params![include_patterns as i32, now_ts()],
+        params![include_patterns as i32],
+        |row| row.get(0),
+    )?)
+}
+
+/// Palabras cuya primera respuesta fue hoy.
+pub fn new_today_count(conn: &Connection) -> Result<i64> {
+    Ok(conn.query_row(
+        r#"
+        SELECT COUNT(*) FROM (
+            SELECT item_id, MIN(answered_at) AS first_seen
+            FROM review_log
+            WHERE answered_at IS NOT NULL
+            GROUP BY item_id
+        )
+        WHERE first_seen >= ?1
+        "#,
+        [today_start_ts()],
         |row| row.get(0),
     )?)
 }
@@ -836,6 +948,7 @@ pub fn stats(
     include_patterns: bool,
     weekly_goal: i64,
     lesson_mastery_percent: i64,
+    new_per_day: i64,
 ) -> Result<Stats> {
     let total_items = count_items(conn)?;
     let total_reviews: i64 =
@@ -856,16 +969,9 @@ pub fn stats(
         [],
         |row| row.get(0),
     )?;
-    let due_now: i64 = conn.query_row(
-        r#"
-        SELECT COUNT(*) FROM items i
-        LEFT JOIN srs_state s ON s.item_id = i.id
-        WHERE (?1 = 1 OR i.is_pattern = 0)
-          AND (s.item_id IS NULL OR s.due_at <= ?2)
-        "#,
-        params![include_patterns as i32, now_ts()],
-        |row| row.get(0),
-    )?;
+    let due_now = due_count(conn, include_patterns)?;
+    let new_available = new_count(conn, include_patterns)?;
+    let new_today = new_today_count(conn)?;
 
     let (xp_total, _stored_level, stored_best) = profile(conn).unwrap_or((0, 1, 0));
     let (level, level_progress_value, next_level_xp) = level_progress(xp_total);
@@ -884,6 +990,9 @@ pub fn stats(
         streak_days: current_streak,
         mastered,
         due_now,
+        new_available,
+        new_today,
+        new_per_day,
         activity: activity(conn)?,
         lessons: lessons(conn, lesson_mastery_percent)?,
         difficult: difficult(conn)?,
@@ -1490,5 +1599,121 @@ mod tests {
 
         let relaxed = lessons(&conn, 90).expect("lessons");
         assert!(relaxed[0].is_mastered);
+    }
+
+    fn insert_order_item(
+        conn: &Connection,
+        uid: &str,
+        lesson: &str,
+        category: &str,
+    ) -> i64 {
+        conn.execute(
+            "INSERT INTO items
+             (source_uid, reading, meaning, meaning_plain, lesson, category, dedup_key, created_at)
+             VALUES (?1, 'a', 'b', 'b', ?2, ?3, ?4, 0)",
+            params![uid, lesson, category, format!("{uid}|b")],
+        )
+        .expect("item");
+        conn.last_insert_rowid()
+    }
+
+    fn mark_seen(conn: &Connection, id: i64, due_at: i64) {
+        conn.execute(
+            "INSERT INTO srs_state
+             (item_id, interval_minutes, ease, due_at, reps)
+             VALUES (?1, 1440, 2.5, ?2, 2)",
+            params![id, due_at],
+        )
+        .expect("srs");
+    }
+
+    #[test]
+    fn new_words_follow_deck_order() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        let later_lesson = insert_order_item(&conn, "u3", "L02", "01 Vocabulario");
+        let later_subsection = insert_order_item(&conn, "u2", "L01", "02 Saludos");
+        let first_word = insert_order_item(&conn, "u1", "L01", "01 Vocabulario");
+
+        let first = next_item(&conn, 0, false, 10, 0, false)
+            .expect("query")
+            .expect("item");
+        assert_eq!(first.id, first_word);
+
+        mark_seen(&conn, first_word, now_ts() + 60);
+        let second = next_item(&conn, 0, false, 10, 0, false)
+            .expect("query")
+            .expect("item");
+        assert_eq!(second.id, later_subsection);
+
+        mark_seen(&conn, later_subsection, now_ts() + 60);
+        let third = next_item(&conn, 0, false, 10, 0, false)
+            .expect("query")
+            .expect("item");
+        assert_eq!(third.id, later_lesson);
+    }
+
+    #[test]
+    fn reviews_come_before_new_words_unless_mixed() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        let new_word = insert_order_item(&conn, "new", "L01", "01 Vocabulario");
+        let review_word = insert_order_item(&conn, "due", "L01", "02 Saludos");
+        mark_seen(&conn, review_word, now_ts() - 60);
+
+        let review = next_item(&conn, 0, false, 10, 0, false)
+            .expect("query")
+            .expect("item");
+        assert_eq!(review.id, review_word);
+
+        let mixed = next_item(&conn, 0, false, 10, 100, false)
+            .expect("query")
+            .expect("item");
+        assert_eq!(mixed.id, new_word);
+    }
+
+    #[test]
+    fn respects_daily_new_limit_and_falls_back_to_seen_words() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        let seen = insert_order_item(&conn, "seen", "L01", "01 Vocabulario");
+        let new_word = insert_order_item(&conn, "new", "L01", "02 Saludos");
+        mark_seen(&conn, seen, now_ts() + 3600);
+        conn.execute(
+            "INSERT INTO review_log
+             (item_id, shown_at, answered_at, result, quality, latency_ms, direction)
+             VALUES (?1, ?2, ?2, 1, 5, 900, 'jp_to_es')",
+            params![seen, now_ts()],
+        )
+        .expect("review");
+        assert_eq!(new_today_count(&conn).expect("new today"), 1);
+
+        assert!(next_item(&conn, 0, false, 1, 0, false)
+            .expect("query")
+            .is_none());
+
+        let fallback = next_item(&conn, 0, false, 1, 0, true)
+            .expect("query")
+            .expect("fallback");
+        assert_eq!(fallback.id, seen);
+
+        let next_new = next_item(&conn, 0, false, 2, 0, false)
+            .expect("query")
+            .expect("new");
+        assert_eq!(next_new.id, new_word);
+    }
+
+    #[test]
+    fn counts_due_reviews_and_new_words_separately() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        insert_order_item(&conn, "new", "L01", "01 Vocabulario");
+        let due = insert_order_item(&conn, "due", "L01", "02 Saludos");
+        let future = insert_order_item(&conn, "future", "L02", "01 Vocabulario");
+        mark_seen(&conn, due, now_ts() - 60);
+        mark_seen(&conn, future, now_ts() + 3600);
+
+        assert_eq!(due_count(&conn, false).expect("due"), 1);
+        assert_eq!(new_count(&conn, false).expect("new"), 1);
     }
 }

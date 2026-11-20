@@ -36,6 +36,10 @@ pub struct Settings {
     pub font_scale: i64,
     /// Idioma de la interfaz: `es`, `en` o `ja`.
     pub language: String,
+    /// Palabras nuevas máximas por día (0 = no introducir nuevas).
+    pub new_per_day: i64,
+    /// Porcentaje de nuevas cuando también hay repasos vencidos (0 = repasos primero).
+    pub new_mix_percent: i64,
 }
 
 impl Default for Settings {
@@ -61,6 +65,8 @@ impl Default for Settings {
             theme: "auto".to_string(),
             font_scale: 100,
             language: "es".to_string(),
+            new_per_day: 10,
+            new_mix_percent: 0,
         }
     }
 }
@@ -75,6 +81,8 @@ impl Settings {
         self.weekly_goal = self.weekly_goal.clamp(0, 500);
         self.lesson_mastery_percent = self.lesson_mastery_percent.clamp(50, 100);
         self.font_scale = self.font_scale.clamp(90, 125);
+        self.new_per_day = self.new_per_day.clamp(0, 200);
+        self.new_mix_percent = self.new_mix_percent.clamp(0, 100);
         if !matches!(self.theme.as_str(), "auto" | "light" | "dark") {
             self.theme = "auto".to_string();
         }
@@ -138,7 +146,10 @@ pub struct Challenge {
     pub item: Item,
     /// `jp_to_es` o `es_to_jp`.
     pub direction: String,
+    /// Repasos vencidos (sin contar palabras nuevas).
     pub due_count: i64,
+    /// Palabras nuevas disponibles sin introducir.
+    pub new_count: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -220,7 +231,14 @@ pub struct Stats {
     pub accuracy_today: f64,
     pub streak_days: i64,
     pub mastered: i64,
+    /// Repasos vencidos (sin contar palabras nuevas).
     pub due_now: i64,
+    /// Palabras nuevas sin introducir.
+    pub new_available: i64,
+    /// Palabras nuevas introducidas hoy.
+    pub new_today: i64,
+    /// Límite diario de palabras nuevas.
+    pub new_per_day: i64,
     pub activity: Vec<DayCount>,
     pub lessons: Vec<LessonStat>,
     pub difficult: Vec<DifficultItem>,
@@ -355,12 +373,16 @@ mod tests {
             theme: "neon".to_string(),
             font_scale: 400,
             language: "fr".to_string(),
+            new_per_day: 500,
+            new_mix_percent: -10,
             ..Default::default()
         }
         .sanitize();
         assert_eq!(settings.theme, "auto");
         assert_eq!(settings.font_scale, 125);
         assert_eq!(settings.language, "es");
+        assert_eq!(settings.new_per_day, 200);
+        assert_eq!(settings.new_mix_percent, 0);
 
         let settings = Settings {
             font_scale: 10,
