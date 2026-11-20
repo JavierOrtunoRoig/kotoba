@@ -126,7 +126,7 @@ flowchart LR
 ### Desde el código
 
 ```powershell
-git clone https://github.com/<tu-usuario>/kotoba.git
+git clone https://github.com/JavierOrtunoRoig/kotoba.git
 cd kotoba
 npm install
 npm run tauri dev
