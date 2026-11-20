@@ -291,11 +291,18 @@ pueden incentivar respuestas rápidas/malas que rompan el SM-2.
 - [x] Migración v3 (`achievements`, `profile.weekly_goals_done`).
 - [x] Tests de desbloqueo único y umbral de maestría.
 
-### R3-04c — Refinamiento (pendiente)
+### R3-04c — Refinamiento (implementado)
 
-- [ ] Congelar/reparar racha con un salvavidas ganado al completar el objetivo semanal.
-- [ ] Curva de niveles y recompensas refinadas.
-- [ ] Métricas de retención y objetivos a medio plazo.
+- [x] Salvavidas de racha: cada objetivo semanal completado da uno (máximo 2).
+- [x] Reparación automática de un día perdido, opcional en Ajustes; nunca repara más de un
+  hueco por repaso ni gasta salvavidas sin actividad reciente.
+- [x] Salvavidas visibles en Progreso y feedback `+1 salvavidas` al ganarlos.
+- [x] Curva de niveles más suave (80 → 5.800 XP) y títulos por tramo (Semilla, Brote, Raíz,
+  Rama, Árbol, Bosque).
+- [x] Migración v4 (`profile.streak_savers`, tabla `streak_repairs`) y tests de reparación,
+  tope de salvavidas y migración.
+- [ ] Métricas de retención a medio plazo: fuera del MVP local (sin telemetría ni nube); la
+  pantalla de Progreso ya muestra actividad de 14 días y progreso por lección.
 
 ---
 

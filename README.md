@@ -34,14 +34,14 @@ Lo que ya funciona:
 - **Copia de seguridad** a carpeta (SQLite + audio), **restauración** y limpieza de audios huérfanos.
 - **Exportación del historial** de repasos a CSV.
 - **Progreso de importación** en vivo (evento cada 25 notas).
-- **Gamificación**: XP por calidad, niveles, racha flexible, objetivo semanal, 16 logros y
-  maestría por lección.
+- **Gamificación**: XP por calidad, niveles con títulos, racha flexible con salvavidas, objetivo
+  semanal, 16 logros y maestría por lección.
 - **Notificaciones de hitos** opt-in (objetivo semanal y logros), respetando DND y pantalla completa.
 - **Logs a archivo** con acceso desde Ajustes.
 - Pantallas de importación, progreso y ajustes.
 
-Fase 3 en curso: gamificación c (congelar racha), AnkiConnect y más mazos. Distribución
-pendiente: firmar el instalador y añadir CI.
+Fase 3 en curso: AnkiConnect, más mazos y gramática. Distribución pendiente: firmar el
+instalador y añadir CI.
 
 ## Stack
 

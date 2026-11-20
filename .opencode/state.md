@@ -44,7 +44,7 @@ progreso y ajustes.
 | Plantillas (`is_pattern`) | 66 |
 | Avisos de importación | 0 |
 | RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 33 OK (+3 ignored: importación, normalización y progreso reales) |
+| Tests unitarios Rust | 35 OK (+3 ignored: importación, normalización y progreso reales) |
 | Respuestas reales validadas | 2.629 |
 | Copia de seguridad | SQLite + 827 audios |
 | Typecheck / build frontend | OK |
@@ -99,13 +99,18 @@ progreso y ajustes.
   una base v2 existente con test dedicado.
 - **Logros medidos en la app:** `first_step` al primer repaso y `reviews_25` al llegar a 25;
   notificación emitida con `milestone_notifications` y anotada en el log.
+- **Gamificación R3-04c:** salvavidas de racha (máx. 2) ganados al cumplir el objetivo semanal,
+  reparación automática de un hueco (desactivable), títulos de nivel y curva de 0 a 5.800 XP.
+- **Migración v4:** `profile.streak_savers` y tabla `streak_repairs`; probada sobre una base v2.
+- **Salvavidas medido en la app:** objetivo 26 → repaso 26, `saver_earned = true`, 1 salvavidas,
+  logros `weekly_goal_1` y aviso `objetivo semanal completado: 26 repasos`.
 
 ## Datos de prueba en el equipo
 
-La app tiene importado el mazo en `%APPDATA%\com.kotoba.app` y **25 repasos de prueba**, **54 XP**,
-nivel 1, racha/mejor 1, **2 logros desbloqueados** (`first_step`, `reviews_25`), objetivo semanal 30,
-maestría por lección 90 % y notificaciones de hito desactivadas. El modo se dejó en `popup` y el DND
-en 22:00–08:00.
+La app tiene importado el mazo en `%APPDATA%\com.kotoba.app` y **26 repasos de prueba**, **57 XP**,
+nivel 1 «Semilla», racha/mejor 1, **3 logros desbloqueados** (`first_step`, `reviews_25`,
+`weekly_goal_1`), **1 salvavidas**, objetivo semanal 30, maestría por lección 90 % y notificaciones
+de hito desactivadas. El modo se dejó en `popup` y el DND en 22:00–08:00.
 
 Para dejarlo limpio:
 
@@ -138,15 +143,14 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 | Media | `.txt` sin audio | El fallback no puede extraer mp3 |
 | Media | Pantalla completa real | Implementada, pero no probada contra un juego/presentación real |
 | Baja | Accesibilidad | Foco y navegación por teclado mejorables |
-| Baja | Gamificación c | Congelar/reparar racha y refinamiento de niveles pendientes |
+| Baja | Gamificación | Logros/maestría y salvavidas implementados; métricas de retención fuera del MVP |
 | Baja | CI / firma | El instalador funciona, pero no está firmado ni hay pipeline |
 
 ## Próximos pasos recomendados
 
-1. **R3-04c — Gamificación:** congelar/reparar racha y refinamiento.
-2. **Fase 3:** AnkiConnect, más mazos y gramática.
-3. **Distribución:** firmar el instalador y añadir CI.
-4. **Pantalla completa real:** probar contra un juego/presentación.
+1. **Fase 3:** AnkiConnect, más mazos y gramática.
+2. **Distribución:** firmar el instalador y añadir CI.
+3. **Pantalla completa real:** probar contra un juego/presentación.
 
 ## Cómo actualizar este documento
 

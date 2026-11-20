@@ -233,3 +233,15 @@ de palabras con intervalo ≥ 7 días alcanza el umbral configurable (default 90
 notificaciones de desbloqueo son opt-in y respetan pausa/DND/pantalla completa.
 **Consecuencias:** el progreso retroactivo se materializa en el siguiente repaso; no hay logros
 sociales ni de velocidad. El umbral de maestría puede ajustarse entre 50 % y 100 %.
+
+## D-028 — Salvavidas de racha y niveles con títulos
+
+**Contexto:** una racha estricta castiga un día perdido y contradice el carácter pasivo. A la vez,
+el XP necesita una progresión legible a largo plazo.
+**Decisión:** cada objetivo semanal completado concede un salvavidas (máximo 2). Si el usuario
+vuelve tras un día perdido, se gasta automáticamente uno para reparar solo ese hueco (desactivable
+en Ajustes) y se registra en `streak_repairs`. La curva de niveles pasa a 12 umbrales de 0 a 5.800
+XP, con títulos por tramo: Semilla, Brote, Raíz, Rama, Árbol y Bosque.
+**Consecuencias:** la racha sigue siendo flexible y no se castiga con avisos. Los salvavidas no se
+gastan sin actividad reciente ni reparan varios huecos de golpe. Las métricas de retención quedan
+fuera del MVP por no usar nube ni telemetría.
