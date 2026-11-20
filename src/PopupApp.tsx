@@ -9,6 +9,8 @@ import {
   type Challenge,
   type Settings,
 } from "./api";
+import { applyAppearance } from "./appearance";
+import { useT } from "./i18n";
 import { playAudio } from "./audio";
 import { IconArrow, IconClose, IconSound } from "./Icons";
 
@@ -25,6 +27,9 @@ export default function PopupApp({ variant }: Props) {
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<AnswerResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const language = settings?.language ?? "es";
+  const t = useT(language);
 
   const shownAt = useRef(Date.now());
   const inputRef = useRef<HTMLInputElement>(null);
@@ -75,6 +80,12 @@ export default function PopupApp({ variant }: Props) {
   }, []);
 
   useEffect(() => {
+    if (settings) {
+      applyAppearance(settings.theme, settings.font_scale);
+    }
+  }, [settings?.theme, settings?.font_scale]);
+
+  useEffect(() => {
     const unlistenShow = listen("challenge:show", () => {
       void load();
     });
@@ -101,15 +112,30 @@ export default function PopupApp({ variant }: Props) {
     }
   }, [variant]);
 
+  const next = useCallback(() => {
+    void load(challenge?.item.id);
+  }, [challenge?.item.id, load]);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         dismiss();
+        return;
+      }
+      if (
+        event.key === "Enter" &&
+        status === "answered" &&
+        !event.isComposing
+      ) {
+        const tag = (event.target as HTMLElement | null)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON") return;
+        event.preventDefault();
+        next();
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [dismiss]);
+  }, [dismiss, next, status]);
 
   const submit = useCallback(
     async (override?: string) => {
@@ -140,10 +166,6 @@ export default function PopupApp({ variant }: Props) {
     [answer, challenge],
   );
 
-  const next = useCallback(() => {
-    void load(challenge?.item.id);
-  }, [challenge?.item.id, load]);
-
   const openApp = async () => {
     await api.showMainWindow();
     dismiss();
@@ -162,13 +184,15 @@ export default function PopupApp({ variant }: Props) {
             kotoba
           </span>
           <span className="popup-direction">
-            {direction ? directionLabel(direction) : "micro-reto"}
+            {direction ? directionLabel(direction, language) : t("Micro-reto")}
           </span>
           <button
             type="button"
             className="popup-close"
             onClick={dismiss}
-            aria-label={variant === "widget" ? "Ocultar widget" : "Cerrar"}
+            aria-label={
+              variant === "widget" ? t("Ocultar widget") : t("Cerrar")
+            }
           >
             <IconClose size={14} />
           </button>
@@ -185,9 +209,9 @@ export default function PopupApp({ variant }: Props) {
         {status === "empty" && (
           <div className="popup-body popup-empty">
             <span className="empty-mark small">空</span>
-            <p>{error ?? "No hay palabras disponibles."}</p>
+            <p>{error ?? t("No hay palabras disponibles.")}</p>
             <button type="button" className="ghost small" onClick={openApp}>
-              Abrir kotoba
+              {t("Abrir kotoba")}
             </button>
           </div>
         )}
@@ -229,7 +253,8 @@ export default function PopupApp({ variant }: Props) {
                       void submit();
                     }
                   }}
-                  placeholder={directionHint(challenge.direction)}
+                  aria-label={directionHint(challenge.direction, language)}
+                  placeholder={directionHint(challenge.direction, language)}
                   lang={challenge.direction === "es_to_jp" ? "ja" : "es"}
                   autoComplete="off"
                   spellCheck={false}
@@ -240,14 +265,15 @@ export default function PopupApp({ variant }: Props) {
                     className="ghost small"
                     onClick={dismiss}
                   >
-                    {variant === "widget" ? "Ocultar" : "Ahora no"}
+                    {variant === "widget" ? t("Ocultar") : t("Ahora no")}
                   </button>
                   <button
                     type="submit"
                     className="primary small"
                     disabled={answer.trim().length === 0}
+                    aria-keyshortcuts="Enter"
                   >
-                    Comprobar
+                    {t("Comprobar")}
                     <span className="key-hint">↵</span>
                   </button>
                 </div>
@@ -256,12 +282,14 @@ export default function PopupApp({ variant }: Props) {
               result && (
                 <div
                   className={`popup-feedback ${result.correct ? "ok" : "ko"}`}
+                  role="status"
+                  aria-live="polite"
                 >
                   <div className="pf-head">
                     <span className="feedback-mark">
                       {result.correct ? "正" : "×"}
                     </span>
-                    <strong>{result.correct ? "Correcto" : "Casi"}</strong>
+                    <strong>{result.correct ? t("Correcto") : t("Casi")}</strong>
                   </div>
                   <p className="pf-jp" lang="ja">
                     {japaneseDisplay(challenge.item)}
@@ -273,16 +301,22 @@ export default function PopupApp({ variant }: Props) {
                   {result.xp_gained > 0 && (
                     <p className="pf-xp">
                       +{result.xp_gained} XP
-                      {result.leveled_up && ` · ¡Nivel ${result.level}!`}
+                      {result.leveled_up &&
+                        ` · ${t("¡Nivel {n}!", { n: result.level })}`}
                     </p>
                   )}
                   {result.unlocked.length > 0 && (
                     <p className="pf-achievement">
-                      ✦ {result.unlocked.map((a) => a.title).join(" · ")}
+                      ✦{" "}
+                      {result.unlocked
+                        .map((achievement) => t(achievement.title))
+                        .join(" · ")}
                     </p>
                   )}
                   {result.saver_earned && (
-                    <p className="pf-achievement">+1 salvavidas de racha</p>
+                    <p className="pf-achievement">
+                      {t("+1 salvavidas de racha")}
+                    </p>
                   )}
                   <div className="popup-actions">
                     <button
@@ -290,7 +324,7 @@ export default function PopupApp({ variant }: Props) {
                       className="ghost small"
                       onClick={() => void playAudio(challenge.item.id)}
                       disabled={!result.has_audio}
-                      aria-label="Reproducir audio"
+                      aria-label={t("Reproducir audio")}
                     >
                       <IconSound size={14} />
                     </button>
@@ -299,14 +333,15 @@ export default function PopupApp({ variant }: Props) {
                       className="ghost small"
                       onClick={openApp}
                     >
-                      Abrir app
+                      {t("Abrir app")}
                     </button>
                     <button
                       type="button"
                       className="primary small"
                       onClick={next}
+                      aria-keyshortcuts="Enter"
                     >
-                      Siguiente
+                      {t("Siguiente")}
                       <IconArrow size={14} />
                     </button>
                   </div>

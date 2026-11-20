@@ -9,6 +9,7 @@ import {
   type Challenge,
   type Settings,
 } from "./api";
+import { useT } from "./i18n";
 import { playAudio } from "./audio";
 import { IconArrow, IconEye, IconRefresh, IconSound } from "./Icons";
 
@@ -20,6 +21,7 @@ type Props = {
 type Status = "loading" | "ready" | "answered" | "empty";
 
 export default function PracticePanel({ settings, onRefresh }: Props) {
+  const t = useT(settings.language);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [answer, setAnswer] = useState("");
@@ -108,11 +110,24 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
     void load(challenge?.item.id);
   }, [challenge?.item.id, load]);
 
+  useEffect(() => {
+    if (status !== "answered") return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Enter" || event.isComposing) return;
+      const tag = (event.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON") return;
+      event.preventDefault();
+      next();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [status, next]);
+
   if (status === "loading") {
     return (
       <section className="practice">
         <header className="practice-head">
-          <span className="eyebrow">Micro-reto</span>
+          <span className="eyebrow">{t("Micro-reto")}</span>
         </header>
         <div className="flashcard skeleton">
           <div className="skeleton-line short" />
@@ -127,19 +142,21 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
     return (
       <section className="practice">
         <header className="practice-head">
-          <span className="eyebrow">Micro-reto</span>
+          <span className="eyebrow">{t("Micro-reto")}</span>
         </header>
         <div className="flashcard empty-card">
           <span className="empty-mark">空</span>
-          <h2>No hay palabras que practicar</h2>
+          <h2>{t("No hay palabras que practicar")}</h2>
           <p>
             {error ??
-              "Importa un mazo desde Ajustes o espera a que haya ítems disponibles."}
+              t(
+                "Importa un mazo desde Ajustes o espera a que haya ítems disponibles.",
+              )}
           </p>
           <div className="empty-actions">
             <button type="button" className="ghost" onClick={() => void load()}>
               <IconRefresh size={16} />
-              Reintentar
+              {t("Reintentar")}
             </button>
           </div>
         </div>
@@ -154,9 +171,11 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
   return (
     <section className="practice">
       <header className="practice-head">
-        <span className="eyebrow">Micro-reto</span>
-        <span className="direction">{directionLabel(direction)}</span>
-        <span className="due">{challenge.due_count} pendientes</span>
+        <span className="eyebrow">{t("Micro-reto")}</span>
+        <span className="direction">{directionLabel(direction, settings.language)}</span>
+        <span className="due">
+          {t("{n} pendientes", { n: challenge.due_count })}
+        </span>
       </header>
 
       <article className={`flashcard ${status === "answered" ? "answered" : ""}`}>
@@ -166,8 +185,8 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
             {item.category ? ` · ${item.category}` : ""}
           </span>
           <span className="card-meta">
-            {item.is_pattern && <em className="tag-pattern">plantilla</em>}
-            {item.irregular && <em className="tag-irregular">irregular</em>}
+            {item.is_pattern && <em className="tag-pattern">{t("plantilla")}</em>}
+            {item.irregular && <em className="tag-irregular">{t("irregular")}</em>}
           </span>
         </div>
 
@@ -180,15 +199,18 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
           >
             {prompt}
           </p>
-          <p className="prompt-hint">{directionHint(direction)}</p>
+          <p className="prompt-hint">
+            {directionHint(direction, settings.language)}
+          </p>
           {direction === "jp_to_es" && item.kanji && (
             <button
               type="button"
               className="reading-toggle"
+              aria-expanded={showReading}
               onClick={() => setShowReading((value) => !value)}
             >
               <IconEye size={14} />
-              {showReading ? "Ocultar lectura" : "Ver lectura"}
+              {showReading ? t("Ocultar lectura") : t("Ver lectura")}
               {showReading && <span className="reading-value">{item.reading}</span>}
             </button>
           )}
@@ -213,10 +235,11 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
                   void submit();
                 }
               }}
+              aria-label={directionHint(direction, settings.language)}
               placeholder={
                 direction === "jp_to_es"
-                  ? "Escribe el significado…"
-                  : "Kanji, kana o romaji…"
+                  ? t("Escribe el significado…")
+                  : t("Kanji, kana o romaji…")
               }
               lang={direction === "es_to_jp" ? "ja" : "es"}
               autoComplete="off"
@@ -230,50 +253,55 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
                 onClick={() => void submit("")}
                 disabled={busy.current}
               >
-                No lo sé
+                {t("No lo sé")}
               </button>
               <button
                 type="submit"
                 className="primary"
                 disabled={answer.trim().length === 0}
+                aria-keyshortcuts="Enter"
               >
-                Comprobar
+                {t("Comprobar")}
                 <span className="key-hint">↵</span>
               </button>
             </div>
           </form>
         ) : (
           result && (
-            <div className={`feedback ${result.correct ? "ok" : "ko"}`}>
+            <div
+              className={`feedback ${result.correct ? "ok" : "ko"}`}
+              role="status"
+              aria-live="polite"
+            >
               <div className="feedback-head">
                 <span className="feedback-mark">
                   {result.correct ? "正" : "×"}
                 </span>
                 <div>
-                  <strong>{result.correct ? "Correcto" : "Casi"}</strong>
+                  <strong>{result.correct ? t("Correcto") : t("Casi")}</strong>
                   <span>
                     {result.correct
-                      ? "Bien hecho, sigue así."
-                      : "La respuesta era:"}
+                      ? t("Bien hecho, sigue así.")
+                      : t("La respuesta era:")}
                   </span>
                 </div>
               </div>
 
               <div className="answer-block">
                 <div className="answer-row">
-                  <span className="label">Japonés</span>
+                  <span className="label">{t("Japonés")}</span>
                   <span className="value jp" lang="ja">
                     {japaneseDisplay(item)}
                   </span>
                   <span className="reading">{item.reading}</span>
                 </div>
                 <div className="answer-row">
-                  <span className="label">Significado</span>
+                  <span className="label">{t("Significado")}</span>
                   <span className="value">{result.meaning}</span>
                 </div>
                 {result.kanji_gloss && (
                   <div className="answer-row">
-                    <span className="label">Kanji</span>
+                    <span className="label">{t("Kanji")}</span>
                     <span className="value muted">{result.kanji_gloss}</span>
                   </div>
                 )}
@@ -295,27 +323,39 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
                   disabled={!result.has_audio}
                 >
                   <IconSound size={16} />
-                  Oír
+                  {t("Oír")}
                 </button>
                 {result.xp_gained > 0 && (
                   <span className="xp-badge">+{result.xp_gained} XP</span>
                 )}
                 {result.leveled_up && (
-                  <span className="level-up">¡Nivel {result.level}!</span>
+                  <span className="level-up">
+                    {t("¡Nivel {n}!", { n: result.level })}
+                  </span>
                 )}
                 {result.unlocked.map((achievement) => (
                   <span className="achievement-chip" key={achievement.key}>
-                    ✦ {achievement.title}
+                    ✦ {t(achievement.title)}
                   </span>
                 ))}
                 {result.saver_earned && (
-                  <span className="saver-chip">+1 salvavidas</span>
+                  <span className="saver-chip">{t("+1 salvavidas")}</span>
                 )}
                 <span className="next-interval">
-                  Vuelve en {formatInterval(result.next_interval_minutes)}
+                  {t("Vuelve en {interval}", {
+                    interval: formatInterval(
+                      result.next_interval_minutes,
+                      settings.language,
+                    ),
+                  })}
                 </span>
-                <button type="button" className="primary" onClick={next}>
-                  Siguiente
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={next}
+                  aria-keyshortcuts="Enter"
+                >
+                  {t("Siguiente")}
                   <IconArrow size={16} />
                 </button>
               </div>

@@ -21,6 +21,25 @@
   --mono: "Cascadia Mono", "Consolas", monospace;
 }
 
+:root[data-theme="dark"] {
+  --paper: #171614;
+  --paper-raised: #211f1b;
+  --paper-deep: #2b2823;
+  --ink: #f0eade;
+  --ink-soft: #c8bfaf;
+  --ink-faint: #968c7c;
+  --line: #3a352d;
+  --line-strong: #4d463c;
+  --vermilion: #e06a4f;
+  --vermilion-deep: #f19175;
+  --vermilion-soft: #4a2a23;
+  --moss: #9db79a;
+  --gold: #d6ab6a;
+  --success: #86c295;
+  --error: #e59080;
+  --shadow: 0 22px 50px -26px rgba(0, 0, 0, 0.85);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -29,6 +48,12 @@ html,
 body,
 #root {
   height: 100%;
+}
+
+#root {
+  width: calc(100% / var(--ui-scale, 1));
+  height: calc(100% / var(--ui-scale, 1));
+  zoom: var(--ui-scale, 1);
 }
 
 body {
@@ -72,14 +97,34 @@ body.popup-window::before {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d3c8b6;
+  background: var(--line-strong);
   border-radius: 999px;
   border: 3px solid var(--paper);
 }
 
 :focus-visible {
-  outline: 2px solid var(--vermilion);
+  outline: 3px solid var(--vermilion);
   outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 200;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--paper-raised);
+  font-size: 12px;
+  text-decoration: none;
+  transform: translateY(-160%);
+  transition: transform 0.15s ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
 }
 
 /* ---------- Arranque ---------- */
@@ -1763,7 +1808,7 @@ input[type="time"]:disabled {
 /* ---------- Popup ---------- */
 
 .popup-shell {
-  height: 100vh;
+  height: 100%;
   padding: 6px;
   display: flex;
 }
@@ -2119,6 +2164,60 @@ input[type="time"]:disabled {
   .settings-buttons {
     justify-content: flex-end;
   }
+}
+
+/* ---------- Tema oscuro ---------- */
+
+:root[data-theme="dark"] body::before {
+  opacity: 0.05;
+}
+
+:root[data-theme="dark"] .rail {
+  background: linear-gradient(180deg, #1d1b18 0%, #131210 100%);
+}
+
+:root[data-theme="dark"] .primary:hover:not(:disabled) {
+  background: #fff6e6;
+}
+
+:root[data-theme="dark"] .ghost:hover:not(:disabled),
+:root[data-theme="dark"] .chip,
+:root[data-theme="dark"] .dropzone {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme="dark"] .flashcard {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    var(--shadow);
+}
+
+:root[data-theme="dark"] .popup-card {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 26px 60px -20px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+:root[data-theme="dark"] .achievement {
+  background: rgba(33, 31, 27, 0.5);
+}
+
+:root[data-theme="dark"] .achievement.unlocked {
+  background: linear-gradient(
+    135deg,
+    rgba(214, 171, 106, 0.13),
+    rgba(33, 31, 27, 0.6)
+  );
+}
+
+:root[data-theme="dark"] .skeleton-line {
+  background: linear-gradient(
+    90deg,
+    var(--paper-deep),
+    #34302a,
+    var(--paper-deep)
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {

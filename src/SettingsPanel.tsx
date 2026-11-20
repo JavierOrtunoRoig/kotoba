@@ -7,6 +7,8 @@ import {
   isEnabled as isAutostartEnabled,
 } from "@tauri-apps/plugin-autostart";
 import { api, type Bootstrap, type ImportProgress, type Settings } from "./api";
+import { applyAppearance } from "./appearance";
+import { LANGUAGES, useT } from "./i18n";
 import {
   IconArchive,
   IconDownload,
@@ -50,6 +52,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
   const [busy, setBusy] = useState(false);
   const [autostart, setAutostart] = useState(false);
   const [progress, setProgress] = useState<ImportProgress | null>(null);
+  const t = useT(settings.language);
 
   useEffect(() => {
     const unlisten = listen<ImportProgress>("import:progress", (event) => {
@@ -70,6 +73,10 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
   }, []);
 
   const dirty = JSON.stringify(settings) !== JSON.stringify(boot.settings);
+
+  useEffect(() => {
+    applyAppearance(settings.theme, settings.font_scale);
+  }, [settings.theme, settings.font_scale]);
 
   function update<K extends keyof Settings>(key: K, value: Settings[K]) {
     setSettings((current) => ({ ...current, [key]: value }));
@@ -95,7 +102,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     try {
       const saved = await api.updateSettings(settings);
       setSettings(saved);
-      onToast("Ajustes guardados");
+      onToast(t("Ajustes guardados"));
       await onChanged();
     } catch (caught) {
       onToast(String(caught));
@@ -130,8 +137,8 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     const selected = await open({
       multiple: false,
       filters: [
-        { name: "Mazo de Anki", extensions: ["apkg", "txt"] },
-        { name: "Todos", extensions: ["*"] },
+        { name: t("Mazo de Anki"), extensions: ["apkg", "txt"] },
+        { name: t("Todos"), extensions: ["*"] },
       ],
     });
     if (!selected || Array.isArray(selected)) return;
@@ -141,9 +148,10 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     try {
       const summary = await api.importDeck(selected);
       onToast(
-        `Importadas ${summary.items_inserted} palabras y ${
-          summary.audio_extracted + summary.audio_reused
-        } audios`,
+        t("Importadas {words} palabras y {audios} audios", {
+          words: summary.items_inserted,
+          audios: summary.audio_extracted + summary.audio_reused,
+        }),
       );
       await onChanged();
     } catch (caught) {
@@ -161,7 +169,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     setBusy(true);
     try {
       const folder = await api.exportBackup(selected);
-      onToast(`Copia guardada en ${folder}`);
+      onToast(t("Copia guardada en {folder}", { folder }));
     } catch (caught) {
       onToast(String(caught));
     } finally {
@@ -174,7 +182,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     if (!selected || Array.isArray(selected)) return;
     if (
       !window.confirm(
-        "Se reemplazarán las palabras, el audio y el progreso actuales. ¿Continuar?",
+        t("Se reemplazarán las palabras, el audio y el progreso actuales. ¿Continuar?"),
       )
     ) {
       return;
@@ -184,7 +192,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     try {
       const restored = await api.restoreBackup(selected);
       setSettings(restored);
-      onToast("Copia restaurada");
+      onToast(t("Copia restaurada"));
       await onChanged();
     } catch (caught) {
       onToast(String(caught));
@@ -203,7 +211,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     setBusy(true);
     try {
       const path = await api.exportHistory(selected);
-      onToast(`Historial guardado en ${path}`);
+      onToast(t("Historial guardado en {path}", { path }));
     } catch (caught) {
       onToast(String(caught));
     } finally {
@@ -211,9 +219,12 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     }
   }
 
-  async function resetProgress() {    if (
+  async function resetProgress() {
+    if (
       !window.confirm(
-        "¿Reiniciar el repaso? Se borra el historial y los intervalos, pero se conservan las palabras.",
+        t(
+          "¿Reiniciar el repaso? Se borra el historial y los intervalos, pero se conservan las palabras.",
+        ),
       )
     ) {
       return;
@@ -221,7 +232,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     setBusy(true);
     try {
       await api.resetProgress();
-      onToast("Progreso reiniciado");
+      onToast(t("Progreso reiniciado"));
       await onChanged();
     } catch (caught) {
       onToast(String(caught));
@@ -233,7 +244,9 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
   async function clearLibrary() {
     if (
       !window.confirm(
-        "¿Borrar todas las palabras importadas? Tendrás que volver a importar el mazo.",
+        t(
+          "¿Borrar todas las palabras importadas? Tendrás que volver a importar el mazo.",
+        ),
       )
     ) {
       return;
@@ -241,7 +254,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     setBusy(true);
     try {
       await api.clearLibrary();
-      onToast("Biblioteca borrada");
+      onToast(t("Biblioteca borrada"));
       await onChanged();
     } catch (caught) {
       onToast(String(caught));
@@ -250,15 +263,23 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     }
   }
 
+  const themeDescription =
+    settings.theme === "auto"
+      ? t("Sigue el tema de Windows.")
+      : settings.theme === "light"
+        ? t("Tema claro, papel y tinta.")
+        : t("Tema oscuro, lectura nocturna.");
+
   return (
     <section className="settings">
       <header className="view-head">
         <div>
-          <span className="eyebrow">Ajustes</span>
-          <h1>Tu ritmo</h1>
+          <span className="eyebrow">{t("Ajustes")}</span>
+          <h1>{t("Tu ritmo")}</h1>
           <p className="sub">
-            Un equilibrio entre no olvidar y no molestar. Los cambios se aplican
-            al guardar.
+            {t(
+              "Un equilibrio entre no olvidar y no molestar. Los cambios se aplican al guardar.",
+            )}
           </p>
         </div>
       </header>
@@ -266,21 +287,102 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
       <article className="panel">
         <div className="panel-head">
           <div>
-            <h2>Frecuencia</h2>
-            <p className="muted">Cuándo y cuánto aparece el repaso.</p>
+            <h2>{t("Apariencia")}</h2>
+            <p className="muted">{t("Tema, idioma y tamaño de la interfaz.")}</p>
           </div>
         </div>
 
         <div className="field">
           <div>
-            <div className="field-label">Intervalo entre retos</div>
+            <div className="field-label">{t("Tema")}</div>
+            <div className="field-desc">{themeDescription}</div>
+          </div>
+          <div className="segmented" role="group" aria-label={t("Tema")}>
+            {(
+              [
+                ["auto", t("Auto")],
+                ["light", t("Claro")],
+                ["dark", t("Oscuro")],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={settings.theme === value ? "active" : ""}
+                aria-pressed={settings.theme === value}
+                onClick={() => update("theme", value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
+          <div>
+            <div className="field-label">{t("Idioma")}</div>
             <div className="field-desc">
-              Cada cuánto puede aparecer un micro-reto.
+              {t("Cambia los textos de la interfaz y de la bandeja.")}
+            </div>
+          </div>
+          <div className="segmented" role="group" aria-label={t("Idioma")}>
+            {LANGUAGES.map((language) => (
+              <button
+                key={language.id}
+                type="button"
+                lang={language.id}
+                className={settings.language === language.id ? "active" : ""}
+                aria-pressed={settings.language === language.id}
+                onClick={() => update("language", language.id)}
+              >
+                {language.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
+          <div>
+            <div className="field-label">{t("Tamaño de la interfaz")}</div>
+            <div className="field-desc">
+              {t("Escala el texto y los controles de la interfaz.")}
+            </div>
+          </div>
+          <div className="range-control single">
+            <input
+              type="range"
+              min={90}
+              max={125}
+              step={5}
+              value={settings.font_scale}
+              aria-label={t("Tamaño de la interfaz")}
+              onChange={(event) =>
+                update("font_scale", Number(event.currentTarget.value))
+              }
+            />
+            <output>{settings.font_scale}%</output>
+          </div>
+        </div>
+      </article>
+
+      <article className="panel">
+        <div className="panel-head">
+          <div>
+            <h2>{t("Frecuencia")}</h2>
+            <p className="muted">{t("Cuándo y cuánto aparece el repaso.")}</p>
+          </div>
+        </div>
+
+        <div className="field">
+          <div>
+            <div className="field-label">{t("Intervalo entre retos")}</div>
+            <div className="field-desc">
+              {t("Cada cuánto puede aparecer un micro-reto.")}
             </div>
           </div>
           <div className="range-pair">
             <label className="range-control">
-              <span>mín</span>
+              <span>{t("mín")}</span>
               <input
                 type="range"
                 min={1}
@@ -290,10 +392,12 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
                   changeMinInterval(Number(event.currentTarget.value))
                 }
               />
-              <output>{settings.interval_min_minutes} min</output>
+              <output>
+                {t("{n} min", { n: settings.interval_min_minutes })}
+              </output>
             </label>
             <label className="range-control">
-              <span>máx</span>
+              <span>{t("máx")}</span>
               <input
                 type="range"
                 min={1}
@@ -303,18 +407,20 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
                   changeMaxInterval(Number(event.currentTarget.value))
                 }
               />
-              <output>{settings.interval_max_minutes} min</output>
+              <output>
+                {t("{n} min", { n: settings.interval_max_minutes })}
+              </output>
             </label>
           </div>
         </div>
 
         <div className="field">
           <div>
-            <div className="field-label">Máximo por día</div>
+            <div className="field-label">{t("Máximo por día")}</div>
             <div className="field-desc">
               {settings.max_per_day === 0
-                ? "Sin límite diario."
-                : `Hasta ${settings.max_per_day} repasos al día.`}
+                ? t("Sin límite diario.")
+                : t("Hasta {n} repasos al día.", { n: settings.max_per_day })}
             </div>
           </div>
           <div className="range-control single">
@@ -324,6 +430,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
               max={200}
               step={5}
               value={settings.max_per_day}
+              aria-label={t("Máximo por día")}
               onChange={(event) =>
                 update("max_per_day", Number(event.currentTarget.value))
               }
@@ -336,15 +443,15 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
 
         <div className="field">
           <div>
-            <div className="field-label">Pausar repasos</div>
+            <div className="field-label">{t("Pausar repasos")}</div>
             <div className="field-desc">
-              La app sigue en la bandeja, pero no interrumpe.
+              {t("La app sigue en la bandeja, pero no interrumpe.")}
             </div>
           </div>
           <Toggle
             checked={settings.paused}
             onChange={(value) => update("paused", value)}
-            label="Pausar repasos"
+            label={t("Pausar repasos")}
           />
         </div>
       </article>
@@ -352,30 +459,30 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
       <article className="panel">
         <div className="panel-head">
           <div>
-            <h2>No molestar</h2>
-            <p className="muted">Horas en las que kotoba se queda callado.</p>
+            <h2>{t("No molestar")}</h2>
+            <p className="muted">{t("Horas en las que kotoba se queda callado.")}</p>
           </div>
         </div>
 
         <div className="field">
           <div>
-            <div className="field-label">Activar horario de silencio</div>
+            <div className="field-label">{t("Activar horario de silencio")}</div>
             <div className="field-desc">
-              Útil para la noche o para reuniones.
+              {t("Útil para la noche o para reuniones.")}
             </div>
           </div>
           <Toggle
             checked={settings.dnd_enabled}
             onChange={(value) => update("dnd_enabled", value)}
-            label="Activar horario de silencio"
+            label={t("Activar horario de silencio")}
           />
         </div>
 
         <div className={`field ${!settings.dnd_enabled ? "disabled" : ""}`}>
           <div>
-            <div className="field-label">Desde / hasta</div>
+            <div className="field-label">{t("Desde / hasta")}</div>
             <div className="field-desc">
-              Si la hora final es menor, el rango cruza la medianoche.
+              {t("Si la hora final es menor, el rango cruza la medianoche.")}
             </div>
           </div>
           <div className="time-pair">
@@ -383,6 +490,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
               type="time"
               value={settings.dnd_start}
               disabled={!settings.dnd_enabled}
+              aria-label={t("Desde")}
               onChange={(event) => update("dnd_start", event.currentTarget.value)}
             />
             <span>→</span>
@@ -390,6 +498,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
               type="time"
               value={settings.dnd_end}
               disabled={!settings.dnd_enabled}
+              aria-label={t("Hasta")}
               onChange={(event) => update("dnd_end", event.currentTarget.value)}
             />
           </div>
@@ -399,16 +508,16 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
       <article className="panel">
         <div className="panel-head">
           <div>
-            <h2>Progreso</h2>
-            <p className="muted">Nivel, racha, logros y objetivos.</p>
+            <h2>{t("Progreso")}</h2>
+            <p className="muted">{t("Nivel, racha, logros y objetivos.")}</p>
           </div>
         </div>
 
         <div className="field">
           <div>
-            <div className="field-label">Objetivo semanal</div>
+            <div className="field-label">{t("Objetivo semanal")}</div>
             <div className="field-desc">
-              Repasos por semana. 0 = sin objetivo.
+              {t("Repasos por semana. 0 = sin objetivo.")}
             </div>
           </div>
           <div className="range-control single">
@@ -418,6 +527,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
               max={100}
               step={5}
               value={settings.weekly_goal}
+              aria-label={t("Objetivo semanal")}
               onChange={(event) =>
                 update("weekly_goal", Number(event.currentTarget.value))
               }
@@ -430,10 +540,11 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
 
         <div className="field">
           <div>
-            <div className="field-label">Maestría por lección</div>
+            <div className="field-label">{t("Maestría por lección")}</div>
             <div className="field-desc">
-              Porcentaje de palabras con intervalo de 7 días o más para dar una
-              lección por dominada.
+              {t(
+                "Porcentaje de palabras con intervalo de 7 días o más para dar una lección por dominada.",
+              )}
             </div>
           </div>
           <div className="range-control single">
@@ -443,6 +554,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
               max={100}
               step={5}
               value={settings.lesson_mastery_percent}
+              aria-label={t("Maestría por lección")}
               onChange={(event) =>
                 update(
                   "lesson_mastery_percent",
@@ -456,31 +568,33 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
 
         <div className="field">
           <div>
-            <div className="field-label">Reparar racha</div>
+            <div className="field-label">{t("Reparar racha")}</div>
             <div className="field-desc">
-              Si fallas un día, gastar un salvavidas para mantener la racha. Los
-              salvavidas se ganan al cumplir el objetivo semanal.
+              {t(
+                "Si fallas un día, gastar un salvavidas para mantener la racha. Los salvavidas se ganan al cumplir el objetivo semanal.",
+              )}
             </div>
           </div>
           <Toggle
             checked={settings.streak_repair}
             onChange={(value) => update("streak_repair", value)}
-            label="Reparar racha"
+            label={t("Reparar racha")}
           />
         </div>
 
         <div className="field">
           <div>
-            <div className="field-label">Notificaciones de hitos</div>
+            <div className="field-label">{t("Notificaciones de hitos")}</div>
             <div className="field-desc">
-              Avisar al completar el objetivo semanal o desbloquear un logro.
-              Respeta el modo no molestar y la pantalla completa.
+              {t(
+                "Avisar al completar el objetivo semanal o desbloquear un logro. Respeta el modo no molestar y la pantalla completa.",
+              )}
             </div>
           </div>
           <Toggle
             checked={settings.milestone_notifications}
             onChange={(value) => update("milestone_notifications", value)}
-            label="Notificaciones de hitos"
+            label={t("Notificaciones de hitos")}
           />
         </div>
       </article>
@@ -488,69 +602,67 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
       <article className="panel">
         <div className="panel-head">
           <div>
-            <h2>Aparición</h2>
-            <p className="muted">Cómo y dónde aparece el micro-reto.</p>
+            <h2>{t("Aparición")}</h2>
+            <p className="muted">{t("Cómo y dónde aparece el micro-reto.")}</p>
           </div>
         </div>
 
         <div className="field">
           <div>
-            <div className="field-label">Modo</div>
+            <div className="field-label">{t("Modo")}</div>
             <div className="field-desc">
-              Popup: tarjeta flotante. Widget: ventana siempre visible. Toast:
-              notificación nativa de Windows.
+              {t(
+                "Popup: tarjeta flotante. Widget: ventana siempre visible. Toast: notificación nativa de Windows.",
+              )}
             </div>
           </div>
-          <div className="segmented" role="group" aria-label="Modo de aparición">
-            <button
-              type="button"
-              className={settings.mode === "popup" ? "active" : ""}
-              onClick={() => update("mode", "popup")}
-            >
-              Popup
-            </button>
-            <button
-              type="button"
-              className={settings.mode === "widget" ? "active" : ""}
-              onClick={() => update("mode", "widget")}
-            >
-              Widget
-            </button>
-            <button
-              type="button"
-              className={settings.mode === "toast" ? "active" : ""}
-              onClick={() => update("mode", "toast")}
-            >
-              Toast
-            </button>
+          <div
+            className="segmented"
+            role="group"
+            aria-label={t("Modo de aparición")}
+          >
+            {(["popup", "widget", "toast"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={settings.mode === mode ? "active" : ""}
+                aria-pressed={settings.mode === mode}
+                onClick={() => update("mode", mode)}
+              >
+                {mode === "popup" ? "Popup" : mode === "widget" ? "Widget" : "Toast"}
+              </button>
+            ))}
           </div>
         </div>
 
         <div className="field">
           <div>
-            <div className="field-label">Silenciar en pantalla completa</div>
+            <div className="field-label">{t("Silenciar en pantalla completa")}</div>
             <div className="field-desc">
-              No interrumpir juegos, vídeos, presentaciones ni el modo silencio
-              de Windows.
+              {t(
+                "No interrumpir juegos, vídeos, presentaciones ni el modo silencio de Windows.",
+              )}
             </div>
           </div>
           <Toggle
             checked={settings.suppress_fullscreen}
             onChange={(value) => update("suppress_fullscreen", value)}
-            label="Silenciar en pantalla completa"
+            label={t("Silenciar en pantalla completa")}
           />
         </div>
 
         {settings.mode === "toast" && (
           <p className="small muted">
-            El toast es una notificación nativa: toca la notificación o el icono
-            de la bandeja para abrir el reto.
+            {t(
+              "El toast es una notificación nativa: toca la notificación o el icono de la bandeja para abrir el reto.",
+            )}
           </p>
         )}
         {settings.mode === "widget" && (
           <p className="small muted">
-            El widget aparece en la esquina inferior derecha. Puedes arrastrarlo
-            y ocultarlo cuando quieras.
+            {t(
+              "El widget aparece en la esquina inferior derecha. Puedes arrastrarlo y ocultarlo cuando quieras.",
+            )}
           </p>
         )}
       </article>
@@ -558,63 +670,62 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
       <article className="panel">
         <div className="panel-head">
           <div>
-            <h2>Contenido</h2>
-            <p className="muted">Qué se pregunta y cómo.</p>
+            <h2>{t("Contenido")}</h2>
+            <p className="muted">{t("Qué se pregunta y cómo.")}</p>
           </div>
         </div>
 
         <div className="field">
           <div>
-            <div className="field-label">Dirección del ejercicio</div>
+            <div className="field-label">{t("Dirección del ejercicio")}</div>
             <div className="field-desc">
-              JP → ES para reconocer; ES → JP para producir. Alternar mezcla
-              ambas.
+              {t(
+                "JP → ES para reconocer; ES → JP para producir. Alternar mezcla ambas.",
+              )}
             </div>
           </div>
-          <div className="segmented" role="group" aria-label="Dirección">
-            <button
-              type="button"
-              className={settings.direction_mode === "random" ? "active" : ""}
-              onClick={() => update("direction_mode", "random")}
-            >
-              Aleatoria
-            </button>
-            <button
-              type="button"
-              className={settings.direction_mode === "alternate" ? "active" : ""}
-              onClick={() => update("direction_mode", "alternate")}
-            >
-              Alternar
-            </button>
+          <div className="segmented" role="group" aria-label={t("Dirección")}>
+            {(["random", "alternate"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={settings.direction_mode === mode ? "active" : ""}
+                aria-pressed={settings.direction_mode === mode}
+                onClick={() => update("direction_mode", mode)}
+              >
+                {mode === "random" ? t("Aleatoria") : t("Alternar")}
+              </button>
+            ))}
           </div>
         </div>
 
         <div className="field">
           <div>
-            <div className="field-label">Incluir plantillas y gramática</div>
+            <div className="field-label">{t("Incluir plantillas y gramática")}</div>
             <div className="field-desc">
-              Notas con 〜, «+ negative» o «...». Recomendado dejarlas fuera al
-              principio.
+              {t(
+                "Notas con 〜, «+ negative» o «...». Recomendado dejarlas fuera al principio.",
+              )}
             </div>
           </div>
           <Toggle
             checked={settings.include_patterns}
             onChange={(value) => update("include_patterns", value)}
-            label="Incluir plantillas"
+            label={t("Incluir plantillas")}
           />
         </div>
 
         <div className="field">
           <div>
-            <div className="field-label">Audio automático en JP → ES</div>
+            <div className="field-label">{t("Audio automático en JP → ES")}</div>
             <div className="field-desc">
-              En ES → JP el audio suena solo después de responder.
+              {t("En ES → JP el audio suena solo después de responder.")}
             </div>
           </div>
           <Toggle
             checked={settings.audio_autoplay}
             onChange={(value) => update("audio_autoplay", value)}
-            label="Audio automático"
+            label={t("Audio automático")}
           />
         </div>
       </article>
@@ -622,30 +733,30 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
       <article className="panel">
         <div className="panel-head">
           <div>
-            <h2>Sistema</h2>
-            <p className="muted">Integración con Windows.</p>
+            <h2>{t("Sistema")}</h2>
+            <p className="muted">{t("Integración con Windows.")}</p>
           </div>
         </div>
 
         <div className="field">
           <div>
-            <div className="field-label">Arrancar con Windows</div>
+            <div className="field-label">{t("Arrancar con Windows")}</div>
             <div className="field-desc">
-              kotoba se inicia en la bandeja sin abrir ninguna ventana.
+              {t("kotoba se inicia en la bandeja sin abrir ninguna ventana.")}
             </div>
           </div>
           <Toggle
             checked={autostart}
             onChange={(value) => void toggleAutostart(value)}
-            label="Arrancar con Windows"
+            label={t("Arrancar con Windows")}
           />
         </div>
 
         <div className="field">
           <div>
-            <div className="field-label">Registro de la app</div>
+            <div className="field-label">{t("Registro de la app")}</div>
             <div className="field-desc">
-              Abre la carpeta con los logs para diagnosticar problemas.
+              {t("Abre la carpeta con los logs para diagnosticar problemas.")}
             </div>
           </div>
           <button
@@ -654,7 +765,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             onClick={() => void openLogs()}
           >
             <IconFolder size={16} />
-            Abrir carpeta
+            {t("Abrir carpeta")}
           </button>
         </div>
       </article>
@@ -662,10 +773,11 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
       <article className="panel">
         <div className="panel-head">
           <div>
-            <h2>Datos</h2>
+            <h2>{t("Datos")}</h2>
             <p className="muted">
-              Todo es local. Puedes reimportar el mazo sin perder el progreso de
-              las palabras que ya existen.
+              {t(
+                "Todo es local. Puedes reimportar el mazo sin perder el progreso de las palabras que ya existen.",
+              )}
             </p>
           </div>
         </div>
@@ -678,7 +790,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             disabled={busy}
           >
             <IconImport size={16} />
-            Reimportar mazo
+            {t("Reimportar mazo")}
           </button>
           <button
             type="button"
@@ -687,7 +799,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             disabled={busy}
           >
             <IconArchive size={16} />
-            Exportar copia
+            {t("Exportar copia")}
           </button>
           <button
             type="button"
@@ -696,7 +808,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             disabled={busy}
           >
             <IconUpload size={16} />
-            Restaurar copia
+            {t("Restaurar copia")}
           </button>
           <button
             type="button"
@@ -705,7 +817,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             disabled={busy}
           >
             <IconDownload size={16} />
-            Exportar historial
+            {t("Exportar historial")}
           </button>
           <button
             type="button"
@@ -714,7 +826,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             disabled={busy}
           >
             <IconRefresh size={16} />
-            Reiniciar progreso
+            {t("Reiniciar progreso")}
           </button>
           <button
             type="button"
@@ -723,7 +835,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             disabled={busy}
           >
             <IconTrash size={16} />
-            Borrar biblioteca
+            {t("Borrar biblioteca")}
           </button>
         </div>
 
@@ -750,7 +862,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
 
       <div className="settings-actions">
         <span className="muted">
-          {dirty ? "Hay cambios sin guardar." : "Todo guardado."}
+          {dirty ? t("Hay cambios sin guardar.") : t("Todo guardado.")}
         </span>
         <div className="settings-buttons">
           <button
@@ -759,7 +871,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             onClick={() => setSettings(boot.settings)}
             disabled={!dirty || saving}
           >
-            Descartar
+            {t("Descartar")}
           </button>
           <button
             type="button"
@@ -767,7 +879,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             onClick={() => void save()}
             disabled={!dirty || saving}
           >
-            {saving ? "Guardando…" : "Guardar cambios"}
+            {saving ? t("Guardando…") : t("Guardar cambios")}
           </button>
         </div>
       </div>

@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { api, type Bootstrap } from "./api";
+import { applyAppearance } from "./appearance";
+import { useT } from "./i18n";
 import ImportPanel from "./ImportPanel";
 import PracticePanel from "./PracticePanel";
 import StatsPanel from "./StatsPanel";
@@ -12,16 +15,13 @@ import {
 
 type View = "practice" | "stats" | "settings";
 
-const NAV: { id: View; label: string; Icon: typeof IconPractice }[] = [
-  { id: "practice", label: "Practicar", Icon: IconPractice },
-  { id: "stats", label: "Progreso", Icon: IconChart },
-  { id: "settings", label: "Ajustes", Icon: IconSettings },
-];
-
 export default function MainApp() {
   const [boot, setBoot] = useState<Bootstrap | null>(null);
   const [view, setView] = useState<View>("practice");
   const [toast, setToast] = useState<string | null>(null);
+
+  const language = boot?.settings.language ?? "es";
+  const t = useT(language);
 
   const refresh = useCallback(async () => {
     try {
@@ -36,6 +36,15 @@ export default function MainApp() {
   }, [refresh]);
 
   useEffect(() => {
+    const unlisten = listen("settings:changed", () => {
+      void refresh();
+    });
+    return () => {
+      void unlisten.then((fn) => fn());
+    };
+  }, [refresh]);
+
+  useEffect(() => {
     if (view === "stats") {
       void refresh();
     }
@@ -46,6 +55,12 @@ export default function MainApp() {
     const timer = window.setTimeout(() => setToast(null), 4200);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (boot) {
+      applyAppearance(boot.settings.theme, boot.settings.font_scale);
+    }
+  }, [boot?.settings.theme, boot?.settings.font_scale]);
 
   if (!boot) {
     return (
@@ -59,6 +74,7 @@ export default function MainApp() {
   if (boot.item_count === 0) {
     return (
       <ImportPanel
+        language={boot.settings.language}
         onImported={async () => {
           await refresh();
           setView("practice");
@@ -67,23 +83,34 @@ export default function MainApp() {
     );
   }
 
+  const nav: { id: View; label: string; Icon: typeof IconPractice }[] = [
+    { id: "practice", label: t("Practicar"), Icon: IconPractice },
+    { id: "stats", label: t("Progreso"), Icon: IconChart },
+    { id: "settings", label: t("Ajustes"), Icon: IconSettings },
+  ];
+
   return (
     <div className="shell">
+      <a className="skip-link" href="#main-content">
+        {t("Saltar al contenido")}
+      </a>
+
       <aside className="rail">
         <div className="brand">
           <span className="brand-kanji">言葉</span>
           <div className="brand-text">
             <span className="brand-latin">kotoba</span>
-            <span className="brand-sub">repaso pasivo</span>
+            <span className="brand-sub">{t("repaso pasivo")}</span>
           </div>
         </div>
 
-        <nav className="rail-nav" aria-label="Secciones">
-          {NAV.map(({ id, label, Icon }) => (
+        <nav className="rail-nav" aria-label={t("Secciones")}>
+          {nav.map(({ id, label, Icon }) => (
             <button
               key={id}
               type="button"
               className={`nav-item ${view === id ? "active" : ""}`}
+              aria-current={view === id ? "page" : undefined}
               onClick={() => setView(id)}
             >
               <Icon size={18} />
@@ -95,24 +122,29 @@ export default function MainApp() {
         <div className="rail-foot">
           <div className="rail-status">
             <span className={`status-dot ${boot.settings.paused ? "paused" : ""}`} />
-            {boot.settings.paused ? "En pausa" : "Activo"}
+            {boot.settings.paused ? t("En pausa") : t("Activo")}
           </div>
           <div className="rail-meta">
-            {boot.stats.due_now} pendientes · {boot.stats.total_items} palabras
+            {t("{n} pendientes · {m} palabras", {
+              n: boot.stats.due_now,
+              m: boot.stats.total_items,
+            })}
           </div>
           <div className="rail-meta">
-            {boot.settings.interval_min_minutes}–{boot.settings.interval_max_minutes} min
-            entre retos
+            {t("{min}–{max} min entre retos", {
+              min: boot.settings.interval_min_minutes,
+              max: boot.settings.interval_max_minutes,
+            })}
           </div>
         </div>
       </aside>
 
-      <main className="content">
+      <main className="content" id="main-content" tabIndex={-1}>
         {view === "practice" && (
           <PracticePanel settings={boot.settings} onRefresh={refresh} />
         )}
         {view === "stats" && (
-          <StatsPanel onPractice={() => setView("practice")} />
+          <StatsPanel language={language} onPractice={() => setView("practice")} />
         )}
         {view === "settings" && (
           <SettingsPanel
@@ -123,7 +155,11 @@ export default function MainApp() {
         )}
       </main>
 
-      {toast && <div className="toast">{toast}</div>}
+      {toast && (
+        <div className="toast" role="status" aria-live="polite">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

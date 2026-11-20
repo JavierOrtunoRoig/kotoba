@@ -1,14 +1,21 @@
 import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
-import { api, type ImportProgress, type ImportSummary } from "./api";
+import {
+  api,
+  type ImportProgress,
+  type ImportSummary,
+} from "./api";
+import { useT, type Language } from "./i18n";
 import { IconArrow, IconCheck, IconImport, IconRefresh } from "./Icons";
 
 type Props = {
+  language: Language;
   onImported: () => Promise<void> | void;
 };
 
-export default function ImportPanel({ onImported }: Props) {
+export default function ImportPanel({ language, onImported }: Props) {
+  const t = useT(language);
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +36,8 @@ export default function ImportPanel({ onImported }: Props) {
       const selected = await open({
         multiple: false,
         filters: [
-          { name: "Mazo de Anki", extensions: ["apkg", "txt"] },
-          { name: "Todos", extensions: ["*"] },
+          { name: t("Mazo de Anki"), extensions: ["apkg", "txt"] },
+          { name: t("Todos"), extensions: ["*"] },
         ],
       });
       if (!selected || Array.isArray(selected)) return;
@@ -53,17 +60,18 @@ export default function ImportPanel({ onImported }: Props) {
         <div className="import-head">
           <span className="import-seal">言</span>
           <div>
-            <span className="eyebrow">Bienvenido</span>
-            <h1>Trae tu mazo</h1>
+            <span className="eyebrow">{t("Bienvenido")}</span>
+            <h1>{t("Trae tu mazo")}</h1>
           </div>
         </div>
 
         {!summary ? (
           <>
             <p className="sub">
-              kotoba repasa por ti el vocabulario de tu mazo <strong>Genki 1</strong>.
-              Importa el archivo <code>.apkg</code> exportado de Anki y la app
-              extraerá las palabras y el audio.
+              {t(
+                "kotoba repasa por ti el vocabulario de tu mazo {deck}. Importa el archivo {format} exportado de Anki y la app extraerá las palabras y el audio.",
+                { deck: "Genki 1", format: ".apkg" },
+              )}
             </p>
 
             <button
@@ -75,9 +83,9 @@ export default function ImportPanel({ onImported }: Props) {
               {busy ? (
                 <>
                   <span className="spinner" />
-                  <strong>Leyendo el mazo…</strong>
+                  <strong>{t("Leyendo el mazo…")}</strong>
                   <span className="small">
-                    Extrayendo notas y audio. Puede tardar unos segundos.
+                    {t("Extrayendo notas y audio. Puede tardar unos segundos.")}
                   </span>
                   <div className="progress-track">
                     <div
@@ -97,15 +105,15 @@ export default function ImportPanel({ onImported }: Props) {
                   <span className="small">
                     {progress
                       ? `${progress.current} / ${progress.total}`
-                      : "Preparando…"}
+                      : t("Preparando…")}
                   </span>
                 </>
               ) : (
                 <>
                   <IconImport size={30} />
-                  <strong>Elegir archivo .apkg</strong>
+                  <strong>{t("Elegir archivo .apkg")}</strong>
                   <span className="small">
-                    También acepta exports .txt de Anki (sin audio)
+                    {t("También acepta exports .txt de Anki (sin audio)")}
                   </span>
                 </>
               )}
@@ -120,63 +128,72 @@ export default function ImportPanel({ onImported }: Props) {
                   onClick={() => void pick()}
                 >
                   <IconRefresh size={16} />
-                  Reintentar
+                  {t("Reintentar")}
                 </button>
               </div>
             )}
 
             <ul className="import-notes">
               <li>
-                <IconCheck size={14} /> Todo se guarda en tu equipo. Nada sale de aquí.
+                <IconCheck size={14} />{" "}
+                {t("Todo se guarda en tu equipo. Nada sale de aquí.")}
               </li>
               <li>
-                <IconCheck size={14} /> El progreso de Anki no se toca: kotoba usa su
-                propio repaso.
+                <IconCheck size={14} />{" "}
+                {t("El progreso de Anki no se toca: kotoba usa su propio repaso.")}
               </li>
               <li>
-                <IconCheck size={14} /> Puedes reimportar o borrar los datos desde
-                Ajustes.
+                <IconCheck size={14} />{" "}
+                {t("Puedes reimportar o borrar los datos desde Ajustes.")}
               </li>
             </ul>
           </>
         ) : (
           <>
             <p className="sub">
-              Mazo importado: <strong>{summary.deck_name}</strong>. Esto es lo que
-              ha quedado listo para repasar.
+              {t(
+                "Mazo importado: {name}. Esto es lo que ha quedado listo para repasar.",
+                { name: summary.deck_name },
+              )}
             </p>
 
             <div className="summary-grid">
               <div className="summary-item">
                 <span className="summary-value">{summary.items_inserted}</span>
-                <span className="summary-label">palabras</span>
+                <span className="summary-label">{t("palabras")}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-value">
                   {summary.audio_extracted + summary.audio_reused}
                 </span>
-                <span className="summary-label">audios</span>
+                <span className="summary-label">{t("audios")}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-value">{summary.patterns}</span>
-                <span className="summary-label">plantillas</span>
+                <span className="summary-label">{t("plantillas")}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-value">{summary.notes}</span>
-                <span className="summary-label">notas leídas</span>
+                <span className="summary-label">{t("notas leídas")}</span>
               </div>
             </div>
 
             {summary.items_merged > 0 && (
               <p className="small muted">
-                {summary.items_merged} notas duplicadas se han unido a su palabra
-                principal.
+                {t(
+                  "{n} notas duplicadas se han unido a su palabra principal.",
+                  { n: summary.items_merged },
+                )}
               </p>
             )}
 
             {summary.warnings.length > 0 && (
               <details className="warnings">
-                <summary>{summary.warnings.length} avisos durante la importación</summary>
+                <summary>
+                  {t("{n} avisos durante la importación", {
+                    n: summary.warnings.length,
+                  })}
+                </summary>
                 <ul>
                   {summary.warnings.map((warning) => (
                     <li key={warning}>{warning}</li>
@@ -196,14 +213,14 @@ export default function ImportPanel({ onImported }: Props) {
                   setError(null);
                 }}
               >
-                Importar otro
+                {t("Importar otro")}
               </button>
               <button
                 type="button"
                 className="primary"
                 onClick={() => void onImported()}
               >
-                Empezar a repasar
+                {t("Empezar a repasar")}
                 <IconArrow size={16} />
               </button>
             </div>

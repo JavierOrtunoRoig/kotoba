@@ -1,12 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, type Stats } from "./api";
+import { useT, type Language } from "./i18n";
 import { IconArrow, IconFlame, IconSeed, IconTarget } from "./Icons";
 
 type Props = {
+  language: Language;
   onPractice: () => void;
 };
 
-export default function StatsPanel({ onPractice }: Props) {
+const LOCALES: Record<Language, string> = {
+  es: "es-ES",
+  en: "en-GB",
+  ja: "ja-JP",
+};
+
+export default function StatsPanel({ language, onPractice }: Props) {
+  const t = useT(language);
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,8 +37,8 @@ export default function StatsPanel({ onPractice }: Props) {
       <section className="stats">
         <header className="view-head">
           <div>
-            <span className="eyebrow">Progreso</span>
-            <h1>Tu progreso</h1>
+            <span className="eyebrow">{t("Progreso")}</span>
+            <h1>{t("Tu progreso")}</h1>
           </div>
         </header>
         <div className="skeleton-card">
@@ -46,19 +55,35 @@ export default function StatsPanel({ onPractice }: Props) {
   const max = Math.max(1, ...activity.map((day) => day.total));
   const achievements = stats.achievements ?? [];
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
+  const separator = language === "ja" ? "・" : " · ";
+  const streakParts = [
+    stats.streak_days === 1 ? t("día seguido") : t("días seguidos"),
+  ];
+  if (stats.streak_best > 0) {
+    streakParts.push(t("mejor {n}", { n: stats.streak_best }));
+  }
+  if (stats.streak_savers > 0) {
+    streakParts.push(
+      stats.streak_savers === 1
+        ? t("1 salvavidas")
+        : t("{n} salvavidas", { n: stats.streak_savers }),
+    );
+  }
 
   return (
     <section className="stats">
       <header className="view-head">
         <div>
-          <span className="eyebrow">Progreso</span>
-          <h1>Tu progreso</h1>
+          <span className="eyebrow">{t("Progreso")}</span>
+          <h1>{t("Tu progreso")}</h1>
           <p className="sub">
-            Sin colas ni deberes: solo lo que has ido reteniendo sin darte cuenta.
+            {t(
+              "Sin colas ni deberes: solo lo que has ido reteniendo sin darte cuenta.",
+            )}
           </p>
         </div>
         <button type="button" className="ghost" onClick={() => void refresh()}>
-          Actualizar
+          {t("Actualizar")}
         </button>
       </header>
 
@@ -67,46 +92,47 @@ export default function StatsPanel({ onPractice }: Props) {
       <div className="stat-grid">
         <article className="stat">
           <span className="stat-k">
-            <IconTarget size={14} /> Precisión hoy
+            <IconTarget size={14} /> {t("Precisión hoy")}
           </span>
           <span className="stat-v">
             {Math.round(stats.accuracy_today)}
             <small>%</small>
           </span>
           <span className="stat-s">
-            {stats.correct_today} de {stats.reviewed_today}{" "}
-            {stats.reviewed_today === 1 ? "repaso" : "repasos"}
+            {t("{correct} de {total} repasos", {
+              correct: stats.correct_today,
+              total: stats.reviewed_today,
+            })}
           </span>
         </article>
 
         <article className="stat">
           <span className="stat-k">
-            <IconFlame size={14} /> Racha
+            <IconFlame size={14} /> {t("Racha")}
           </span>
           <span className="stat-v">
             {stats.streak_days}
             <small>d</small>
           </span>
           <span className="stat-s">
-            {stats.streak_days === 1 ? "día seguido" : "días seguidos"}
-            {stats.streak_best > 0 && ` · mejor ${stats.streak_best}`}
-            {stats.streak_savers > 0 &&
-              ` · ${stats.streak_savers} salvavidas`}
+            {streakParts.join(separator)}
           </span>
         </article>
 
         <article className="stat">
           <span className="stat-k">
-            <IconSeed size={14} /> Dominadas
+            <IconSeed size={14} /> {t("Dominadas")}
           </span>
           <span className="stat-v">{stats.mastered}</span>
-          <span className="stat-s">con intervalo de 7 días o más</span>
+          <span className="stat-s">{t("con intervalo de 7 días o más")}</span>
         </article>
 
         <article className="stat">
-          <span className="stat-k">Pendientes</span>
+          <span className="stat-k">{t("Pendientes")}</span>
           <span className="stat-v">{stats.due_now}</span>
-          <span className="stat-s">{stats.total_items} palabras en total</span>
+          <span className="stat-s">
+            {t("{n} palabras en total", { n: stats.total_items })}
+          </span>
         </article>
       </div>
 
@@ -116,7 +142,10 @@ export default function StatsPanel({ onPractice }: Props) {
           <div className="level-info">
             <div className="level-title">
               <span>
-                Nivel {stats.level} · {stats.level_title}
+                {t("Nivel {n} · {title}", {
+                  n: stats.level,
+                  title: t(stats.level_title),
+                })}
               </span>
               <span className="level-xp">{stats.xp_total} XP</span>
             </div>
@@ -128,8 +157,10 @@ export default function StatsPanel({ onPractice }: Props) {
             </div>
             <div className="muted small">
               {stats.next_level_xp
-                ? `${Math.max(0, stats.next_level_xp - stats.xp_total)} XP para el siguiente nivel`
-                : "Nivel máximo"}
+                ? t("{n} XP para el siguiente nivel", {
+                    n: Math.max(0, stats.next_level_xp - stats.xp_total),
+                  })
+                : t("Nivel máximo")}
             </div>
           </div>
         </article>
@@ -137,15 +168,17 @@ export default function StatsPanel({ onPractice }: Props) {
         <article className="panel goal-panel">
           <div className="panel-head">
             <div>
-              <h2>Objetivo semanal</h2>
+              <h2>{t("Objetivo semanal")}</h2>
               <p className="muted">
-                {stats.week_reviews} /{" "}
-                {stats.weekly_goal === 0 ? "∞" : stats.weekly_goal} repasos
+                {t("{n} / {m} repasos", {
+                  n: stats.week_reviews,
+                  m: stats.weekly_goal === 0 ? "∞" : stats.weekly_goal,
+                })}
               </p>
             </div>
             {stats.weekly_goal > 0 &&
               stats.week_reviews >= stats.weekly_goal && (
-                <span className="goal-done">Completado</span>
+                <span className="goal-done">{t("Completado")}</span>
               )}
           </div>
           <div className="goal-bar">
@@ -165,15 +198,23 @@ export default function StatsPanel({ onPractice }: Props) {
           </div>
           <span className="muted small">
             {stats.weekly_goal === 0
-              ? "Sin objetivo: repasa a tu ritmo."
+              ? t("Sin objetivo: repasa a tu ritmo.")
               : stats.week_reviews >= stats.weekly_goal
-                ? "Objetivo cumplido. Sigue así."
-                : "Cada repaso cuenta, también los fallos."}
+                ? t("Objetivo cumplido. Sigue así.")
+                : t("Cada repaso cuenta, también los fallos.")}
           </span>
           <span className="muted small">
             {stats.streak_repairs > 0
-              ? `${stats.streak_repairs} ${stats.streak_repairs === 1 ? "día reparado" : "días reparados"} con salvavidas.`
-              : `Cada objetivo completado da un salvavidas (máx. ${stats.streak_savers_max}).`}
+              ? stats.streak_repairs === 1
+                ? t("{n} día reparado con salvavidas.", {
+                    n: stats.streak_repairs,
+                  })
+                : t("{n} días reparados con salvavidas.", {
+                    n: stats.streak_repairs,
+                  })
+              : t("Cada objetivo completado da un salvavidas (máx. {n}).", {
+                  n: stats.streak_savers_max,
+                })}
           </span>
         </article>
       </div>
@@ -181,10 +222,12 @@ export default function StatsPanel({ onPractice }: Props) {
       <article className="panel achievements-panel">
         <div className="panel-head">
           <div>
-            <h2>Logros</h2>
+            <h2>{t("Logros")}</h2>
             <p className="muted">
-              {unlockedCount} de {achievements.length} desbloqueados. Los
-              logros no caducan.
+              {t("{n} de {m} desbloqueados. Los logros no caducan.", {
+                n: unlockedCount,
+                m: achievements.length,
+              })}
             </p>
           </div>
           <span className="achievements-count">
@@ -198,9 +241,11 @@ export default function StatsPanel({ onPractice }: Props) {
               achievement.target > 0
                 ? (achievement.progress / achievement.target) * 100
                 : 0;
+            const title = t(achievement.title);
+            const description = t(achievement.description);
             const date = achievement.unlocked_at
               ? new Date(achievement.unlocked_at * 1000).toLocaleDateString(
-                  "es-ES",
+                  LOCALES[language],
                   { day: "numeric", month: "short" },
                 )
               : null;
@@ -208,19 +253,18 @@ export default function StatsPanel({ onPractice }: Props) {
               <div
                 key={achievement.key}
                 className={`achievement${achievement.unlocked ? " unlocked" : ""}`}
-                title={achievement.description}
+                title={description}
               >
                 <span className="achievement-mark">
                   {achievement.unlocked ? "✓" : "•"}
                 </span>
                 <div className="achievement-body">
-                  <div className="achievement-title">{achievement.title}</div>
-                  <div className="achievement-desc">
-                    {achievement.description}
-                  </div>
+                  <div className="achievement-title">{title}</div>
+                  <div className="achievement-desc">{description}</div>
                   {achievement.unlocked ? (
                     <span className="achievement-meta">
-                      Desbloqueado{date ? ` · ${date}` : ""}
+                      {t("Desbloqueado")}
+                      {date ? ` · ${date}` : ""}
                     </span>
                   ) : (
                     <div className="achievement-progress">
@@ -245,14 +289,13 @@ export default function StatsPanel({ onPractice }: Props) {
       <article className="panel activity-panel">
         <div className="panel-head">
           <div>
-            <h2>Últimos 14 días</h2>
+            <h2>{t("Últimos 14 días")}</h2>
             <p className="muted">
-              Barra clara: repasos · barra oscura: aciertos
+              {t("Barra clara: repasos · barra oscura: aciertos")}
             </p>
           </div>
           <span className="activity-total">
-            {stats.total_reviews}{" "}
-            {stats.total_reviews === 1 ? "repaso" : "repasos"} en total
+            {t("{n} repasos en total", { n: stats.total_reviews })}
           </span>
         </div>
 
@@ -264,15 +307,21 @@ export default function StatsPanel({ onPractice }: Props) {
             const date = new Date(`${day.date}T00:00:00`);
             const label =
               index === activity.length - 1
-                ? "hoy"
+                ? t("hoy")
                 : date
-                    .toLocaleDateString("es-ES", { weekday: "short" })
+                    .toLocaleDateString(LOCALES[language], {
+                      weekday: "narrow",
+                    })
                     .slice(0, 2);
             return (
               <div
                 className="activity-bar"
                 key={day.date}
-                title={`${day.date}: ${day.total} repasos, ${day.correct} aciertos`}
+                title={t("{date}: {total} repasos, {correct} aciertos", {
+                  date: day.date,
+                  total: day.total,
+                  correct: day.correct,
+                })}
               >
                 <div className="bar-track">
                   <div className="bar" style={{ height: `${height}%` }}>
@@ -294,11 +343,12 @@ export default function StatsPanel({ onPractice }: Props) {
         <article className="panel">
           <div className="panel-head">
             <div>
-              <h2>Por lección</h2>
+              <h2>{t("Por lección")}</h2>
               <p className="muted">
-                Progreso y precisión de cada capítulo. Una lección se domina con
-                al menos el {stats.lesson_mastery_percent}% de sus palabras en 7
-                días o más.
+                {t(
+                  "Progreso y precisión de cada capítulo. Una lección se domina con al menos el {n}% de sus palabras en 7 días o más.",
+                  { n: stats.lesson_mastery_percent },
+                )}
               </p>
             </div>
           </div>
@@ -320,13 +370,15 @@ export default function StatsPanel({ onPractice }: Props) {
                   </span>
                   <span
                     className={`lesson-badge${lesson.is_mastered ? " done" : ""}`}
-                    title={`Maestría: ${Math.round(lesson.mastery_percent)}%`}
+                    title={t("Maestría: {n}%", {
+                      n: Math.round(lesson.mastery_percent),
+                    })}
                   >
                     {lesson.is_mastered
-                      ? "Dominada"
+                      ? t("Dominada")
                       : `${Math.round(lesson.mastery_percent)}%`}
                   </span>
-                  <span className="lesson-accuracy" title="Precisión">
+                  <span className="lesson-accuracy" title={t("Precisión")}>
                     {lesson.reviews > 0
                       ? `${Math.round(lesson.accuracy)}%`
                       : "—"}
@@ -340,13 +392,13 @@ export default function StatsPanel({ onPractice }: Props) {
         <article className="panel">
           <div className="panel-head">
             <div>
-              <h2>Palabras difíciles</h2>
-              <p className="muted">Las que más fallos acumulan.</p>
+              <h2>{t("Palabras difíciles")}</h2>
+              <p className="muted">{t("Las que más fallos acumulan.")}</p>
             </div>
           </div>
           {difficult.length === 0 ? (
             <p className="muted small">
-              Aún no hay fallos registrados. Sigue repasando.
+              {t("Aún no hay fallos registrados. Sigue repasando.")}
             </p>
           ) : (
             <ul className="difficult-list">
@@ -356,7 +408,9 @@ export default function StatsPanel({ onPractice }: Props) {
                     {item.japanese}
                   </span>
                   <span className="difficult-count">
-                    {item.failures} {item.failures === 1 ? "fallo" : "fallos"}
+                    {item.failures === 1
+                      ? t("{n} fallo", { n: item.failures })
+                      : t("{n} fallos", { n: item.failures })}
                   </span>
                   <span className="difficult-meaning">{item.meaning}</span>
                 </li>
@@ -368,10 +422,12 @@ export default function StatsPanel({ onPractice }: Props) {
 
       <div className="stats-actions">
         <p className="muted">
-          Un micro-reto de 10 segundos vale más que una sesión que nunca empiezas.
+          {t(
+            "Un micro-reto de 10 segundos vale más que una sesión que nunca empiezas.",
+          )}
         </p>
         <button type="button" className="primary" onClick={onPractice}>
-          Practicar ahora
+          {t("Practicar ahora")}
           <IconArrow size={16} />
         </button>
       </div>

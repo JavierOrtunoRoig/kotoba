@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { translate, type Language } from "./i18n";
 
 export type Direction = "jp_to_es" | "es_to_jp";
 export type DirectionMode = "random" | "alternate";
@@ -22,7 +23,12 @@ export interface Settings {
   milestone_notifications: boolean;
   lesson_mastery_percent: number;
   streak_repair: boolean;
+  theme: Theme;
+  font_scale: number;
+  language: Language;
 }
+
+export type Theme = "auto" | "light" | "dark";
 
 export interface Item {
   id: number;
@@ -191,18 +197,34 @@ export function japaneseDisplay(item: Item): string {
   return kanji && kanji.length > 0 ? kanji : item.reading;
 }
 
-export function directionLabel(direction: Direction): string {
-  return direction === "jp_to_es" ? "日本語 → Español" : "Español → 日本語";
+export function directionLabel(
+  direction: Direction,
+  language: Language = "es",
+): string {
+  return translate(
+    language,
+    direction === "jp_to_es" ? "日本語 → Español" : "Español → 日本語",
+  );
 }
 
-export function directionHint(direction: Direction): string {
-  return direction === "jp_to_es"
-    ? "Escribe el significado en español"
-    : "Escribe la palabra en japonés (kanji, kana o romaji)";
+export function directionHint(
+  direction: Direction,
+  language: Language = "es",
+): string {
+  return translate(
+    language,
+    direction === "jp_to_es"
+      ? "Escribe el significado en español"
+      : "Escribe la palabra en japonés (kanji, kana o romaji)",
+  );
 }
 
-export function formatInterval(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`;
-  if (minutes < 1440) return `${Math.round(minutes / 60)} h`;
-  return `${Math.round(minutes / 1440)} d`;
+export function formatInterval(
+  minutes: number,
+  language: Language = "es",
+): string {
+  if (minutes < 60) return translate(language, "{n} min", { n: minutes });
+  if (minutes < 1440)
+    return translate(language, "{n} h", { n: Math.round(minutes / 60) });
+  return translate(language, "{n} d", { n: Math.round(minutes / 1440) });
 }
