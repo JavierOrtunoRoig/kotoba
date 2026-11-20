@@ -36,6 +36,8 @@ La visión de producto sigue estando en [`../docs/plan.md`](../docs/plan.md).
   escala 90-125 %, navegación por teclado y foco visible.
 - **RF2-09 completada:** nuevas por orden de lección/subapartado, repasos primero (con mezcla
   opcional) y límite diario de nuevas.
+- **RF-04 / RF2-06 completadas:** mapeo manual de columnas y campos por tipo de nota al importar
+  `.txt` y `.apkg`, con inspección y vista previa.
 - **Fase 3 (extras): en curso.** R3-04a/b/c completadas: XP por calidad, niveles con títulos, racha
   flexible con salvavidas, objetivo semanal, 16 logros y maestría por lección.
 - Importación real del mazo `Genki 1.apkg`: **1.076 notas → 1.012 ítems**, **827 audios**,

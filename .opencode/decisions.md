@@ -274,3 +274,18 @@ independientes y el scheduler no interrumpe si no hay nada disponible.
 **Consecuencias:** el usuario avanza L01 → subapartado 1 → subapartado 2 → L02 sin saltos. Los
 repasos mantienen la prioridad y las nuevas no inundan el día. Si se baja el límite a mitad de día,
 puede aparecer un exceso ya introducido; no se elimina ese progreso.
+
+## D-031 — Mapeo manual de campos al importar
+
+**Contexto:** el importador asumía el orden de campos de Genki (o un modo reducido de 3 columnas).
+Eso obligaba a que cualquier mazo tuviera exactamente esos campos y hacía imposible importar mazos
+con nombres/orden distintos sin tocar código.
+**Decisión:** inspeccionar el mazo antes de importar y mostrar un asistente de mapeo. Para `.txt` se
+leen `#separator`, `#tags column` y `#columns`; para `.apkg` se leen los tipos de nota de Anki y sus
+campos (`fields` + `notetypes`), con una muestra de filas por tipo. El mapeo asigna índices a lectura,
+kanji, significado, glosa, audio, UID, etiquetas, lección y subapartado. La detección automática usa
+nombres conocidos y cae a posiciones Genki; el usuario puede corregirla. Anki usa la colación
+`unicase` en nombres de campo, así que se registra al abrir la base temporal.
+**Consecuencias:** se pueden importar mazos con otros campos sin cambiar el código, y también
+reimportar conservando el progreso. Los mapeos viven solo en la importación; no se guardan como
+preferencia. El contenido del mazo sigue siendo responsable de la calidad de los datos mapeados.

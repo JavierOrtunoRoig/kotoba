@@ -44,7 +44,7 @@ progreso y ajustes.
 | Plantillas (`is_pattern`) | 66 |
 | Avisos de importación | 0 |
 | RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 40 OK (+3 ignored: importación, normalización y progreso reales) |
+| Tests unitarios Rust | 42 OK (+4 ignored: importación, normalización, progreso y tipos de nota reales) |
 | Respuestas reales validadas | 2.629 |
 | Copia de seguridad | SQLite + 827 audios |
 | Typecheck / build frontend | OK |
@@ -114,6 +114,12 @@ progreso y ajustes.
   real: `L00 / 01 Saludos` completo y salto a `L00 / 02 Numeros 0 100`.
 - **Límite y prioridad:** `new_per_day = 10` y `new_mix_percent = 0` por defecto; contadores
   separados de repasos vencidos y nuevas; el scheduler no abre retos si no hay nada disponible.
+- **RF-04 / RF2-06 mapeo manual:** inspección previa de `.txt` y `.apkg`, mapeo por columnas o por
+  tipo de nota (lectura, kanji, significado, glosa, audio, UID, etiquetas, lección y subapartado),
+  vista previa de filas y detección automática ajustable.
+- **Verificado con el mazo real:** tipo `Genki Model ES` con campos `kana`, `kanjis`, `tipo`,
+  `español`, `significado`, `sonido`, `id_orden` y `uid`; reimportación correcta manteniendo 1.012
+  ítems. Se registró la colación `unicase` de Anki para leer los nombres de campo.
 
 ## Datos de prueba en el equipo
 

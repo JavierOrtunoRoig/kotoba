@@ -37,12 +37,13 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 **Aceptación verificada:** `Genki 1.apkg` → 1.076 notas, 1.012 ítems, 827 audios, 66 plantillas,
 0 avisos.
 
-## RF-04 — Importación `.txt` (fallback)
+## RF-04 - Importación `.txt` (fallback)
 
-- [x] Parseo de cabeceras `#separator` y `#tags column`.
+- [x] Parseo de cabeceras `#separator`, `#tags column` y `#columns`.
 - [x] Mapeo posicional de Genki (8 columnas) y modo reducido (3 columnas).
 - [x] Sin extracción de audio (el `.txt` solo trae referencias).
-- [~] No hay pantalla de mapeo manual de columnas.
+- [x] Pantalla de mapeo manual de columnas con vista previa de filas y asignación de lectura,
+  kanji, significado, glosa, UID, etiquetas, lección y subapartado.
 
 ## RF-05 — Ejercicio bidireccional
 
@@ -213,10 +214,16 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 - [ ] Historial detallado y exportable.
 - [ ] Rachas y objetivos configurables.
 
-## RF2-06 — Importación más cómoda
+## RF2-06 - Importación más cómoda
 
 - [x] Progreso de importación por eventos (`import:progress` cada 25 notas).
-- [ ] Pantalla de mapeo de campos para mazos no Genki.
+- [x] Inspección previa del `.apkg` por tipo de nota con nombres de campo y filas de ejemplo.
+- [x] Mapeo manual de campos por tipo de nota: lectura, kanji, significado, glosa, audio, UID,
+  etiquetas, lección y subapartado.
+- [x] Mapeo manual de columnas en `.txt` (incluye `#columns` cuando existe).
+- [x] Detección automática de campos por nombre con fallback posicional; el usuario puede ajustar.
+- [x] Registro de la colación `unicase` de Anki para leer `fields.name` y `notetypes.name`.
+- [~] Validación con mazos reales adicionales de varios tipos de nota (soportado por diseño).
 - [x] Limpieza de audios huérfanos al borrar o reimportar.
 - [ ] Importación de mazos distintos a Genki 1.
 

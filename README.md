@@ -40,6 +40,8 @@ Lo que ya funciona:
   japonés, escala 90-125 %, navegación por teclado y foco visible.
 - **Nuevas ordenadas**: avance por lección y subapartado del mazo, límite diario configurable y
   prioridad de los repasos vencidos (con mezcla opcional).
+- **Mapeo manual al importar** `.txt` y `.apkg`: inspección por tipo de nota, vista previa y
+  asignación de lectura, kanji, significado, glosa, audio, UID, etiquetas y lección.
 - **Notificaciones de hitos** opt-in (objetivo semanal y logros), respetando DND y pantalla completa.
 - **Logs a archivo** con acceso desde Ajustes.
 - Pantallas de importación, progreso y ajustes.
