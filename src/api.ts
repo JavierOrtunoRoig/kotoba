@@ -21,6 +21,7 @@ export interface Settings {
   weekly_goal: number;
   milestone_notifications: boolean;
   lesson_mastery_percent: number;
+  streak_repair: boolean;
 }
 
 export interface Item {
@@ -55,6 +56,7 @@ export interface AnswerResult {
   level: number;
   leveled_up: boolean;
   unlocked: Achievement[];
+  saver_earned: boolean;
 }
 
 export interface DayCount {
@@ -108,9 +110,13 @@ export interface Stats {
   difficult: DifficultItem[];
   xp_total: number;
   level: number;
+  level_title: string;
   level_progress: number;
   next_level_xp: number | null;
   streak_best: number;
+  streak_savers: number;
+  streak_savers_max: number;
+  streak_repairs: number;
   week_reviews: number;
   weekly_goal: number;
   lesson_mastery_percent: number;

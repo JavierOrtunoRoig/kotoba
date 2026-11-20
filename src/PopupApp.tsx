@@ -281,6 +281,9 @@ export default function PopupApp({ variant }: Props) {
                       ✦ {result.unlocked.map((a) => a.title).join(" · ")}
                     </p>
                   )}
+                  {result.saver_earned && (
+                    <p className="pf-achievement">+1 salvavidas de racha</p>
+                  )}
                   <div className="popup-actions">
                     <button
                       type="button"

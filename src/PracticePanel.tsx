@@ -308,6 +308,9 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
                     ✦ {achievement.title}
                   </span>
                 ))}
+                {result.saver_earned && (
+                  <span className="saver-chip">+1 salvavidas</span>
+                )}
                 <span className="next-interval">
                   Vuelve en {formatInterval(result.next_interval_minutes)}
                 </span>

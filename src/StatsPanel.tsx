@@ -90,6 +90,8 @@ export default function StatsPanel({ onPractice }: Props) {
           <span className="stat-s">
             {stats.streak_days === 1 ? "día seguido" : "días seguidos"}
             {stats.streak_best > 0 && ` · mejor ${stats.streak_best}`}
+            {stats.streak_savers > 0 &&
+              ` · ${stats.streak_savers} salvavidas`}
           </span>
         </article>
 
@@ -113,7 +115,9 @@ export default function StatsPanel({ onPractice }: Props) {
           <div className="level-badge">{stats.level}</div>
           <div className="level-info">
             <div className="level-title">
-              <span>Nivel {stats.level}</span>
+              <span>
+                Nivel {stats.level} · {stats.level_title}
+              </span>
               <span className="level-xp">{stats.xp_total} XP</span>
             </div>
             <div className="level-bar">
@@ -165,6 +169,11 @@ export default function StatsPanel({ onPractice }: Props) {
               : stats.week_reviews >= stats.weekly_goal
                 ? "Objetivo cumplido. Sigue así."
                 : "Cada repaso cuenta, también los fallos."}
+          </span>
+          <span className="muted small">
+            {stats.streak_repairs > 0
+              ? `${stats.streak_repairs} ${stats.streak_repairs === 1 ? "día reparado" : "días reparados"} con salvavidas.`
+              : `Cada objetivo completado da un salvavidas (máx. ${stats.streak_savers_max}).`}
           </span>
         </article>
       </div>

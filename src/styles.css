@@ -735,6 +735,16 @@ body.popup-window::before {
   white-space: nowrap;
 }
 
+.saver-chip {
+  font-size: 10px;
+  color: var(--gold);
+  border: 1px solid rgba(164, 122, 60, 0.3);
+  background: rgba(164, 122, 60, 0.1);
+  padding: 4px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
 /* ---------- Skeletons y vacíos ---------- */
 
 .skeleton-line {
@@ -1238,6 +1248,10 @@ body.popup-window::before {
   padding: 3px 8px;
   border-radius: 999px;
   white-space: nowrap;
+}
+
+.goal-panel > .muted.small {
+  display: block;
 }
 
 .panel {

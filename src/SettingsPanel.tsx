@@ -456,6 +456,21 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
 
         <div className="field">
           <div>
+            <div className="field-label">Reparar racha</div>
+            <div className="field-desc">
+              Si fallas un día, gastar un salvavidas para mantener la racha. Los
+              salvavidas se ganan al cumplir el objetivo semanal.
+            </div>
+          </div>
+          <Toggle
+            checked={settings.streak_repair}
+            onChange={(value) => update("streak_repair", value)}
+            label="Reparar racha"
+          />
+        </div>
+
+        <div className="field">
+          <div>
             <div className="field-label">Notificaciones de hitos</div>
             <div className="field-desc">
               Avisar al completar el objetivo semanal o desbloquear un logro.
