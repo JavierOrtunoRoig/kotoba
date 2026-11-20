@@ -1,9 +1,10 @@
 use crate::db;
-use crate::tray::TrayState;
+use crate::i18n;
 use crate::AppState;
 use std::sync::atomic::Ordering;
 use tauri::{
-    AppHandle, Emitter, Manager, PhysicalPosition, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
+    AppHandle, Emitter, Manager, LogicalSize, PhysicalPosition, WebviewUrl, WebviewWindow,
+    WebviewWindowBuilder,
 };
 
 const POPUP_WIDTH: f64 = 392.0;
@@ -20,8 +21,25 @@ pub fn show_main(app: &AppHandle) {
     }
 }
 
+/// Escala de interfaz configurada (1.0 = 100 %).
+fn ui_scale(app: &AppHandle) -> f64 {
+    app.try_state::<AppState>()
+        .and_then(|state| {
+            state
+                .db
+                .lock()
+                .ok()
+                .and_then(|conn| db::load_settings(&conn).ok())
+        })
+        .map(|settings| settings.font_scale as f64 / 100.0)
+        .unwrap_or(1.0)
+}
+
 pub fn show_popup(app: &AppHandle) -> tauri::Result<()> {
-    let window = ensure_window(app, "popup", POPUP_WIDTH, POPUP_HEIGHT)?;
+    let scale = ui_scale(app);
+    let (width, height) = (POPUP_WIDTH * scale, POPUP_HEIGHT * scale);
+    let window = ensure_window(app, "popup", width, height)?;
+    let _ = window.set_size(LogicalSize::new(width, height));
     position_bottom_right(&window)?;
 
     if let Some(state) = app.try_state::<AppState>() {
@@ -34,7 +52,10 @@ pub fn show_popup(app: &AppHandle) -> tauri::Result<()> {
 }
 
 pub fn show_widget(app: &AppHandle) -> tauri::Result<()> {
-    let window = ensure_window(app, "widget", WIDGET_WIDTH, WIDGET_HEIGHT)?;
+    let scale = ui_scale(app);
+    let (width, height) = (WIDGET_WIDTH * scale, WIDGET_HEIGHT * scale);
+    let window = ensure_window(app, "widget", width, height)?;
+    let _ = window.set_size(LogicalSize::new(width, height));
     position_bottom_right(&window)?;
 
     if let Some(state) = app.try_state::<AppState>() {
@@ -44,6 +65,25 @@ pub fn show_widget(app: &AppHandle) -> tauri::Result<()> {
     show_without_activation(&window)?;
     let _ = window.emit("challenge:show", ());
     Ok(())
+}
+
+/// Redimensiona las ventanas flotantes cuando cambia la escala.
+pub fn apply_font_scale(app: &AppHandle) {
+    let scale = ui_scale(app);
+    if let Some(window) = app.get_webview_window("popup") {
+        let _ = window.set_size(LogicalSize::new(
+            POPUP_WIDTH * scale,
+            POPUP_HEIGHT * scale,
+        ));
+        let _ = position_bottom_right(&window);
+    }
+    if let Some(window) = app.get_webview_window("widget") {
+        let _ = window.set_size(LogicalSize::new(
+            WIDGET_WIDTH * scale,
+            WIDGET_HEIGHT * scale,
+        ));
+        let _ = position_bottom_right(&window);
+    }
 }
 
 pub fn close_popup(app: &AppHandle) {
@@ -66,7 +106,12 @@ pub fn hide_widget(app: &AppHandle) {
 
 /// Notificación nativa. El click se gestiona en `setup` mediante `on_action`.
 pub fn show_toast(app: &AppHandle) {
-    show_notification(app, "kotoba", "Toca para repasar una palabra");
+    let language = app
+        .try_state::<AppState>()
+        .and_then(|state| state.db.lock().ok().and_then(|conn| db::load_settings(&conn).ok()))
+        .map(|settings| settings.language)
+        .unwrap_or_else(|| "es".to_string());
+    show_notification(app, "kotoba", i18n::toast_body(&language));
 }
 
 pub fn show_notification(app: &AppHandle, title: &str, body: &str) {
@@ -129,11 +174,7 @@ pub fn toggle_pause(app: &AppHandle) -> bool {
     let _ = db::save_settings(&conn, &settings);
     drop(conn);
 
-    if let Some(tray) = app.try_state::<TrayState>() {
-        let _ = tray
-            .pause_item
-            .set_text(if settings.paused { "Reanudar" } else { "Pausar" });
-    }
+    crate::tray::sync_pause(app, settings.paused);
     let _ = app.emit("settings:changed", &settings);
     settings.paused
 }

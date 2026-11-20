@@ -1,4 +1,5 @@
 mod db;
+mod i18n;
 mod import;
 mod media;
 mod models;
@@ -58,17 +59,28 @@ fn update_settings(
     state: State<AppState>,
     settings: Settings,
 ) -> Result<Settings, String> {
-    let (previous_mode, saved) = {
+    let (previous_mode, previous_language, previous_scale, saved) = {
         let conn = state.db.lock().map_err(to_err)?;
         let previous = db::load_settings(&conn).map_err(to_err)?;
         let saved = db::save_settings(&conn, &settings).map_err(to_err)?;
-        (previous.mode, saved)
+        (
+            previous.mode,
+            previous.language,
+            previous.font_scale,
+            saved,
+        )
     };
 
     if previous_mode != saved.mode {
         let handle = app.clone();
         let mode = saved.mode.clone();
         std::thread::spawn(move || shell::apply_mode(&handle, &mode));
+    }
+    if previous_language != saved.language {
+        crate::tray::sync_language(&app, &saved.language);
+    }
+    if previous_scale != saved.font_scale {
+        shell::apply_font_scale(&app);
     }
     let _ = app.emit("settings:changed", &saved);
     Ok(saved)
@@ -217,21 +229,27 @@ fn submit_answer(
         && week_before < settings.weekly_goal
         && week_after >= settings.weekly_goal
     {
-        let mut body = format!("{week_after} repasos esta semana. ¡Bien hecho!");
-        if saver_earned {
-            body.push_str(" Has ganado un salvavidas de racha.");
-        }
-        shell::show_notification(&app, "Objetivo semanal completado", &body);
+        let body = i18n::weekly_body(&settings.language, week_after, saver_earned);
+        shell::show_notification(
+            &app,
+            i18n::weekly_title(&settings.language),
+            &body,
+        );
         log::info!("objetivo semanal completado: {week_after} repasos");
     }
 
     if allow_notifications && !unlocked.is_empty() {
         let body = if unlocked.len() == 1 {
-            format!("Has desbloqueado «{}»", unlocked[0].title)
+            let title = i18n::achievement_name(&settings.language, &unlocked[0].key);
+            i18n::achievement_body_one(&settings.language, &title)
         } else {
-            format!("Has desbloqueado {} logros", unlocked.len())
+            i18n::achievement_body_many(&settings.language, unlocked.len())
         };
-        shell::show_notification(&app, "Logro desbloqueado", &body);
+        shell::show_notification(
+            &app,
+            i18n::achievement_title(&settings.language),
+            &body,
+        );
         let keys: Vec<&str> = unlocked.iter().map(|a| a.key.as_str()).collect();
         log::info!("logros desbloqueados: {}", keys.join(", "));
     }

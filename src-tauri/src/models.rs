@@ -30,6 +30,12 @@ pub struct Settings {
     pub lesson_mastery_percent: i64,
     /// Reparar automáticamente un día perdido si hay un salvavidas disponible.
     pub streak_repair: bool,
+    /// Tema visual: `auto`, `light` o `dark`.
+    pub theme: String,
+    /// Escala de la interfaz en porcentaje (90-125).
+    pub font_scale: i64,
+    /// Idioma de la interfaz: `es`, `en` o `ja`.
+    pub language: String,
 }
 
 impl Default for Settings {
@@ -52,6 +58,9 @@ impl Default for Settings {
             milestone_notifications: false,
             lesson_mastery_percent: 90,
             streak_repair: true,
+            theme: "auto".to_string(),
+            font_scale: 100,
+            language: "es".to_string(),
         }
     }
 }
@@ -65,6 +74,13 @@ impl Settings {
         self.max_per_day = self.max_per_day.clamp(0, 500);
         self.weekly_goal = self.weekly_goal.clamp(0, 500);
         self.lesson_mastery_percent = self.lesson_mastery_percent.clamp(50, 100);
+        self.font_scale = self.font_scale.clamp(90, 125);
+        if !matches!(self.theme.as_str(), "auto" | "light" | "dark") {
+            self.theme = "auto".to_string();
+        }
+        if !matches!(self.language.as_str(), "es" | "en" | "ja") {
+            self.language = "es".to_string();
+        }
         if !matches!(self.direction_mode.as_str(), "random" | "alternate") {
             self.direction_mode = "random".to_string();
         }
@@ -331,5 +347,26 @@ mod tests {
         }
         .sanitize();
         assert_eq!(low.lesson_mastery_percent, 50);
+    }
+
+    #[test]
+    fn sanitizes_appearance_and_language() {
+        let settings = Settings {
+            theme: "neon".to_string(),
+            font_scale: 400,
+            language: "fr".to_string(),
+            ..Default::default()
+        }
+        .sanitize();
+        assert_eq!(settings.theme, "auto");
+        assert_eq!(settings.font_scale, 125);
+        assert_eq!(settings.language, "es");
+
+        let settings = Settings {
+            font_scale: 10,
+            ..Default::default()
+        }
+        .sanitize();
+        assert_eq!(settings.font_scale, 90);
     }
 }
