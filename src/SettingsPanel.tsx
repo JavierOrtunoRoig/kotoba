@@ -6,9 +6,17 @@ import {
   enable as enableAutostart,
   isEnabled as isAutostartEnabled,
 } from "@tauri-apps/plugin-autostart";
-import { api, type Bootstrap, type ImportProgress, type Settings } from "./api";
+import {
+  api,
+  type Bootstrap,
+  type ImportInspection,
+  type ImportMapping,
+  type ImportProgress,
+  type Settings,
+} from "./api";
 import { applyAppearance } from "./appearance";
 import { LANGUAGES, useT } from "./i18n";
+import MappingDialog from "./MappingDialog";
 import {
   IconArchive,
   IconDownload,
@@ -52,6 +60,8 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
   const [busy, setBusy] = useState(false);
   const [autostart, setAutostart] = useState(false);
   const [progress, setProgress] = useState<ImportProgress | null>(null);
+  const [inspection, setInspection] = useState<ImportInspection | null>(null);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
   const t = useT(settings.language);
 
   useEffect(() => {
@@ -146,13 +156,30 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
     setBusy(true);
     setProgress(null);
     try {
-      const summary = await api.importDeck(selected);
+      const info = await api.inspectImport(selected);
+      setInspection(info);
+      setPendingPath(selected);
+    } catch (caught) {
+      onToast(String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runMappedImport(mapping: ImportMapping) {
+    if (!pendingPath) return;
+    setBusy(true);
+    setProgress(null);
+    try {
+      const summary = await api.importDeck(pendingPath, mapping);
       onToast(
         t("Importadas {words} palabras y {audios} audios", {
           words: summary.items_inserted,
           audios: summary.audio_extracted + summary.audio_reused,
         }),
       );
+      setInspection(null);
+      setPendingPath(null);
       await onChanged();
     } catch (caught) {
       onToast(String(caught));
@@ -936,6 +963,19 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
           </button>
         </div>
       </div>
+
+      {inspection && (
+        <MappingDialog
+          inspection={inspection}
+          language={settings.language}
+          busy={busy}
+          onCancel={() => {
+            setInspection(null);
+            setPendingPath(null);
+          }}
+          onImport={runMappedImport}
+        />
+      )}
     </section>
   );
 }

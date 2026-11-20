@@ -159,13 +159,57 @@ export interface ImportProgress {
   total: number;
 }
 
+export interface FieldMapping {
+  reading: number | null;
+  kanji: number | null;
+  meaning: number | null;
+  gloss: number | null;
+  audio: number | null;
+  uid: number | null;
+  tags: number | null;
+  lesson: number | null;
+  category: number | null;
+}
+
+export interface NoteTypeMapping {
+  mid: number;
+  mapping: FieldMapping;
+}
+
+export interface ImportMapping {
+  txt: FieldMapping | null;
+  note_types: NoteTypeMapping[];
+}
+
+export interface NoteTypeInfo {
+  mid: number;
+  name: string;
+  fields: string[];
+  count: number;
+  sample: string[][];
+  suggested: FieldMapping;
+}
+
+export interface ImportInspection {
+  kind: "txt" | "apkg";
+  deck_name: string;
+  total_notes: number;
+  columns: string[];
+  sample: string[][];
+  suggested: FieldMapping | null;
+  note_types: NoteTypeInfo[];
+}
+
 export const api = {
   bootstrap: () => invoke<Bootstrap>("bootstrap"),
   getSettings: () => invoke<Settings>("get_settings"),
   updateSettings: (settings: Settings) =>
     invoke<Settings>("update_settings", { settings }),
   getStats: () => invoke<Stats>("get_stats"),
-  importDeck: (path: string) => invoke<ImportSummary>("import_deck", { path }),
+  importDeck: (path: string, mapping?: ImportMapping | null) =>
+    invoke<ImportSummary>("import_deck", { path, mapping: mapping ?? null }),
+  inspectImport: (path: string) =>
+    invoke<ImportInspection>("inspect_import", { path }),
   nextChallenge: (excludeId?: number) =>
     invoke<Challenge | null>("next_challenge", {
       excludeId: excludeId ?? null,

@@ -3,10 +3,13 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
 import {
   api,
+  type ImportInspection,
+  type ImportMapping,
   type ImportProgress,
   type ImportSummary,
 } from "./api";
 import { useT, type Language } from "./i18n";
+import MappingDialog from "./MappingDialog";
 import { IconArrow, IconCheck, IconImport, IconRefresh } from "./Icons";
 
 type Props = {
@@ -20,6 +23,8 @@ export default function ImportPanel({ language, onImported }: Props) {
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ImportProgress | null>(null);
+  const [inspection, setInspection] = useState<ImportInspection | null>(null);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
 
   useEffect(() => {
     const unlisten = listen<ImportProgress>("import:progress", (event) => {
@@ -44,8 +49,26 @@ export default function ImportPanel({ language, onImported }: Props) {
 
       setBusy(true);
       setProgress(null);
-      const result = await api.importDeck(selected);
+      const info = await api.inspectImport(selected);
+      setInspection(info);
+      setPendingPath(selected);
+    } catch (caught) {
+      setError(String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runImport(mapping: ImportMapping) {
+    if (!pendingPath) return;
+    setBusy(true);
+    setProgress(null);
+    setError(null);
+    try {
+      const result = await api.importDeck(pendingPath, mapping);
       setSummary(result);
+      setInspection(null);
+      setPendingPath(null);
     } catch (caught) {
       setError(String(caught));
     } finally {
@@ -227,6 +250,20 @@ export default function ImportPanel({ language, onImported }: Props) {
           </>
         )}
       </section>
+
+      {inspection && (
+        <MappingDialog
+          inspection={inspection}
+          language={language}
+          busy={busy}
+          error={error}
+          onCancel={() => {
+            setInspection(null);
+            setPendingPath(null);
+          }}
+          onImport={runImport}
+        />
+      )}
     </div>
   );
 }

@@ -113,6 +113,26 @@ const en: Dict = {
   "Empezar a repasar": "Start reviewing",
   "Mazo de Anki": "Anki deck",
   "Todos": "All",
+  "Mapear campos": "Map fields",
+  "Asigna cada dato de kotoba a una columna del mazo. Lectura y significado son obligatorios.":
+    "Map each kotoba field to a deck column. Reading and meaning are required.",
+  Lectura: "Reading",
+  "Glosa de kanji": "Kanji gloss",
+  "Audio": "Audio",
+  "Etiquetas": "Tags",
+  "Lección": "Lesson",
+  "Subapartado": "Subsection",
+  "Sin asignar": "Not assigned",
+  "Importar con este mapeo": "Import with this mapping",
+  "Importando…": "Importing…",
+  Cancelar: "Cancel",
+  "Filas de ejemplo": "Sample rows",
+  "Tipo de nota": "Note type",
+  "notas": "notes",
+  "columnas": "columns",
+  "Selecciona lectura y significado para continuar.":
+    "Select reading and meaning to continue.",
+  "Listo para importar.": "Ready to import.",
 
   // Progreso
   "Tu progreso": "Your progress",
@@ -450,6 +470,26 @@ const ja: Dict = {
   "Empezar a repasar": "復習を始める",
   "Mazo de Anki": "Anki デッキ",
   Todos: "すべて",
+  "Mapear campos": "フィールドの対応",
+  "Asigna cada dato de kotoba a una columna del mazo. Lectura y significado son obligatorios.":
+    "kotoba の各項目をデッキの列に対応させます。読みと意味は必須です。",
+  Lectura: "読み",
+  "Glosa de kanji": "漢字の意味",
+  Audio: "音声",
+  Etiquetas: "タグ",
+  Lección: "レッスン",
+  Subapartado: "サブセクション",
+  "Sin asignar": "未割り当て",
+  "Importar con este mapeo": "この対応でインポート",
+  "Importando…": "インポート中…",
+  Cancelar: "キャンセル",
+  "Filas de ejemplo": "サンプル行",
+  "Tipo de nota": "ノートタイプ",
+  notas: "ノート",
+  columnas: "列",
+  "Selecciona lectura y significado para continuar.":
+    "続行するには読みと意味を選択してください。",
+  "Listo para importar.": "インポートの準備ができました。",
 
   "Tu progreso": "あなたの進捗",
   "Sin colas ni deberes: solo lo que has ido reteniendo sin darte cuenta.":
