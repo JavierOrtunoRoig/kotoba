@@ -1,6 +1,12 @@
 # Estado del proyecto
 
-Última verificación: **2026-11-18**.
+Última verificación: **2026-11-20**.
+
+**Repositorio público:** <https://github.com/JavierOrtunoRoig/kotoba> (código bajo MIT).
+
+- README orientado a release pública, con capturas, privacidad, roadmap y resumen en inglés.
+- Configuración de agentes versionada (`AGENTS.md`, `opencode.jsonc`, `.mcp.json`,
+  `skills-lock.json`); el índice local `.codegraph/` queda ignorado.
 
 ## Fase actual
 
