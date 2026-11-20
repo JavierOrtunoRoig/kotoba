@@ -38,6 +38,8 @@ Lo que ya funciona:
   semanal, 16 logros y maestría por lección.
 - **Accesibilidad y apariencia**: tema claro/oscuro/automático, interfaz en español, inglés o
   japonés, escala 90-125 %, navegación por teclado y foco visible.
+- **Nuevas ordenadas**: avance por lección y subapartado del mazo, límite diario configurable y
+  prioridad de los repasos vencidos (con mezcla opcional).
 - **Notificaciones de hitos** opt-in (objetivo semanal y logros), respetando DND y pantalla completa.
 - **Logs a archivo** con acceso desde Ajustes.
 - Pantallas de importación, progreso y ajustes.

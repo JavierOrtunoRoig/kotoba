@@ -44,7 +44,7 @@ progreso y ajustes.
 | Plantillas (`is_pattern`) | 66 |
 | Avisos de importación | 0 |
 | RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 36 OK (+3 ignored: importación, normalización y progreso reales) |
+| Tests unitarios Rust | 40 OK (+3 ignored: importación, normalización y progreso reales) |
 | Respuestas reales validadas | 2.629 |
 | Copia de seguridad | SQLite + 827 audios |
 | Typecheck / build frontend | OK |
@@ -110,14 +110,18 @@ progreso y ajustes.
   para cerrar el popup; foco visible y `prefers-reduced-motion` respetado.
 - **Verificado en la app:** tema claro/oscuro en vivo, textos en inglés y japonés, escala 110 % en
   Progreso y popup, y barra de racha con formato japonés correcto.
+- **RF2-09 nuevas ordenadas:** las nuevas siguen `lesson → category → id`; verificado con el mazo
+  real: `L00 / 01 Saludos` completo y salto a `L00 / 02 Numeros 0 100`.
+- **Límite y prioridad:** `new_per_day = 10` y `new_mix_percent = 0` por defecto; contadores
+  separados de repasos vencidos y nuevas; el scheduler no abre retos si no hay nada disponible.
 
 ## Datos de prueba en el equipo
 
-La app tiene importado el mazo en `%APPDATA%\com.kotoba.app` y **26 repasos de prueba**, **57 XP**,
-nivel 1 «Semilla», racha/mejor 1, **3 logros desbloqueados** (`first_step`, `reviews_25`,
-`weekly_goal_1`), **1 salvavidas**, objetivo semanal 30, maestría por lección 90 % y notificaciones
-de hito desactivadas. El modo se dejó en `popup`, el DND en 22:00–08:00 y la apariencia en
-`auto`/español/100 %.
+La app tiene importado el mazo en `%APPDATA%\com.kotoba.app` y **3 repasos de prueba**, **9 XP**,
+nivel 1 «Semilla», racha/mejor 1, **1 logro** (`first_step`), **946 nuevas disponibles**,
+**3 nuevas hoy de 10**, 0 repasos vencidos y 0 salvavidas. Objetivo semanal 30, maestría por
+lección 90 % y notificaciones de hito desactivadas. El modo se dejó en `popup`, el DND en
+22:00–08:00 y la apariencia en `auto`/español/100 %.
 
 Para dejarlo limpio:
 

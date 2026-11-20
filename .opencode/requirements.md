@@ -230,7 +230,7 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 - [x] **Tema oscuro** con opción automática, clara y oscura; `auto` sigue el tema de Windows.
 - [x] Respeto a `prefers-reduced-motion` y etiquetas accesibles en controles e iconos.
 
-## RF2-08 — Robustez
+## RF2-08 - Robustez
 
 - [x] Migraciones versionadas (`PRAGMA user_version` + `ensure_column`).
 - [x] Copia de seguridad a carpeta (SQLite + `media/`).
@@ -238,6 +238,20 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 - [x] Logging a archivo (`%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`).
 - [x] Manejo de errores con reintento (práctica e importación).
 - [x] Exportar historial de repasos (CSV).
+
+## RF2-09 - Orden y límite de palabras nuevas
+
+- [x] Una palabra es nueva si no tiene `srs_state`; no hay flag aparte.
+- [x] Las nuevas siguen el orden del mazo: lección, subapartado y orden de importación
+  (`ORDER BY lesson, category, id`).
+- [x] Al importar `.apkg` se leen las notas en orden estable (`ORDER BY notes.id`).
+- [x] Repasos vencidos antes que nuevas por defecto (`new_mix_percent = 0`).
+- [x] Mezcla configurable 0-100 %: porcentaje de nuevas cuando también hay repasos pendientes.
+- [x] Límite diario de nuevas (`new_per_day`, default 10; 0 = ninguna) contado por la primera
+  respuesta del día.
+- [x] Contadores separados: repasos vencidos, nuevas disponibles y nuevas introducidas hoy.
+- [x] El scheduler no abre retos si no hay repasos vencidos ni nuevas dentro del límite.
+- [x] Tests de orden por lección/subapartado, prioridad de repasos, mezcla y límite diario.
 
 ---
 

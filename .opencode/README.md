@@ -34,6 +34,8 @@ La visión de producto sigue estando en [`../docs/plan.md`](../docs/plan.md).
   propio, reintento de errores, instaladores MSI/NSIS y limpieza de audios huérfanos.
 - **RF2-07 completada:** tema oscuro automático/claro/oscuro, interfaz en español/inglés/japonés,
   escala 90-125 %, navegación por teclado y foco visible.
+- **RF2-09 completada:** nuevas por orden de lección/subapartado, repasos primero (con mezcla
+  opcional) y límite diario de nuevas.
 - **Fase 3 (extras): en curso.** R3-04a/b/c completadas: XP por calidad, niveles con títulos, racha
   flexible con salvavidas, objetivo semanal, 16 logros y maestría por lección.
 - Importación real del mazo `Genki 1.apkg`: **1.076 notas → 1.012 ítems**, **827 audios**,

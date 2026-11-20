@@ -259,3 +259,18 @@ elementos nativos, `Enter`/`Esc`, `aria-current`, foco visible y un enlace de sa
 **Consecuencias:** las preferencias son locales y sin dependencias externas. El tema oscuro no
 introduce animaciones nuevas y respeta `prefers-reduced-motion`. Los textos de logros se traducen
 por título en el frontend y por clave en las notificaciones del backend.
+
+## D-030 — Nuevas por orden de mazo y límite diario
+
+**Contexto:** al importar un mazo grande, mezclar todas las palabras nuevas al azar rompe la
+progresión didáctica del mazo y adelanta vocabulario de lecciones avanzadas. Además, las nuevas
+podían competir con repasos vencidos y retrasar la retención.
+**Decisión:** una palabra sin `srs_state` es nueva. Las nuevas se eligen por
+`lesson, category, id`, respetando lecciones y subapartados del mazo. Por defecto los repasos
+vencidos tienen prioridad; `new_mix_percent` permite reservar un porcentaje para nuevas cuando
+también hay repasos. `new_per_day` limita cuántas nuevas se introducen al día (default 10, 0 =
+ninguna), contando la primera respuesta de cada palabra. Los contadores de vencidas y nuevas son
+independientes y el scheduler no interrumpe si no hay nada disponible.
+**Consecuencias:** el usuario avanza L01 → subapartado 1 → subapartado 2 → L02 sin saltos. Los
+repasos mantienen la prioridad y las nuevas no inundan el día. Si se baja el límite a mitad de día,
+puede aparecer un exceso ya introducido; no se elimina ese progreso.
