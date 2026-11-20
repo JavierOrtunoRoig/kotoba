@@ -24,8 +24,10 @@ pub struct Settings {
     pub launch_at_startup: bool,
     /// Repasos objetivo por semana (0 = sin objetivo).
     pub weekly_goal: i64,
-    /// Notificar hitos como completar el objetivo semanal.
+    /// Notificar hitos como completar el objetivo semanal o desbloquear logros.
     pub milestone_notifications: bool,
+    /// Porcentaje de palabras dominadas para completar una lección (50-100).
+    pub lesson_mastery_percent: i64,
 }
 
 impl Default for Settings {
@@ -46,6 +48,7 @@ impl Default for Settings {
             launch_at_startup: false,
             weekly_goal: 30,
             milestone_notifications: false,
+            lesson_mastery_percent: 90,
         }
     }
 }
@@ -58,6 +61,7 @@ impl Settings {
             .clamp(self.interval_min_minutes, 480);
         self.max_per_day = self.max_per_day.clamp(0, 500);
         self.weekly_goal = self.weekly_goal.clamp(0, 500);
+        self.lesson_mastery_percent = self.lesson_mastery_percent.clamp(50, 100);
         if !matches!(self.direction_mode.as_str(), "random" | "alternate") {
             self.direction_mode = "random".to_string();
         }
@@ -137,6 +141,8 @@ pub struct AnswerResult {
     pub level: i64,
     /// Si este repaso ha subido de nivel.
     pub leveled_up: bool,
+    /// Logros desbloqueados con este repaso.
+    pub unlocked: Vec<Achievement>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -155,6 +161,23 @@ pub struct LessonStat {
     pub reviews: i64,
     pub correct: i64,
     pub accuracy: f64,
+    /// Porcentaje de palabras dominadas sobre el total de la lección.
+    pub mastery_percent: f64,
+    /// Si la lección alcanza el umbral de maestría configurado.
+    pub is_mastered: bool,
+}
+
+/// Logro o insignia. `progress` se recorta en `target`.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Achievement {
+    pub key: String,
+    pub title: String,
+    pub description: String,
+    pub unlocked: bool,
+    /// Marca temporal de desbloqueo (segundos Unix).
+    pub unlocked_at: Option<i64>,
+    pub progress: i64,
+    pub target: i64,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -194,6 +217,10 @@ pub struct Stats {
     pub week_reviews: i64,
     /// Objetivo semanal configurado (0 = sin objetivo).
     pub weekly_goal: i64,
+    /// Umbral de maestría por lección (50-100).
+    pub lesson_mastery_percent: i64,
+    /// Catálogo de logros con su progreso actual.
+    pub achievements: Vec<Achievement>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -274,5 +301,22 @@ mod tests {
         }
         .sanitize();
         assert_eq!(low.weekly_goal, 0);
+    }
+
+    #[test]
+    fn clamps_lesson_mastery_percent() {
+        let high = Settings {
+            lesson_mastery_percent: 200,
+            ..Default::default()
+        }
+        .sanitize();
+        assert_eq!(high.lesson_mastery_percent, 100);
+
+        let low = Settings {
+            lesson_mastery_percent: 10,
+            ..Default::default()
+        }
+        .sanitize();
+        assert_eq!(low.lesson_mastery_percent, 50);
     }
 }

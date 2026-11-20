@@ -1,4 +1,4 @@
-use crate::models::{Item, Settings, Stats};
+use crate::models::{Achievement, Item, Settings, Stats};
 use anyhow::Result;
 use chrono::{Local, NaiveDate, TimeZone};
 use rusqlite::{params, Connection, OptionalExtension};
@@ -89,6 +89,141 @@ pub struct ReviewOutcome {
     pub leveled_up: bool,
 }
 
+/// Métrica que alimenta cada logro.
+#[derive(Clone, Copy)]
+enum AchievementMetric {
+    Reviews,
+    Mastered,
+    Streak,
+    LessonsMastered,
+    Level,
+    WeeklyGoals,
+}
+
+struct AchievementDef {
+    key: &'static str,
+    title: &'static str,
+    description: &'static str,
+    metric: AchievementMetric,
+    target: i64,
+}
+
+/// Catálogo de logros. El orden es el orden de presentación.
+const ACHIEVEMENT_CATALOG: [AchievementDef; 16] = [
+    AchievementDef {
+        key: "first_step",
+        title: "Primer paso",
+        description: "Completa tu primer repaso.",
+        metric: AchievementMetric::Reviews,
+        target: 1,
+    },
+    AchievementDef {
+        key: "reviews_25",
+        title: "Calentando",
+        description: "Completa 25 repasos.",
+        metric: AchievementMetric::Reviews,
+        target: 25,
+    },
+    AchievementDef {
+        key: "reviews_100",
+        title: "Cien repasos",
+        description: "Completa 100 repasos.",
+        metric: AchievementMetric::Reviews,
+        target: 100,
+    },
+    AchievementDef {
+        key: "reviews_250",
+        title: "Constancia",
+        description: "Completa 250 repasos.",
+        metric: AchievementMetric::Reviews,
+        target: 250,
+    },
+    AchievementDef {
+        key: "reviews_500",
+        title: "Medio millar",
+        description: "Completa 500 repasos.",
+        metric: AchievementMetric::Reviews,
+        target: 500,
+    },
+    AchievementDef {
+        key: "mastered_1",
+        title: "Primera semilla",
+        description: "Domina una palabra con un intervalo de 7 días o más.",
+        metric: AchievementMetric::Mastered,
+        target: 1,
+    },
+    AchievementDef {
+        key: "mastered_10",
+        title: "Diez semillas",
+        description: "Domina 10 palabras.",
+        metric: AchievementMetric::Mastered,
+        target: 10,
+    },
+    AchievementDef {
+        key: "mastered_25",
+        title: "Veinticinco semillas",
+        description: "Domina 25 palabras.",
+        metric: AchievementMetric::Mastered,
+        target: 25,
+    },
+    AchievementDef {
+        key: "mastered_50",
+        title: "Cincuenta semillas",
+        description: "Domina 50 palabras.",
+        metric: AchievementMetric::Mastered,
+        target: 50,
+    },
+    AchievementDef {
+        key: "streak_3",
+        title: "Tres días",
+        description: "Repasa 3 días seguidos.",
+        metric: AchievementMetric::Streak,
+        target: 3,
+    },
+    AchievementDef {
+        key: "streak_7",
+        title: "Una semana",
+        description: "Repasa 7 días seguidos.",
+        metric: AchievementMetric::Streak,
+        target: 7,
+    },
+    AchievementDef {
+        key: "streak_30",
+        title: "Un mes",
+        description: "Repasa 30 días seguidos.",
+        metric: AchievementMetric::Streak,
+        target: 30,
+    },
+    AchievementDef {
+        key: "lesson_1",
+        title: "Lección dominada",
+        description: "Alcanza el umbral de maestría en una lección.",
+        metric: AchievementMetric::LessonsMastered,
+        target: 1,
+    },
+    AchievementDef {
+        key: "lesson_5",
+        title: "Cinco lecciones",
+        description: "Alcanza el umbral de maestría en cinco lecciones.",
+        metric: AchievementMetric::LessonsMastered,
+        target: 5,
+    },
+    AchievementDef {
+        key: "level_5",
+        title: "Nivel 5",
+        description: "Alcanza el nivel 5.",
+        metric: AchievementMetric::Level,
+        target: 5,
+    },
+    AchievementDef {
+        key: "weekly_goal_1",
+        title: "Objetivo cumplido",
+        description: "Completa un objetivo semanal.",
+        metric: AchievementMetric::WeeklyGoals,
+        target: 1,
+    },
+];
+
 pub fn open(path: &Path) -> Result<Connection> {
     let mut conn = Connection::open(path)?;
     conn.pragma_update(None, "journal_mode", "WAL")?;
@@ -152,14 +287,20 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
         );
 
         CREATE TABLE IF NOT EXISTS profile (
-            id          INTEGER PRIMARY KEY CHECK (id = 1),
-            xp_total    INTEGER NOT NULL DEFAULT 0,
-            level       INTEGER NOT NULL DEFAULT 1,
-            streak_best INTEGER NOT NULL DEFAULT 0
+            id                INTEGER PRIMARY KEY CHECK (id = 1),
+            xp_total          INTEGER NOT NULL DEFAULT 0,
+            level             INTEGER NOT NULL DEFAULT 1,
+            streak_best       INTEGER NOT NULL DEFAULT 0,
+            weekly_goals_done INTEGER NOT NULL DEFAULT 0
         );
 
         INSERT OR IGNORE INTO profile (id, xp_total, level, streak_best)
         VALUES (1, 0, 1, 0);
+
+        CREATE TABLE IF NOT EXISTS achievements (
+            key         TEXT PRIMARY KEY,
+            unlocked_at INTEGER NOT NULL
+        );
 
         CREATE INDEX IF NOT EXISTS idx_srs_due ON srs_state(due_at);
         CREATE INDEX IF NOT EXISTS idx_review_answered ON review_log(answered_at);
@@ -180,6 +321,15 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
             [current],
         )?;
         conn.pragma_update(None, "user_version", 2)?;
+    }
+    if version < 3 {
+        ensure_column(
+            conn,
+            "profile",
+            "weekly_goals_done",
+            "INTEGER NOT NULL DEFAULT 0",
+        )?;
+        conn.pragma_update(None, "user_version", 3)?;
     }
 
     Ok(())
@@ -243,6 +393,89 @@ pub fn profile(conn: &Connection) -> Result<(i64, i64, i64)> {
         [],
         |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
     )?)
+}
+
+pub fn weekly_goals_done(conn: &Connection) -> Result<i64> {
+    Ok(conn.query_row(
+        "SELECT weekly_goals_done FROM profile WHERE id = 1",
+        [],
+        |row| row.get(0),
+    )?)
+}
+
+/// Suma un objetivo semanal completado. Se llama al cruzar el umbral.
+pub fn bump_weekly_goals_done(conn: &Connection) -> Result<()> {
+    conn.execute(
+        "UPDATE profile SET weekly_goals_done = weekly_goals_done + 1 WHERE id = 1",
+        [],
+    )?;
+    Ok(())
+}
+
+/// Catálogo completo con el progreso actual y si ya está desbloqueado.
+pub fn achievements(conn: &Connection, mastery_percent: i64) -> Result<Vec<Achievement>> {
+    let (xp_total, _stored_level, stored_best) = profile(conn).unwrap_or((0, 1, 0));
+    let level = level_for_xp(xp_total);
+    let total_reviews: i64 =
+        conn.query_row("SELECT COUNT(*) FROM review_log", [], |row| row.get(0))?;
+    let mastered: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM srs_state WHERE interval_minutes >= 10080",
+        [],
+        |row| row.get(0),
+    )?;
+    let streak_best = stored_best.max(streak_days(conn)?);
+    let lessons_mastered = lessons(conn, mastery_percent)?
+        .iter()
+        .filter(|lesson| lesson.lesson != "Sin lección" && lesson.is_mastered)
+        .count() as i64;
+    let weekly_goals = weekly_goals_done(conn)?;
+
+    let mut unlocked_stmt = conn.prepare("SELECT key, unlocked_at FROM achievements")?;
+    let unlocked: HashMap<String, i64> = unlocked_stmt
+        .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?)))?
+        .filter_map(|row| row.ok())
+        .collect();
+
+    let mut out = Vec::with_capacity(ACHIEVEMENT_CATALOG.len());
+    for def in ACHIEVEMENT_CATALOG.iter() {
+        let value = match def.metric {
+            AchievementMetric::Reviews => total_reviews,
+            AchievementMetric::Mastered => mastered,
+            AchievementMetric::Streak => streak_best,
+            AchievementMetric::LessonsMastered => lessons_mastered,
+            AchievementMetric::Level => level,
+            AchievementMetric::WeeklyGoals => weekly_goals,
+        };
+        let unlocked_at = unlocked.get(def.key).copied();
+        out.push(Achievement {
+            key: def.key.to_string(),
+            title: def.title.to_string(),
+            description: def.description.to_string(),
+            unlocked: unlocked_at.is_some(),
+            unlocked_at,
+            progress: value.clamp(0, def.target),
+            target: def.target,
+        });
+    }
+    Ok(out)
+}
+
+/// Desbloquea los logros que ya cumplen su objetivo y devuelve solo los nuevos.
+pub fn sync_achievements(conn: &Connection, mastery_percent: i64) -> Result<Vec<Achievement>> {
+    let now = now_ts();
+    let mut newly = Vec::new();
+    for mut achievement in achievements(conn, mastery_percent)? {
+        if !achievement.unlocked && achievement.progress >= achievement.target {
+            conn.execute(
+                "INSERT OR IGNORE INTO achievements (key, unlocked_at) VALUES (?1, ?2)",
+                params![achievement.key, now],
+            )?;
+            achievement.unlocked = true;
+            achievement.unlocked_at = Some(now);
+            newly.push(achievement);
+        }
+    }
+    Ok(newly)
 }
 
 pub fn count_items(conn: &Connection) -> Result<i64> {
@@ -463,7 +696,12 @@ pub fn record_review(
     })
 }
 
-pub fn stats(conn: &Connection, include_patterns: bool, weekly_goal: i64) -> Result<Stats> {
+pub fn stats(
+    conn: &Connection,
+    include_patterns: bool,
+    weekly_goal: i64,
+    lesson_mastery_percent: i64,
+) -> Result<Stats> {
     let total_items = count_items(conn)?;
     let total_reviews: i64 =
         conn.query_row("SELECT COUNT(*) FROM review_log", [], |row| row.get(0))?;
@@ -510,7 +748,7 @@ pub fn stats(conn: &Connection, include_patterns: bool, weekly_goal: i64) -> Res
         mastered,
         due_now,
         activity: activity(conn)?,
-        lessons: lessons(conn)?,
+        lessons: lessons(conn, lesson_mastery_percent)?,
         difficult: difficult(conn)?,
         xp_total,
         level,
@@ -519,10 +757,12 @@ pub fn stats(conn: &Connection, include_patterns: bool, weekly_goal: i64) -> Res
         streak_best,
         week_reviews,
         weekly_goal,
+        lesson_mastery_percent,
+        achievements: achievements(conn, lesson_mastery_percent)?,
     })
 }
 
-fn lessons(conn: &Connection) -> Result<Vec<crate::models::LessonStat>> {
+fn lessons(conn: &Connection, mastery_percent: i64) -> Result<Vec<crate::models::LessonStat>> {
     let mut stmt = conn.prepare(
         r#"
         SELECT i.lesson,
@@ -557,6 +797,11 @@ fn lessons(conn: &Connection) -> Result<Vec<crate::models::LessonStat>> {
         } else {
             0.0
         };
+        let mastery = if total > 0 {
+            mastered as f64 / total as f64 * 100.0
+        } else {
+            0.0
+        };
         out.push(crate::models::LessonStat {
             lesson: if lesson.is_empty() {
                 "Sin lección".to_string()
@@ -569,6 +814,8 @@ fn lessons(conn: &Connection) -> Result<Vec<crate::models::LessonStat>> {
             reviews,
             correct,
             accuracy,
+            mastery_percent: mastery,
+            is_mastered: total > 0 && mastery >= mastery_percent as f64,
         });
     }
     Ok(out)
@@ -701,7 +948,10 @@ pub fn reset_progress(conn: &Connection) -> Result<()> {
     conn.execute_batch(
         "DELETE FROM review_log;
          DELETE FROM srs_state;
-         UPDATE profile SET xp_total = 0, level = 1, streak_best = 0 WHERE id = 1;",
+         DELETE FROM achievements;
+         UPDATE profile
+         SET xp_total = 0, level = 1, streak_best = 0, weekly_goals_done = 0
+         WHERE id = 1;",
     )?;
     Ok(())
 }
@@ -712,7 +962,10 @@ pub fn clear_library(conn: &mut Connection) -> Result<()> {
          DELETE FROM srs_state;
          DELETE FROM item_sources;
          DELETE FROM items;
-         UPDATE profile SET xp_total = 0, level = 1, streak_best = 0 WHERE id = 1;",
+         DELETE FROM achievements;
+         UPDATE profile
+         SET xp_total = 0, level = 1, streak_best = 0, weekly_goals_done = 0
+         WHERE id = 1;",
     )?;
     Ok(())
 }
@@ -950,5 +1203,91 @@ mod tests {
         assert_eq!(xp, 102);
         assert_eq!(level, 2);
         assert_eq!(best, 1);
+    }
+
+    #[test]
+    fn unlocks_achievements_once() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        conn.execute(
+            "INSERT INTO items
+             (source_uid, reading, meaning, meaning_plain, dedup_key, created_at)
+             VALUES ('u1', 'a', 'b', 'b', 'a|b', 0)",
+            [],
+        )
+        .expect("item");
+
+        assert!(sync_achievements(&conn, 90).expect("sync").is_empty());
+
+        record_review(&mut conn, 1, 5, "es_to_jp", 1000).expect("review");
+        let newly = sync_achievements(&conn, 90).expect("sync");
+        assert_eq!(newly.len(), 1);
+        assert_eq!(newly[0].key, "first_step");
+        assert!(newly[0].unlocked_at.is_some());
+
+        assert!(sync_achievements(&conn, 90).expect("sync").is_empty());
+
+        let catalog = achievements(&conn, 90).expect("achievements");
+        let first = catalog
+            .iter()
+            .find(|achievement| achievement.key == "first_step")
+            .expect("first_step");
+        assert!(first.unlocked);
+        assert_eq!(first.progress, 1);
+    }
+
+    #[test]
+    fn migrates_v2_profile_in_place() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        conn.execute_batch(
+            "CREATE TABLE profile (
+                 id          INTEGER PRIMARY KEY CHECK (id = 1),
+                 xp_total    INTEGER NOT NULL DEFAULT 0,
+                 level       INTEGER NOT NULL DEFAULT 1,
+                 streak_best INTEGER NOT NULL DEFAULT 0
+             );
+             INSERT INTO profile (id, xp_total, level, streak_best) VALUES (1, 42, 3, 2);
+             PRAGMA user_version = 2;",
+        )
+        .expect("old schema");
+
+        migrate(&mut conn).expect("migrate");
+        assert_eq!(profile(&conn).expect("profile"), (42, 3, 2));
+        assert_eq!(weekly_goals_done(&conn).expect("weekly goals"), 0);
+        let version: i64 = conn
+            .pragma_query_value(None, "user_version", |row| row.get(0))
+            .expect("version");
+        assert_eq!(version, 3);
+    }
+
+    #[test]
+    fn lesson_mastery_uses_threshold() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        for index in 0..10 {
+            conn.execute(
+                "INSERT INTO items
+                 (source_uid, reading, meaning, meaning_plain, lesson, dedup_key, created_at)
+                 VALUES (?1, 'a', 'b', 'b', 'L1', ?2, 0)",
+                params![format!("u{index}"), format!("a|b|{index}")],
+            )
+            .expect("item");
+            if index < 9 {
+                conn.execute(
+                    "INSERT INTO srs_state (item_id, interval_minutes, ease, due_at, reps)
+                     VALUES (?1, 10080, 2.5, 0, 3)",
+                    [index + 1],
+                )
+                .expect("srs");
+            }
+        }
+
+        let strict = lessons(&conn, 95).expect("lessons");
+        assert_eq!(strict.len(), 1);
+        assert!(!strict[0].is_mastered);
+        assert!((strict[0].mastery_percent - 90.0).abs() < 1e-9);
+
+        let relaxed = lessons(&conn, 90).expect("lessons");
+        assert!(relaxed[0].is_mastered);
     }
 }

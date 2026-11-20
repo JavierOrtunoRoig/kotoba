@@ -32,8 +32,13 @@ fn bootstrap(state: State<AppState>) -> Result<Bootstrap, String> {
     let conn = state.db.lock().map_err(to_err)?;
     let item_count = db::count_items(&conn).map_err(to_err)?;
     let settings = db::load_settings(&conn).map_err(to_err)?;
-    let stats = db::stats(&conn, settings.include_patterns, settings.weekly_goal)
-        .map_err(to_err)?;
+    let stats = db::stats(
+        &conn,
+        settings.include_patterns,
+        settings.weekly_goal,
+        settings.lesson_mastery_percent,
+    )
+    .map_err(to_err)?;
     Ok(Bootstrap {
         item_count,
         settings,
@@ -73,7 +78,13 @@ fn update_settings(
 fn get_stats(state: State<AppState>) -> Result<Stats, String> {
     let conn = state.db.lock().map_err(to_err)?;
     let settings = db::load_settings(&conn).map_err(to_err)?;
-    db::stats(&conn, settings.include_patterns, settings.weekly_goal).map_err(to_err)
+    db::stats(
+        &conn,
+        settings.include_patterns,
+        settings.weekly_goal,
+        settings.lesson_mastery_percent,
+    )
+    .map_err(to_err)
 }
 
 #[tauri::command]
@@ -182,15 +193,24 @@ fn submit_answer(
     let outcome = db::record_review(&mut conn, item_id, quality, &direction, latency_ms)
         .map_err(to_err)?;
     let week_after = db::reviews_this_week(&conn).map_err(to_err)?;
-    drop(conn);
-
     if settings.weekly_goal > 0
         && week_before < settings.weekly_goal
         && week_after >= settings.weekly_goal
-        && settings.milestone_notifications
+    {
+        db::bump_weekly_goals_done(&conn).map_err(to_err)?;
+    }
+    let unlocked = db::sync_achievements(&conn, settings.lesson_mastery_percent).map_err(to_err)?;
+    drop(conn);
+
+    let allow_notifications = settings.milestone_notifications
         && !settings.paused
         && !scheduler::in_dnd(&settings)
-        && !(settings.suppress_fullscreen && shell::fullscreen_or_busy())
+        && !(settings.suppress_fullscreen && shell::fullscreen_or_busy());
+
+    if allow_notifications
+        && settings.weekly_goal > 0
+        && week_before < settings.weekly_goal
+        && week_after >= settings.weekly_goal
     {
         shell::show_notification(
             &app,
@@ -198,6 +218,17 @@ fn submit_answer(
             &format!("{week_after} repasos esta semana. ¡Bien hecho!"),
         );
         log::info!("objetivo semanal completado: {week_after} repasos");
+    }
+
+    if allow_notifications && !unlocked.is_empty() {
+        let body = if unlocked.len() == 1 {
+            format!("Has desbloqueado «{}»", unlocked[0].title)
+        } else {
+            format!("Has desbloqueado {} logros", unlocked.len())
+        };
+        shell::show_notification(&app, "Logro desbloqueado", &body);
+        let keys: Vec<&str> = unlocked.iter().map(|a| a.key.as_str()).collect();
+        log::info!("logros desbloqueados: {}", keys.join(", "));
     }
 
     let expected = if direction == "jp_to_es" {
@@ -218,6 +249,7 @@ fn submit_answer(
         xp_total: outcome.xp_total,
         level: outcome.level,
         leveled_up: outcome.leveled_up,
+        unlocked,
     })
 }
 
@@ -248,7 +280,13 @@ fn reset_progress(state: State<AppState>) -> Result<Stats, String> {
     let conn = state.db.lock().map_err(to_err)?;
     db::reset_progress(&conn).map_err(to_err)?;
     let settings = db::load_settings(&conn).map_err(to_err)?;
-    db::stats(&conn, settings.include_patterns, settings.weekly_goal).map_err(to_err)
+    db::stats(
+        &conn,
+        settings.include_patterns,
+        settings.weekly_goal,
+        settings.lesson_mastery_percent,
+    )
+    .map_err(to_err)
 }
 
 #[tauri::command]
