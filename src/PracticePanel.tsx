@@ -303,6 +303,11 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
                 {result.leveled_up && (
                   <span className="level-up">¡Nivel {result.level}!</span>
                 )}
+                {result.unlocked.map((achievement) => (
+                  <span className="achievement-chip" key={achievement.key}>
+                    ✦ {achievement.title}
+                  </span>
+                ))}
                 <span className="next-interval">
                   Vuelve en {formatInterval(result.next_interval_minutes)}
                 </span>

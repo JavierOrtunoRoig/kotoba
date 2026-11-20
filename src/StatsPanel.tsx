@@ -44,6 +44,8 @@ export default function StatsPanel({ onPractice }: Props) {
   const lessons = stats.lessons ?? [];
   const difficult = stats.difficult ?? [];
   const max = Math.max(1, ...activity.map((day) => day.total));
+  const achievements = stats.achievements ?? [];
+  const unlockedCount = achievements.filter((a) => a.unlocked).length;
 
   return (
     <section className="stats">
@@ -167,6 +169,70 @@ export default function StatsPanel({ onPractice }: Props) {
         </article>
       </div>
 
+      <article className="panel achievements-panel">
+        <div className="panel-head">
+          <div>
+            <h2>Logros</h2>
+            <p className="muted">
+              {unlockedCount} de {achievements.length} desbloqueados. Los
+              logros no caducan.
+            </p>
+          </div>
+          <span className="achievements-count">
+            {Math.round((unlockedCount / Math.max(1, achievements.length)) * 100)}
+            %
+          </span>
+        </div>
+        <div className="achievement-grid">
+          {achievements.map((achievement) => {
+            const percent =
+              achievement.target > 0
+                ? (achievement.progress / achievement.target) * 100
+                : 0;
+            const date = achievement.unlocked_at
+              ? new Date(achievement.unlocked_at * 1000).toLocaleDateString(
+                  "es-ES",
+                  { day: "numeric", month: "short" },
+                )
+              : null;
+            return (
+              <div
+                key={achievement.key}
+                className={`achievement${achievement.unlocked ? " unlocked" : ""}`}
+                title={achievement.description}
+              >
+                <span className="achievement-mark">
+                  {achievement.unlocked ? "✓" : "•"}
+                </span>
+                <div className="achievement-body">
+                  <div className="achievement-title">{achievement.title}</div>
+                  <div className="achievement-desc">
+                    {achievement.description}
+                  </div>
+                  {achievement.unlocked ? (
+                    <span className="achievement-meta">
+                      Desbloqueado{date ? ` · ${date}` : ""}
+                    </span>
+                  ) : (
+                    <div className="achievement-progress">
+                      <div className="achievement-bar">
+                        <div
+                          className="achievement-fill"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                      <span className="achievement-meta">
+                        {achievement.progress}/{achievement.target}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </article>
+
       <article className="panel activity-panel">
         <div className="panel-head">
           <div>
@@ -220,7 +286,11 @@ export default function StatsPanel({ onPractice }: Props) {
           <div className="panel-head">
             <div>
               <h2>Por lección</h2>
-              <p className="muted">Progreso y precisión de cada capítulo.</p>
+              <p className="muted">
+                Progreso y precisión de cada capítulo. Una lección se domina con
+                al menos el {stats.lesson_mastery_percent}% de sus palabras en 7
+                días o más.
+              </p>
             </div>
           </div>
           <div className="lesson-list">
@@ -239,7 +309,15 @@ export default function StatsPanel({ onPractice }: Props) {
                   <span className="lesson-meta">
                     {lesson.mastered}/{lesson.total}
                   </span>
-                  <span className="lesson-accuracy">
+                  <span
+                    className={`lesson-badge${lesson.is_mastered ? " done" : ""}`}
+                    title={`Maestría: ${Math.round(lesson.mastery_percent)}%`}
+                  >
+                    {lesson.is_mastered
+                      ? "Dominada"
+                      : `${Math.round(lesson.mastery_percent)}%`}
+                  </span>
+                  <span className="lesson-accuracy" title="Precisión">
                     {lesson.reviews > 0
                       ? `${Math.round(lesson.accuracy)}%`
                       : "—"}

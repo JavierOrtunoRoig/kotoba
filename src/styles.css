@@ -725,6 +725,16 @@ body.popup-window::before {
   white-space: nowrap;
 }
 
+.achievement-chip {
+  font-size: 10px;
+  color: var(--moss);
+  border: 1px solid rgba(78, 99, 79, 0.3);
+  background: rgba(78, 99, 79, 0.08);
+  padding: 4px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
 /* ---------- Skeletons y vacíos ---------- */
 
 .skeleton-line {
@@ -1346,7 +1356,7 @@ body.popup-window::before {
 
 .lesson-row {
   display: grid;
-  grid-template-columns: 52px 1fr 56px 42px;
+  grid-template-columns: 52px 1fr 48px 64px 38px;
   align-items: center;
   gap: 10px;
   font-size: 11.5px;
@@ -1384,6 +1394,139 @@ body.popup-window::before {
   font-size: 10px;
   color: var(--moss);
   text-align: right;
+}
+
+.lesson-badge {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  border: 1px solid var(--line);
+  padding: 2px 6px;
+  border-radius: 999px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.lesson-badge.done {
+  color: var(--success);
+  border-color: rgba(63, 107, 79, 0.3);
+  background: rgba(63, 107, 79, 0.08);
+}
+
+.achievements-panel {
+  margin-top: 14px;
+}
+
+.achievements-count {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.achievement {
+  display: flex;
+  gap: 11px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(251, 248, 242, 0.5);
+  opacity: 0.72;
+  transition:
+    opacity 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.achievement.unlocked {
+  opacity: 1;
+  border-color: rgba(164, 122, 60, 0.35);
+  background: linear-gradient(
+    135deg,
+    rgba(164, 122, 60, 0.09),
+    rgba(251, 248, 242, 0.6)
+  );
+}
+
+.achievement.unlocked:hover {
+  transform: translateY(-1px);
+}
+
+.achievement-mark {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: var(--ink-faint);
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+}
+
+.achievement.unlocked .achievement-mark {
+  color: var(--paper-raised);
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 6px 14px -8px rgba(164, 122, 60, 0.9);
+}
+
+.achievement-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.achievement-title {
+  font-family: var(--serif);
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.achievement-desc {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  line-height: 1.35;
+}
+
+.achievement-meta {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.achievement.unlocked .achievement-meta {
+  color: var(--gold);
+}
+
+.achievement-progress {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.achievement-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--paper-deep);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.achievement-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--vermilion));
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .difficult-list {
@@ -1843,6 +1986,12 @@ input[type="time"]:disabled {
   color: var(--gold);
 }
 
+.pf-achievement {
+  margin: 0 0 4px;
+  font-size: 10px;
+  color: var(--moss);
+}
+
 .popup-empty {
   align-items: center;
   justify-content: center;
@@ -1930,6 +2079,10 @@ input[type="time"]:disabled {
   }
 
   .game-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .achievement-grid {
     grid-template-columns: 1fr;
   }
 

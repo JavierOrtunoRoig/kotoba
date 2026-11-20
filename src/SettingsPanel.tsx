@@ -400,7 +400,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
         <div className="panel-head">
           <div>
             <h2>Progreso</h2>
-            <p className="muted">Nivel, racha y objetivo semanal.</p>
+            <p className="muted">Nivel, racha, logros y objetivos.</p>
           </div>
         </div>
 
@@ -430,10 +430,36 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
 
         <div className="field">
           <div>
+            <div className="field-label">Maestría por lección</div>
+            <div className="field-desc">
+              Porcentaje de palabras con intervalo de 7 días o más para dar una
+              lección por dominada.
+            </div>
+          </div>
+          <div className="range-control single">
+            <input
+              type="range"
+              min={50}
+              max={100}
+              step={5}
+              value={settings.lesson_mastery_percent}
+              onChange={(event) =>
+                update(
+                  "lesson_mastery_percent",
+                  Number(event.currentTarget.value),
+                )
+              }
+            />
+            <output>{settings.lesson_mastery_percent}%</output>
+          </div>
+        </div>
+
+        <div className="field">
+          <div>
             <div className="field-label">Notificaciones de hitos</div>
             <div className="field-desc">
-              Avisar al completar el objetivo semanal. Respeta el modo no molestar
-              y la pantalla completa.
+              Avisar al completar el objetivo semanal o desbloquear un logro.
+              Respeta el modo no molestar y la pantalla completa.
             </div>
           </div>
           <Toggle

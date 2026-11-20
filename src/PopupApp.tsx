@@ -276,6 +276,11 @@ export default function PopupApp({ variant }: Props) {
                       {result.leveled_up && ` · ¡Nivel ${result.level}!`}
                     </p>
                   )}
+                  {result.unlocked.length > 0 && (
+                    <p className="pf-achievement">
+                      ✦ {result.unlocked.map((a) => a.title).join(" · ")}
+                    </p>
+                  )}
                   <div className="popup-actions">
                     <button
                       type="button"

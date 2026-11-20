@@ -20,6 +20,7 @@ export interface Settings {
   launch_at_startup: boolean;
   weekly_goal: number;
   milestone_notifications: boolean;
+  lesson_mastery_percent: number;
 }
 
 export interface Item {
@@ -53,6 +54,7 @@ export interface AnswerResult {
   xp_total: number;
   level: number;
   leveled_up: boolean;
+  unlocked: Achievement[];
 }
 
 export interface DayCount {
@@ -69,6 +71,18 @@ export interface LessonStat {
   reviews: number;
   correct: number;
   accuracy: number;
+  mastery_percent: number;
+  is_mastered: boolean;
+}
+
+export interface Achievement {
+  key: string;
+  title: string;
+  description: string;
+  unlocked: boolean;
+  unlocked_at: number | null;
+  progress: number;
+  target: number;
 }
 
 export interface DifficultItem {
@@ -99,6 +113,8 @@ export interface Stats {
   streak_best: number;
   week_reviews: number;
   weekly_goal: number;
+  lesson_mastery_percent: number;
+  achievements: Achievement[];
 }
 
 export interface Bootstrap {
