@@ -221,3 +221,15 @@ racha + objetivo semanal + XP/nivel, **R3-04b** logros/maestría y **R3-04c** co
 refinamiento.
 **Consecuencias:** se puede retener sin convertir la app en una obligación diaria. La curva de
 niveles y el catálogo de logros quedan para b/c; el XP no incentiva responder rápido o mal.
+
+## D-027 — Logros permanentes y maestría por lección
+
+**Contexto:** R3-04b necesita hitos que celebren constancia y retención sin introducir presión
+diaria ni comparaciones sociales.
+**Decisión:** catálogo fijo de 16 logros calculados a partir de datos reales (repasos, palabras
+dominadas, racha, lecciones, nivel y objetivos semanales). El desbloqueo se guarda en la tabla
+`achievements` y no se pierde con el tiempo. Una lección se considera dominada cuando el porcentaje
+de palabras con intervalo ≥ 7 días alcanza el umbral configurable (default 90 %). Las
+notificaciones de desbloqueo son opt-in y respetan pausa/DND/pantalla completa.
+**Consecuencias:** el progreso retroactivo se materializa en el siguiente repaso; no hay logros
+sociales ni de velocidad. El umbral de maestría puede ajustarse entre 50 % y 100 %.

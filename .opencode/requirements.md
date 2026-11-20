@@ -279,11 +279,17 @@ pueden incentivar respuestas rápidas/malas que rompan el SM-2.
   completa y nunca avisa de “racha en peligro”.
 - [x] Tests de XP, niveles, racha, objetivo y migración.
 
-### R3-04b — Logros y maestría (pendiente)
+### R3-04b — Logros y maestría (implementado)
 
-- [ ] Catálogo de logros (~15 hitos): dominadas, racha, lecciones y repasos.
-- [ ] Maestría por lección (umbral configurable, por defecto ≥ 90 % con intervalo ≥ 7 días).
-- [ ] Pantalla de logros y notificaciones opt-in al desbloquear.
+- [x] Catálogo de 16 logros: repasos, palabras dominadas, racha, lecciones maestras, nivel 5 y
+  objetivo semanal cumplido.
+- [x] Progreso de cada logro visible y desbloqueo permanente.
+- [x] Maestría por lección con umbral configurable (default 90 %): porcentaje de palabras con
+  intervalo ≥ 7 días sobre el total de la lección.
+- [x] Pantalla de logros en Progreso y feedback inmediato al desbloquear.
+- [x] Notificaciones opt-in al desbloquear, sujetas a pausa/DND/pantalla completa.
+- [x] Migración v3 (`achievements`, `profile.weekly_goals_done`).
+- [x] Tests de desbloqueo único y umbral de maestría.
 
 ### R3-04c — Refinamiento (pendiente)
 

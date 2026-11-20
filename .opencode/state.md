@@ -44,7 +44,7 @@ progreso y ajustes.
 | Plantillas (`is_pattern`) | 66 |
 | Avisos de importación | 0 |
 | RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 29 OK (+3 ignored: importación, normalización y progreso reales) |
+| Tests unitarios Rust | 33 OK (+3 ignored: importación, normalización y progreso reales) |
 | Respuestas reales validadas | 2.629 |
 | Copia de seguridad | SQLite + 827 audios |
 | Typecheck / build frontend | OK |
@@ -93,12 +93,19 @@ progreso y ajustes.
 - 3 aciertos consecutivos → **9 XP**; el nivel sigue en 1 (umbral 100).
 - **Notificación de objetivo semanal:** suprimida con DND activo; emitida con DND desactivado
   (verificado en `kotoba.log`: `objetivo semanal completado: 12 repasos`).
+- **Gamificación R3-04b:** catálogo de 16 logros, panel de logros con progreso y fecha de
+  desbloqueo, maestría por lección con umbral configurable y feedback `✦ Logro` al desbloquear.
+- **Migración v3:** tabla `achievements` y columna `profile.weekly_goals_done`; verificada sobre
+  una base v2 existente con test dedicado.
+- **Logros medidos en la app:** `first_step` al primer repaso y `reviews_25` al llegar a 25;
+  notificación emitida con `milestone_notifications` y anotada en el log.
 
 ## Datos de prueba en el equipo
 
-La app tiene importado el mazo en `%APPDATA%\com.kotoba.app` y **12 repasos de prueba**, **15 XP**,
-nivel 1, racha/mejor 1, objetivo semanal 30 y notificaciones de hito desactivadas. El modo se dejó en
-`popup` y el DND en 22:00–08:00.
+La app tiene importado el mazo en `%APPDATA%\com.kotoba.app` y **25 repasos de prueba**, **54 XP**,
+nivel 1, racha/mejor 1, **2 logros desbloqueados** (`first_step`, `reviews_25`), objetivo semanal 30,
+maestría por lección 90 % y notificaciones de hito desactivadas. El modo se dejó en `popup` y el DND
+en 22:00–08:00.
 
 Para dejarlo limpio:
 
@@ -131,16 +138,15 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 | Media | `.txt` sin audio | El fallback no puede extraer mp3 |
 | Media | Pantalla completa real | Implementada, pero no probada contra un juego/presentación real |
 | Baja | Accesibilidad | Foco y navegación por teclado mejorables |
-| Baja | Gamificación b/c | Logros, maestría por lección y congelar racha pendientes |
+| Baja | Gamificación c | Congelar/reparar racha y refinamiento de niveles pendientes |
 | Baja | CI / firma | El instalador funciona, pero no está firmado ni hay pipeline |
 
 ## Próximos pasos recomendados
 
-1. **R3-04b — Gamificación:** logros/insignias y maestría por lección.
-2. **R3-04c — Gamificación:** congelar/reparar racha y refinamiento.
-3. **Fase 3:** AnkiConnect, más mazos y gramática.
-4. **Distribución:** firmar el instalador y añadir CI.
-5. **Pantalla completa real:** probar contra un juego/presentación.
+1. **R3-04c — Gamificación:** congelar/reparar racha y refinamiento.
+2. **Fase 3:** AnkiConnect, más mazos y gramática.
+3. **Distribución:** firmar el instalador y añadir CI.
+4. **Pantalla completa real:** probar contra un juego/presentación.
 
 ## Cómo actualizar este documento
 
