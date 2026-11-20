@@ -163,7 +163,9 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 - [x] Windows 10/11 con WebView2.
 - [x] Build MSVC.
-- [ ] Instalador firmado y CI (Fase 3).
+- [x] CI con build y tests en Windows.
+- [x] Release automática con MSI y NSIS al empujar una etiqueta `v*`.
+- [ ] Instalador firmado.
 
 ## RNF-05 — Mantenibilidad
 
@@ -278,9 +280,10 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 ## RF3-03 — Distribución
 
+- [x] CI con build y tests en Windows.
+- [x] Release automática con MSI y NSIS al empujar una etiqueta `v*`.
 - [ ] Instalador MSI/NSIS firmado.
 - [ ] Auto-update.
-- [ ] CI con build y tests en Windows.
 
 ## RF3-04 — Gamificación
 

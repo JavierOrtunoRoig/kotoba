@@ -7,6 +7,8 @@
 - README orientado a release pública, con capturas, privacidad, roadmap y resumen en inglés.
 - Configuración de agentes versionada (`AGENTS.md`, `opencode.jsonc`, `.mcp.json`,
   `skills-lock.json`); el índice local `.codegraph/` queda ignorado.
+- CI y releases en `.github/workflows/`: `ci.yml` valida TypeScript y Rust en cada push/PR, y
+  `release.yml` publica MSI y NSIS al empujar una etiqueta `v*`. Release `v0.1.0` publicada.
 
 ## Fase actual
 
@@ -167,12 +169,12 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 | Media | Pantalla completa real | Implementada, pero no probada contra un juego/presentación real |
 | Baja | Accesibilidad | Foco y navegación por teclado mejorables |
 | Baja | Gamificación | Logros/maestría y salvavidas implementados; métricas de retención fuera del MVP |
-| Baja | CI / firma | El instalador funciona, pero no está firmado ni hay pipeline |
+| Baja | Firma de código | El pipeline de CI y las releases ya funcionan; falta firmar el MSI/NSIS |
 
 ## Próximos pasos recomendados
 
 1. **Fase 3:** AnkiConnect, más mazos y gramática.
-2. **Distribución:** firmar el instalador y añadir CI.
+2. **Distribución:** firmar el instalador (CI y releases automáticas ya están hechas).
 3. **Pantalla completa real:** probar contra un juego/presentación.
 
 ## Cómo actualizar este documento
