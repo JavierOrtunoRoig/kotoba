@@ -24,8 +24,12 @@ target/
 *.exe
 *.msix
 
-# --- Editor / OS ---
+# --- Herramientas de IA / agentes ---
+# CodeGraph indexa el repo en local; su base de datos no se versiona.
+.codegraph/
 .agents/
+
+# --- Editor / OS ---
 .vscode/*
 !.vscode/extensions.json
 .idea/
