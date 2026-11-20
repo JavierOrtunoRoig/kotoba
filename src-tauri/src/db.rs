@@ -13,6 +13,9 @@ pub const MAX_QUALITY: u8 = 5;
 /// Intervalo máximo: 10 años, para evitar intervalos absurdos y desbordamientos.
 const MAX_INTERVAL_MINUTES: i64 = 3650 * 1440;
 
+/// Salvavidas de racha acumulables.
+pub const MAX_STREAK_SAVERS: i64 = 2;
+
 /// Calcula el siguiente estado SM-2.
 ///
 /// `quality`: 0-5 (5 = acierto rápido, 4 = acierto, 2 = fallo, 1 = no lo sé).
@@ -55,8 +58,20 @@ pub fn xp_for_quality(quality: u8) -> i64 {
 
 /// Umbrales absolutos de XP para cada nivel.
 const LEVEL_THRESHOLDS: [i64; 12] = [
-    0, 100, 250, 500, 900, 1500, 2400, 3600, 5200, 7200, 9800, 13000,
+    0, 80, 200, 380, 650, 1000, 1450, 2000, 2700, 3500, 4500, 5800,
 ];
+
+/// Nombre del tramo de nivel. Da contexto sin añadir mecánicas nuevas.
+pub fn level_title(level: i64) -> &'static str {
+    match level {
+        1..=2 => "Semilla",
+        3..=4 => "Brote",
+        5..=6 => "Raíz",
+        7..=8 => "Rama",
+        9..=10 => "Árbol",
+        _ => "Bosque",
+    }
+}
 
 pub fn level_for_xp(xp: i64) -> i64 {
     LEVEL_THRESHOLDS
@@ -291,7 +306,8 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
             xp_total          INTEGER NOT NULL DEFAULT 0,
             level             INTEGER NOT NULL DEFAULT 1,
             streak_best       INTEGER NOT NULL DEFAULT 0,
-            weekly_goals_done INTEGER NOT NULL DEFAULT 0
+            weekly_goals_done INTEGER NOT NULL DEFAULT 0,
+            streak_savers     INTEGER NOT NULL DEFAULT 0
         );
 
         INSERT OR IGNORE INTO profile (id, xp_total, level, streak_best)
@@ -300,6 +316,11 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
         CREATE TABLE IF NOT EXISTS achievements (
             key         TEXT PRIMARY KEY,
             unlocked_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS streak_repairs (
+            day        TEXT PRIMARY KEY,
+            created_at INTEGER NOT NULL
         );
 
         CREATE INDEX IF NOT EXISTS idx_srs_due ON srs_state(due_at);
@@ -330,6 +351,10 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
             "INTEGER NOT NULL DEFAULT 0",
         )?;
         conn.pragma_update(None, "user_version", 3)?;
+    }
+    if version < 4 {
+        ensure_column(conn, "profile", "streak_savers", "INTEGER NOT NULL DEFAULT 0")?;
+        conn.pragma_update(None, "user_version", 4)?;
     }
 
     Ok(())
@@ -401,6 +426,116 @@ pub fn weekly_goals_done(conn: &Connection) -> Result<i64> {
         [],
         |row| row.get(0),
     )?)
+}
+
+pub fn streak_savers(conn: &Connection) -> Result<i64> {
+    Ok(conn.query_row(
+        "SELECT streak_savers FROM profile WHERE id = 1",
+        [],
+        |row| row.get(0),
+    )?)
+}
+
+/// Añade un salvavidas si no se ha alcanzado el máximo. Devuelve si se añadió.
+pub fn add_streak_saver(conn: &Connection) -> Result<bool> {
+    let current = streak_savers(conn)?;
+    if current >= MAX_STREAK_SAVERS {
+        return Ok(false);
+    }
+    conn.execute(
+        "UPDATE profile SET streak_savers = streak_savers + 1 WHERE id = 1",
+        [],
+    )?;
+    Ok(true)
+}
+
+pub fn streak_repairs_count(conn: &Connection) -> Result<i64> {
+    Ok(conn.query_row("SELECT COUNT(*) FROM streak_repairs", [], |row| {
+        row.get(0)
+    })?)
+}
+
+/// Días con actividad: repasos reales más días reparados con salvavidas.
+fn active_days(conn: &Connection) -> Result<HashSet<NaiveDate>> {
+    let mut stmt = conn.prepare(
+        "SELECT day FROM (
+             SELECT DISTINCT date(answered_at, 'unixepoch', 'localtime') AS day
+             FROM review_log WHERE answered_at IS NOT NULL
+             UNION
+             SELECT day FROM streak_repairs
+         )",
+    )?;
+    let days = stmt
+        .query_map([], |row| row.get::<_, String>(0))?
+        .filter_map(|row| row.ok())
+        .filter_map(|value| NaiveDate::parse_from_str(&value, "%Y-%m-%d").ok())
+        .collect();
+    Ok(days)
+}
+
+fn day_ts(date: NaiveDate) -> Option<i64> {
+    date.and_hms_opt(12, 0, 0)
+        .and_then(|dt| Local.from_local_datetime(&dt).single())
+        .map(|dt| dt.timestamp())
+}
+
+/// Repara como mucho el hueco más reciente de la racha usando un salvavidas.
+///
+/// Solo actúa si hay un día perdido entre la racha actual y actividad anterior.
+/// Devuelve el día reparado.
+pub fn maintain_streak(conn: &Connection, enabled: bool) -> Result<Option<String>> {
+    if !enabled || streak_savers(conn)? <= 0 {
+        return Ok(None);
+    }
+
+    let days = active_days(conn)?;
+    if days.is_empty() {
+        return Ok(None);
+    }
+
+    let today = Local::now().date_naive();
+    let mut cursor = if days.contains(&today) {
+        today
+    } else {
+        match today.pred_opt() {
+            Some(yesterday) if days.contains(&yesterday) => yesterday,
+            _ => return Ok(None),
+        }
+    };
+
+    while days.contains(&cursor) {
+        match cursor.pred_opt() {
+            Some(previous) => cursor = previous,
+            None => return Ok(None),
+        }
+    }
+
+    let has_older_activity = cursor
+        .pred_opt()
+        .map(|date| days.contains(&date))
+        .unwrap_or(false);
+    if !has_older_activity {
+        return Ok(None);
+    }
+
+    let Some(repaired_at) = day_ts(cursor) else {
+        return Ok(None);
+    };
+    let day = cursor.format("%Y-%m-%d").to_string();
+    conn.execute(
+        "INSERT OR IGNORE INTO streak_repairs (day, created_at) VALUES (?1, ?2)",
+        params![day, repaired_at],
+    )?;
+    conn.execute(
+        "UPDATE profile SET streak_savers = MAX(streak_savers - 1, 0) WHERE id = 1",
+        [],
+    )?;
+    let current = streak_days(conn)?;
+    conn.execute(
+        "UPDATE profile SET streak_best = MAX(streak_best, ?1) WHERE id = 1",
+        [current],
+    )?;
+    Ok(Some(day))
 }
 
 /// Suma un objetivo semanal completado. Se llama al cruzar el umbral.
@@ -737,6 +872,8 @@ pub fn stats(
     let current_streak = streak_days(conn)?;
     let streak_best = stored_best.max(current_streak);
     let week_reviews = reviews_this_week(conn)?;
+    let savers = streak_savers(conn)?;
+    let repairs = streak_repairs_count(conn)?;
 
     Ok(Stats {
         total_items,
@@ -752,9 +889,13 @@ pub fn stats(
         difficult: difficult(conn)?,
         xp_total,
         level,
+        level_title: level_title(level).to_string(),
         level_progress: level_progress_value,
         next_level_xp,
         streak_best,
+        streak_savers: savers,
+        streak_savers_max: MAX_STREAK_SAVERS,
+        streak_repairs: repairs,
         week_reviews,
         weekly_goal,
         lesson_mastery_percent,
@@ -913,16 +1054,7 @@ fn activity(conn: &Connection) -> Result<Vec<crate::models::DayCount>> {
 }
 
 fn streak_days(conn: &Connection) -> Result<i64> {
-    let mut stmt = conn.prepare(
-        "SELECT DISTINCT date(answered_at, 'unixepoch', 'localtime')
-         FROM review_log ORDER BY 1 DESC LIMIT 400",
-    )?;
-    let days: HashSet<NaiveDate> = stmt
-        .query_map([], |row| row.get::<_, String>(0))?
-        .filter_map(|row| row.ok())
-        .filter_map(|value| NaiveDate::parse_from_str(&value, "%Y-%m-%d").ok())
-        .collect();
-
+    let days = active_days(conn)?;
     if days.is_empty() {
         return Ok(0);
     }
@@ -949,8 +1081,10 @@ pub fn reset_progress(conn: &Connection) -> Result<()> {
         "DELETE FROM review_log;
          DELETE FROM srs_state;
          DELETE FROM achievements;
+         DELETE FROM streak_repairs;
          UPDATE profile
-         SET xp_total = 0, level = 1, streak_best = 0, weekly_goals_done = 0
+         SET xp_total = 0, level = 1, streak_best = 0, weekly_goals_done = 0,
+             streak_savers = 0
          WHERE id = 1;",
     )?;
     Ok(())
@@ -963,8 +1097,10 @@ pub fn clear_library(conn: &mut Connection) -> Result<()> {
          DELETE FROM item_sources;
          DELETE FROM items;
          DELETE FROM achievements;
+         DELETE FROM streak_repairs;
          UPDATE profile
-         SET xp_total = 0, level = 1, streak_best = 0, weekly_goals_done = 0
+         SET xp_total = 0, level = 1, streak_best = 0, weekly_goals_done = 0,
+             streak_savers = 0
          WHERE id = 1;",
     )?;
     Ok(())
@@ -1164,12 +1300,19 @@ mod tests {
     #[test]
     fn levels_scale_with_xp() {
         assert_eq!(level_for_xp(0), 1);
-        assert_eq!(level_for_xp(99), 1);
-        assert_eq!(level_for_xp(100), 2);
-        assert_eq!(level_for_xp(249), 2);
-        assert_eq!(level_for_xp(250), 3);
-        assert_eq!(level_for_xp(13000), 12);
+        assert_eq!(level_for_xp(79), 1);
+        assert_eq!(level_for_xp(80), 2);
+        assert_eq!(level_for_xp(199), 2);
+        assert_eq!(level_for_xp(200), 3);
+        assert_eq!(level_for_xp(5800), 12);
         assert_eq!(level_for_xp(99999), 12);
+
+        assert_eq!(level_title(1), "Semilla");
+        assert_eq!(level_title(4), "Brote");
+        assert_eq!(level_title(5), "Raíz");
+        assert_eq!(level_title(7), "Rama");
+        assert_eq!(level_title(9), "Árbol");
+        assert_eq!(level_title(11), "Bosque");
     }
 
     #[test]
@@ -1191,18 +1334,75 @@ mod tests {
         assert!(!outcome.leveled_up);
 
         let mut last = outcome;
-        for _ in 0..33 {
+        for _ in 0..26 {
             last = record_review(&mut conn, 1, 5, "es_to_jp", 1000).expect("review");
         }
 
-        assert_eq!(last.xp_total, 102);
+        assert_eq!(last.xp_total, 81);
         assert_eq!(last.level, 2);
         assert!(last.leveled_up);
 
         let (xp, level, best) = profile(&conn).expect("profile");
-        assert_eq!(xp, 102);
+        assert_eq!(xp, 81);
         assert_eq!(level, 2);
         assert_eq!(best, 1);
+    }
+
+    #[test]
+    fn caps_streak_savers() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+
+        assert!(add_streak_saver(&conn).expect("saver"));
+        assert!(add_streak_saver(&conn).expect("saver"));
+        assert!(!add_streak_saver(&conn).expect("saver"));
+        assert_eq!(streak_savers(&conn).expect("count"), MAX_STREAK_SAVERS);
+    }
+
+    #[test]
+    fn repairs_a_single_streak_gap() {
+        use chrono::Duration;
+
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        conn.execute(
+            "INSERT INTO items
+             (source_uid, reading, meaning, meaning_plain, dedup_key, created_at)
+             VALUES ('u1', 'a', 'b', 'b', 'a|b', 0)",
+            [],
+        )
+        .expect("item");
+
+        let today = Local::now().date_naive();
+        for offset in [0, 2] {
+            let date = today - Duration::days(offset);
+            let answered_at = date
+                .and_hms_opt(12, 0, 0)
+                .and_then(|dt| Local.from_local_datetime(&dt).single())
+                .expect("timestamp")
+                .timestamp();
+            conn.execute(
+                "INSERT INTO review_log
+                 (item_id, shown_at, answered_at, result, quality, latency_ms, direction)
+                 VALUES (1, ?1, ?1, 1, 5, 1000, 'jp_to_es')",
+                [answered_at],
+            )
+            .expect("review");
+        }
+
+        add_streak_saver(&conn).expect("saver");
+        assert!(maintain_streak(&conn, false).expect("disabled").is_none());
+        assert_eq!(streak_savers(&conn).expect("count"), 1);
+
+        let repaired = maintain_streak(&conn, true).expect("repair");
+        let yesterday = (today - Duration::days(1))
+            .format("%Y-%m-%d")
+            .to_string();
+        assert_eq!(repaired, Some(yesterday));
+        assert_eq!(streak_days(&conn).expect("streak"), 3);
+        assert_eq!(streak_savers(&conn).expect("count"), 0);
+        assert_eq!(streak_repairs_count(&conn).expect("repairs"), 1);
+        assert!(maintain_streak(&conn, true).expect("repair").is_none());
     }
 
     #[test]
@@ -1254,10 +1454,11 @@ mod tests {
         migrate(&mut conn).expect("migrate");
         assert_eq!(profile(&conn).expect("profile"), (42, 3, 2));
         assert_eq!(weekly_goals_done(&conn).expect("weekly goals"), 0);
+        assert_eq!(streak_savers(&conn).expect("savers"), 0);
         let version: i64 = conn
             .pragma_query_value(None, "user_version", |row| row.get(0))
             .expect("version");
-        assert_eq!(version, 3);
+        assert_eq!(version, 4);
     }
 
     #[test]

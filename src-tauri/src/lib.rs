@@ -192,12 +192,17 @@ fn submit_answer(
 
     let outcome = db::record_review(&mut conn, item_id, quality, &direction, latency_ms)
         .map_err(to_err)?;
+    if let Some(day) = db::maintain_streak(&conn, settings.streak_repair).map_err(to_err)? {
+        log::info!("racha reparada con salvavidas: {day}");
+    }
     let week_after = db::reviews_this_week(&conn).map_err(to_err)?;
+    let mut saver_earned = false;
     if settings.weekly_goal > 0
         && week_before < settings.weekly_goal
         && week_after >= settings.weekly_goal
     {
         db::bump_weekly_goals_done(&conn).map_err(to_err)?;
+        saver_earned = db::add_streak_saver(&conn).map_err(to_err)?;
     }
     let unlocked = db::sync_achievements(&conn, settings.lesson_mastery_percent).map_err(to_err)?;
     drop(conn);
@@ -212,11 +217,11 @@ fn submit_answer(
         && week_before < settings.weekly_goal
         && week_after >= settings.weekly_goal
     {
-        shell::show_notification(
-            &app,
-            "Objetivo semanal completado",
-            &format!("{week_after} repasos esta semana. ¡Bien hecho!"),
-        );
+        let mut body = format!("{week_after} repasos esta semana. ¡Bien hecho!");
+        if saver_earned {
+            body.push_str(" Has ganado un salvavidas de racha.");
+        }
+        shell::show_notification(&app, "Objetivo semanal completado", &body);
         log::info!("objetivo semanal completado: {week_after} repasos");
     }
 
@@ -250,6 +255,7 @@ fn submit_answer(
         level: outcome.level,
         leveled_up: outcome.leveled_up,
         unlocked,
+        saver_earned,
     })
 }
 

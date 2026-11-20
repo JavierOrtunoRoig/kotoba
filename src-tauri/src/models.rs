@@ -28,6 +28,8 @@ pub struct Settings {
     pub milestone_notifications: bool,
     /// Porcentaje de palabras dominadas para completar una lección (50-100).
     pub lesson_mastery_percent: i64,
+    /// Reparar automáticamente un día perdido si hay un salvavidas disponible.
+    pub streak_repair: bool,
 }
 
 impl Default for Settings {
@@ -49,6 +51,7 @@ impl Default for Settings {
             weekly_goal: 30,
             milestone_notifications: false,
             lesson_mastery_percent: 90,
+            streak_repair: true,
         }
     }
 }
@@ -143,6 +146,8 @@ pub struct AnswerResult {
     pub leveled_up: bool,
     /// Logros desbloqueados con este repaso.
     pub unlocked: Vec<Achievement>,
+    /// Si este repaso ha completado el objetivo semanal y ha dado un salvavidas.
+    pub saver_earned: bool,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -207,12 +212,20 @@ pub struct Stats {
     pub xp_total: i64,
     /// Nivel actual.
     pub level: i64,
+    /// Nombre del tramo del nivel (Semilla, Brote, ...).
+    pub level_title: String,
     /// Progreso 0-100 hacia el siguiente nivel.
     pub level_progress: f64,
     /// XP absoluto del siguiente nivel (null si es el máximo).
     pub next_level_xp: Option<i64>,
     /// Mejor racha histórica.
     pub streak_best: i64,
+    /// Salvavidas de racha disponibles.
+    pub streak_savers: i64,
+    /// Máximo de salvavidas acumulables.
+    pub streak_savers_max: i64,
+    /// Días de racha reparados con salvavidas.
+    pub streak_repairs: i64,
     /// Repasos de la semana actual.
     pub week_reviews: i64,
     /// Objetivo semanal configurado (0 = sin objetivo).
