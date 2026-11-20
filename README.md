@@ -13,6 +13,8 @@ propone un micro-reto de 5–10 segundos. Sin abrir nada, sin cuentas y sin nube
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Rust](https://img.shields.io/badge/Rust-stable-000000?logo=rust&logoColor=white)
 ![Licencia MIT](https://img.shields.io/badge/licencia-MIT-2ea44f)
+[![CI](https://github.com/JavierOrtunoRoig/kotoba/actions/workflows/ci.yml/badge.svg)](https://github.com/JavierOrtunoRoig/kotoba/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/JavierOrtunoRoig/kotoba?label=release)](https://github.com/JavierOrtunoRoig/kotoba/releases)
 
 [Qué es](#qué-es-kotoba) · [Capturas](#capturas) · [Características](#características) ·
 [Instalación](#instalación) · [Desarrollo](#desarrollo) · [Privacidad](#privacidad) ·
@@ -118,6 +120,17 @@ flowchart LR
 
 ## Instalación
 
+### Descarga
+
+Los instaladores de la última versión están en
+[**Releases**](https://github.com/JavierOrtunoRoig/kotoba/releases):
+
+- `kotoba_0.1.0_x64_en-US.msi` — instalador clásico de Windows.
+- `kotoba_0.1.0_x64-setup.exe` — instalador NSIS, útil sin permisos de administrador.
+
+> Los binarios todavía no están firmados digitalmente, así que Windows SmartScreen puede pedir
+> confirmación la primera vez. También puedes compilarlo tú mismo con las instrucciones de abajo.
+
 ### Requisitos
 
 - Windows 10 u 11 con **WebView2** (viene preinstalado en Windows 11 y en la mayoría de Windows 10).
@@ -142,9 +155,6 @@ Salen en `src-tauri/target/release/bundle/`:
 
 - `msi/kotoba_0.1.0_x64_en-US.msi`
 - `nsis/kotoba_0.1.0_x64-setup.exe`
-
-> Los instaladores todavía no están firmados digitalmente, así que Windows SmartScreen puede pedir
-> confirmación. La firma de código y una release automatizada están en el roadmap.
 
 ## Primer uso
 
@@ -209,6 +219,26 @@ src-tauri/src/           Backend Rust
 La base de conocimiento del proyecto vive en [`.opencode/`](.opencode/README.md): decisiones de
 arquitectura, requisitos, comandos y estado.
 
+### CI y releases
+
+- **CI** ([`ci.yml`](.github/workflows/ci.yml)): en cada push a `main` y en cada pull request se
+  ejecutan `npm run typecheck`, `npm run build`, `cargo check` y `cargo test --lib` sobre Windows.
+- **Release** ([`release.yml`](.github/workflows/release.yml)): al empujar una etiqueta `v*` (o al
+  lanzarlo a mano desde Actions) se compila la app y se publica una release con el MSI y el NSIS.
+  El workflow comprueba antes que la etiqueta coincida con la versión de `tauri.conf.json`.
+
+Para publicar una versión:
+
+1. Sube la versión en `package.json`, `src-tauri/Cargo.toml` y `src-tauri/tauri.conf.json`.
+2. Crea y empuja la etiqueta:
+
+   ```powershell
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+
+3. GitHub Actions compila y publica la release con los instaladores adjuntos.
+
 ## Privacidad
 
 - **Sin red**: la app no hace peticiones HTTP. No hay cuentas, sincronización ni telemetría.
@@ -224,9 +254,10 @@ arquitectura, requisitos, comandos y estado.
 - [x] Apariencia y accesibilidad: temas, tres idiomas y escala de fuente.
 - [x] Nuevas en orden de mazo, repasos primero y límite diario.
 - [x] Mapeo manual de campos al importar.
+- [x] Pipeline de CI y releases automáticas con MSI y NSIS.
 - [ ] Sincronización opcional con AnkiConnect.
 - [ ] Más mazos (Genki 2) y contenido de gramática/partículas.
-- [ ] Firma de código y pipeline de CI con releases.
+- [ ] Firma de código del instalador.
 - [ ] Verificación real de pantalla completa en juegos y presentaciones.
 
 ## Contribuir

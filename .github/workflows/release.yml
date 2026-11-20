@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Etiqueta a publicar (por ejemplo, v0.1.0)"
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Compilar y publicar
+    runs-on: windows-latest
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Comprobar la etiqueta y la versión
+        id: tag
+        shell: pwsh
+        run: |
+          $tag = "${{ inputs.tag }}"
+          if (-not $tag) { $tag = "${{ github.ref_name }}" }
+          $version = (Get-Content "src-tauri/tauri.conf.json" -Raw | ConvertFrom-Json).version
+          if ($tag.TrimStart("v") -ne $version) {
+            throw "La etiqueta $tag no coincide con la versión $version de src-tauri/tauri.conf.json"
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Configurar Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Caché de Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: release
+
+      - name: Compilar y publicar
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ steps.tag.outputs.tag }}
+          releaseName: "kotoba ${{ steps.tag.outputs.tag }}"
+          releaseBody: |
+            Instaladores de kotoba ${{ steps.tag.outputs.tag }} para Windows 10 y 11 (x64).
+
+            - **MSI**: `kotoba_${{ steps.tag.outputs.version }}_x64_en-US.msi`
+            - **NSIS**: `kotoba_${{ steps.tag.outputs.version }}_x64-setup.exe`
+
+            Descarga el que prefieras: el MSI es el instalador clásico de Windows y el NSIS permite
+            instalar sin permisos de administrador.
+
+            Los binarios **no están firmados digitalmente**, así que SmartScreen puede pedir
+            confirmación la primera vez. El código fuente de esta versión está en la etiqueta
+            `${{ steps.tag.outputs.tag }}`.
+
+            WebView2 viene incluido en Windows 11 y en la mayoría de equipos con Windows 10; si
+            falta, el instalador puede descargarlo.
+          releaseDraft: false
+          prerelease: false
