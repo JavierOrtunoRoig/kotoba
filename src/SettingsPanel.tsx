@@ -728,6 +728,59 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             label={t("Audio automático")}
           />
         </div>
+
+        <div className="field">
+          <div>
+            <div className="field-label">{t("Nuevas por día")}</div>
+            <div className="field-desc">
+              {t(
+                "Palabras nuevas que se introducen cada día, en orden de lección y subapartado. 0 = ninguna.",
+              )}
+            </div>
+          </div>
+          <div className="range-control single">
+            <input
+              type="range"
+              min={0}
+              max={50}
+              step={1}
+              value={settings.new_per_day}
+              aria-label={t("Nuevas por día")}
+              onChange={(event) =>
+                update("new_per_day", Number(event.currentTarget.value))
+              }
+            />
+            <output>{settings.new_per_day}</output>
+          </div>
+        </div>
+
+        <div className="field">
+          <div>
+            <div className="field-label">{t("Mezcla de nuevas")}</div>
+            <div className="field-desc">
+              {t(
+                "0 = primero los repasos vencidos. Con repasos pendientes, este porcentaje decide cuántas nuevas se muestran.",
+              )}
+            </div>
+          </div>
+          <div className="range-control single">
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={10}
+              value={settings.new_mix_percent}
+              aria-label={t("Mezcla de nuevas")}
+              onChange={(event) =>
+                update(
+                  "new_mix_percent",
+                  Number(event.currentTarget.value),
+                )
+              }
+            />
+            <output>{settings.new_mix_percent}%</output>
+          </div>
+        </div>
       </article>
 
       <article className="panel">

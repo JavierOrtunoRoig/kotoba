@@ -175,6 +175,8 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
         <span className="direction">{directionLabel(direction, settings.language)}</span>
         <span className="due">
           {t("{n} pendientes", { n: challenge.due_count })}
+          {challenge.new_count > 0 &&
+            ` · ${t("{n} nuevas", { n: challenge.new_count })}`}
         </span>
       </header>
 

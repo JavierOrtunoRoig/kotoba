@@ -125,9 +125,9 @@ export default function MainApp() {
             {boot.settings.paused ? t("En pausa") : t("Activo")}
           </div>
           <div className="rail-meta">
-            {t("{n} pendientes · {m} palabras", {
-              n: boot.stats.due_now,
-              m: boot.stats.total_items,
+            {t("{due} pendientes · {new} nuevas", {
+              due: boot.stats.due_now,
+              new: boot.stats.new_available,
             })}
           </div>
           <div className="rail-meta">

@@ -26,6 +26,8 @@ export interface Settings {
   theme: Theme;
   font_scale: number;
   language: Language;
+  new_per_day: number;
+  new_mix_percent: number;
 }
 
 export type Theme = "auto" | "light" | "dark";
@@ -47,6 +49,7 @@ export interface Challenge {
   item: Item;
   direction: Direction;
   due_count: number;
+  new_count: number;
 }
 
 export interface AnswerResult {
@@ -111,6 +114,9 @@ export interface Stats {
   streak_days: number;
   mastered: number;
   due_now: number;
+  new_available: number;
+  new_today: number;
+  new_per_day: number;
   activity: DayCount[];
   lessons: LessonStat[];
   difficult: DifficultItem[];

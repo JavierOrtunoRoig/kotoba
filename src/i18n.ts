@@ -21,6 +21,10 @@ const en: Dict = {
   "En pausa": "Paused",
   Activo: "Active",
   "{n} pendientes · {m} palabras": "{n} due · {m} words",
+  "{due} pendientes · {new} nuevas": "{due} due · {new} new",
+  "{n} nuevas": "{n} new",
+  "{n} nuevas disponibles": "{n} new available",
+  "Nuevas hoy: {n} / {m}": "New today: {n} / {m}",
   "{min}–{max} min entre retos": "{min}–{max} min between challenges",
   "Micro-reto": "Micro-challenge",
   "Saltar al contenido": "Skip to content",
@@ -206,6 +210,12 @@ const en: Dict = {
     "If the end time is earlier, the range crosses midnight.",
   "Nivel, racha, logros y objetivos.": "Level, streak, achievements and goals.",
   "Repasos por semana. 0 = sin objetivo.": "Reviews per week. 0 = no goal.",
+  "Nuevas por día": "New words per day",
+  "Palabras nuevas que se introducen cada día, en orden de lección y subapartado. 0 = ninguna.":
+    "New words introduced each day, in lesson and subsection order. 0 = none.",
+  "Mezcla de nuevas": "New word mix",
+  "0 = primero los repasos vencidos. Con repasos pendientes, este porcentaje decide cuántas nuevas se muestran.":
+    "0 = due reviews first. When reviews are pending, this percentage decides how many new words slip in.",
   "Maestría por lección": "Lesson mastery",
   "Porcentaje de palabras con intervalo de 7 días o más para dar una lección por dominada.":
     "Percentage of words with a 7-day interval or more to consider a lesson mastered.",
@@ -349,6 +359,10 @@ const ja: Dict = {
   "En pausa": "一時停止中",
   Activo: "稼働中",
   "{n} pendientes · {m} palabras": "残り{n}語 · 全{m}語",
+  "{due} pendientes · {new} nuevas": "残り{due}語 · 新規{new}語",
+  "{n} nuevas": "新規{n}語",
+  "{n} nuevas disponibles": "新規{n}語が利用可能",
+  "Nuevas hoy: {n} / {m}": "今日の新規：{n} / {m}",
   "{min}–{max} min entre retos": "チャレンジ間隔 {min}–{max}分",
   "Micro-reto": "ミニチャレンジ",
   "Saltar al contenido": "コンテンツへスキップ",
@@ -527,6 +541,12 @@ const ja: Dict = {
     "終了時刻が開始より早い場合は日をまたぎます。",
   "Nivel, racha, logros y objetivos.": "レベル、連続記録、実績、目標。",
   "Repasos por semana. 0 = sin objetivo.": "週あたりの復習回数。0 = 目標なし。",
+  "Nuevas por día": "1日の新しい単語",
+  "Palabras nuevas que se introducen cada día, en orden de lección y subapartado. 0 = ninguna.":
+    "1日に導入する新しい単語。レッスンとサブセクションの順に進みます。0 = なし。",
+  "Mezcla de nuevas": "新しい単語の混ぜ方",
+  "0 = primero los repasos vencidos. Con repasos pendientes, este porcentaje decide cuántas nuevas se muestran.":
+    "0 = 期限切れの復習を優先。復習が残っている場合、この割合で新しい単語を混ぜます。",
   "Maestría por lección": "レッスン習得",
   "Porcentaje de palabras con intervalo de 7 días o más para dar una lección por dominada.":
     "レッスン制覇とみなす、間隔7日以上の単語の割合。",

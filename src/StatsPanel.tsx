@@ -131,8 +131,16 @@ export default function StatsPanel({ language, onPractice }: Props) {
           <span className="stat-k">{t("Pendientes")}</span>
           <span className="stat-v">{stats.due_now}</span>
           <span className="stat-s">
-            {t("{n} palabras en total", { n: stats.total_items })}
+            {t("{n} nuevas disponibles", { n: stats.new_available })}
           </span>
+          {stats.new_per_day > 0 && (
+            <span className="stat-s">
+              {t("Nuevas hoy: {n} / {m}", {
+                n: stats.new_today,
+                m: stats.new_per_day,
+              })}
+            </span>
+          )}
         </article>
       </div>
 
