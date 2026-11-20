@@ -245,3 +245,17 @@ XP, con títulos por tramo: Semilla, Brote, Raíz, Rama, Árbol y Bosque.
 **Consecuencias:** la racha sigue siendo flexible y no se castiga con avisos. Los salvavidas no se
 gastan sin actividad reciente ni reparan varios huecos de golpe. Las métricas de retención quedan
 fuera del MVP por no usar nube ni telemetría.
+
+## D-029 — Tema oscuro, idioma y escala de interfaz
+
+**Contexto:** RF2-07 pide completar la accesibilidad. La app se usa de noche y en sesiones cortas,
+y parte del vocabulario objetivo son usuarios que prefieren la interfaz en inglés o japonés.
+**Decisión:** añadir tres preferencias locales: `theme` (`auto`, `light`, `dark`), `language`
+(`es`, `en`, `ja`) y `font_scale` (90-125 %). `auto` sigue el tema de Windows en vivo. La escala se
+aplica con `zoom` compensado en `#root` y las ventanas flotantes crecen proporcionalmente para no
+recortar contenido. Toda la UI, la bandeja y las notificaciones usan el idioma elegido; los errores
+técnicos y el contenido del mazo se mantienen en su idioma original. La navegación por teclado usa
+elementos nativos, `Enter`/`Esc`, `aria-current`, foco visible y un enlace de salto.
+**Consecuencias:** las preferencias son locales y sin dependencias externas. El tema oscuro no
+introduce animaciones nuevas y respeta `prefers-reduced-motion`. Los textos de logros se traducen
+por título en el frontend y por clave en las notificaciones del backend.

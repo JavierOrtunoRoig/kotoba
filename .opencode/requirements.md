@@ -220,12 +220,15 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 - [x] Limpieza de audios huérfanos al borrar o reimportar.
 - [ ] Importación de mazos distintos a Genki 1.
 
-## RF2-07 — UX y accesibilidad
+## RF2-07 - UX y accesibilidad
 
 - [x] Icono e identidad visual propios (sello 言).
-- [ ] Navegación completa por teclado y foco visible.
-- [ ] Textos de UI en japonés/inglés además de español.
-- [ ] Ajustes de tamaño de fuente.
+- [x] Navegación por teclado y foco visible: enlace “saltar al contenido”, `aria-current` en la
+  navegación, `Enter` para comprobar y pasar al siguiente reto, `Esc` para cerrar el popup.
+- [x] Textos de UI en español, inglés y japonés (interfaz, bandeja y notificaciones).
+- [x] Ajuste de tamaño de la interfaz (90-125 %), con ventanas flotantes escaladas.
+- [x] **Tema oscuro** con opción automática, clara y oscura; `auto` sigue el tema de Windows.
+- [x] Respeto a `prefers-reduced-motion` y etiquetas accesibles en controles e iconos.
 
 ## RF2-08 — Robustez
 

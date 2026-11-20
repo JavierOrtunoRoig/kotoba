@@ -36,6 +36,8 @@ Lo que ya funciona:
 - **Progreso de importación** en vivo (evento cada 25 notas).
 - **Gamificación**: XP por calidad, niveles con títulos, racha flexible con salvavidas, objetivo
   semanal, 16 logros y maestría por lección.
+- **Accesibilidad y apariencia**: tema claro/oscuro/automático, interfaz en español, inglés o
+  japonés, escala 90-125 %, navegación por teclado y foco visible.
 - **Notificaciones de hitos** opt-in (objetivo semanal y logros), respetando DND y pantalla completa.
 - **Logs a archivo** con acceso desde Ajustes.
 - Pantallas de importación, progreso y ajustes.

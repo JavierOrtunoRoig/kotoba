@@ -44,7 +44,7 @@ progreso y ajustes.
 | Plantillas (`is_pattern`) | 66 |
 | Avisos de importación | 0 |
 | RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 35 OK (+3 ignored: importación, normalización y progreso reales) |
+| Tests unitarios Rust | 36 OK (+3 ignored: importación, normalización y progreso reales) |
 | Respuestas reales validadas | 2.629 |
 | Copia de seguridad | SQLite + 827 audios |
 | Typecheck / build frontend | OK |
@@ -104,13 +104,20 @@ progreso y ajustes.
 - **Migración v4:** `profile.streak_savers` y tabla `streak_repairs`; probada sobre una base v2.
 - **Salvavidas medido en la app:** objetivo 26 → repaso 26, `saver_earned = true`, 1 salvavidas,
   logros `weekly_goal_1` y aviso `objetivo semanal completado: 26 repasos`.
+- **RF2-07 UX y accesibilidad:** tema oscuro `auto`/claro/oscuro siguiendo Windows, idioma
+  español/inglés/japonés en interfaz, bandeja y notificaciones, y escala de interfaz 90-125 %.
+- **Teclado:** enlace “saltar al contenido”, `aria-current`, `Enter` para comprobar/pasar y `Esc`
+  para cerrar el popup; foco visible y `prefers-reduced-motion` respetado.
+- **Verificado en la app:** tema claro/oscuro en vivo, textos en inglés y japonés, escala 110 % en
+  Progreso y popup, y barra de racha con formato japonés correcto.
 
 ## Datos de prueba en el equipo
 
 La app tiene importado el mazo en `%APPDATA%\com.kotoba.app` y **26 repasos de prueba**, **57 XP**,
 nivel 1 «Semilla», racha/mejor 1, **3 logros desbloqueados** (`first_step`, `reviews_25`,
 `weekly_goal_1`), **1 salvavidas**, objetivo semanal 30, maestría por lección 90 % y notificaciones
-de hito desactivadas. El modo se dejó en `popup` y el DND en 22:00–08:00.
+de hito desactivadas. El modo se dejó en `popup`, el DND en 22:00–08:00 y la apariencia en
+`auto`/español/100 %.
 
 Para dejarlo limpio:
 
