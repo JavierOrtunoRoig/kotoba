@@ -12,7 +12,7 @@
 - **Dependabot al día (2026-11-21):** los 7 PRs de la primera ronda están mergeados. `rand` 0.10
   obligó a migrar el scheduler a `rand::rng().random_range()` con el rasgo `RngExt`; `zip` 9,
   `zstd` 0.14, `sha1` 0.11, `windows-sys` 0.61, TypeScript 7 y las actions actualizadas sin
-  cambios de código.
+  cambios de código. Proceso automatizado como skill local: `skills/dependabot-prs/`.
 
 ## Fase actual
 

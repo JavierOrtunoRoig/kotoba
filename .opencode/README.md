@@ -14,10 +14,12 @@ La visión de producto sigue estando en [`../docs/plan.md`](../docs/plan.md).
 | [`requirements.md`](requirements.md) | Requisitos implementados, criterios de aceptación y backlog futuro |
 | [`architecture.md`](architecture.md) | Módulos, esquema SQLite, flujo de importación, comandos IPC y UI |
 | [`state.md`](state.md) | Estado actual, métricas verificadas, datos de prueba y deuda técnica |
+| [`skills/dependabot-prs/`](skills/dependabot-prs/SKILL.md) | Skill de OpenCode para gestionar PRs de Dependabot (listar, preparar, verificar y mergear) |
 
 ## Reglas de mantenimiento
 
-1. **Actualizar al cambiar el comportamiento**, no al final del proyecto.
+1. **Actualizar al cambiar el comportamiento**, no al final del proyecto. Las skills locales viven
+   en `skills/<nombre>/SKILL.md` con sus scripts en `skills/<nombre>/scripts/`.
 2. Las decisiones nuevas se añaden a `decisions.md` con un identificador `D-0xx`.
 3. Los requisitos nuevos se añaden a `requirements.md` con un identificador `RF-xx` / `RF2-xx`.
 4. Los comandos que se usen más de una vez van a `commands.md`.
