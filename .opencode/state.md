@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: **2026-11-20**.
+Última verificación: **2026-11-21**.
 
 **Repositorio público:** <https://github.com/JavierOrtunoRoig/kotoba> (código bajo MIT).
 
@@ -9,6 +9,10 @@
   `skills-lock.json`); el índice local `.codegraph/` queda ignorado.
 - CI y releases en `.github/workflows/`: `ci.yml` valida TypeScript y Rust en cada push/PR, y
   `release.yml` publica MSI y NSIS al empujar una etiqueta `v*`. Release `v0.1.0` publicada.
+- **Dependabot al día (2026-11-21):** los 7 PRs de la primera ronda están mergeados. `rand` 0.10
+  obligó a migrar el scheduler a `rand::rng().random_range()` con el rasgo `RngExt`; `zip` 9,
+  `zstd` 0.14, `sha1` 0.11, `windows-sys` 0.61, TypeScript 7 y las actions actualizadas sin
+  cambios de código.
 
 ## Fase actual
 
@@ -52,7 +56,7 @@ progreso y ajustes.
 | Plantillas (`is_pattern`) | 66 |
 | Avisos de importación | 0 |
 | RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 42 OK (+4 ignored: importación, normalización, progreso y tipos de nota reales) |
+| Tests unitarios Rust | 83 OK (+4 ignored: importación, normalización, progreso y tipos de nota reales) |
 | Respuestas reales validadas | 2.629 |
 | Copia de seguridad | SQLite + 827 audios |
 | Typecheck / build frontend | OK |
