@@ -12,6 +12,27 @@ const POPUP_HEIGHT: f64 = 280.0;
 const WIDGET_WIDTH: f64 = 340.0;
 const WIDGET_HEIGHT: f64 = 248.0;
 const TASKBAR_OFFSET: i32 = 52;
+const MARGIN: i32 = 24;
+
+fn popup_size(scale: f64) -> (f64, f64) {
+    (POPUP_WIDTH * scale, POPUP_HEIGHT * scale)
+}
+
+fn widget_size(scale: f64) -> (f64, f64) {
+    (WIDGET_WIDTH * scale, WIDGET_HEIGHT * scale)
+}
+
+/// Esquina inferior derecha del monitor, con margen y hueco para la barra de tareas.
+fn bottom_right_position(
+    monitor_position: (i32, i32),
+    monitor_size: (u32, u32),
+    window_size: (u32, u32),
+) -> (i32, i32) {
+    let x = monitor_position.0 + monitor_size.0 as i32 - window_size.0 as i32 - MARGIN;
+    let y = monitor_position.1 + monitor_size.1 as i32 - window_size.1 as i32 - MARGIN
+        - TASKBAR_OFFSET;
+    (x, y)
+}
 
 pub fn show_main(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
@@ -36,8 +57,7 @@ fn ui_scale(app: &AppHandle) -> f64 {
 }
 
 pub fn show_popup(app: &AppHandle) -> tauri::Result<()> {
-    let scale = ui_scale(app);
-    let (width, height) = (POPUP_WIDTH * scale, POPUP_HEIGHT * scale);
+    let (width, height) = popup_size(ui_scale(app));
     let window = ensure_window(app, "popup", width, height)?;
     let _ = window.set_size(LogicalSize::new(width, height));
     position_bottom_right(&window)?;
@@ -52,8 +72,7 @@ pub fn show_popup(app: &AppHandle) -> tauri::Result<()> {
 }
 
 pub fn show_widget(app: &AppHandle) -> tauri::Result<()> {
-    let scale = ui_scale(app);
-    let (width, height) = (WIDGET_WIDTH * scale, WIDGET_HEIGHT * scale);
+    let (width, height) = widget_size(ui_scale(app));
     let window = ensure_window(app, "widget", width, height)?;
     let _ = window.set_size(LogicalSize::new(width, height));
     position_bottom_right(&window)?;
@@ -71,17 +90,13 @@ pub fn show_widget(app: &AppHandle) -> tauri::Result<()> {
 pub fn apply_font_scale(app: &AppHandle) {
     let scale = ui_scale(app);
     if let Some(window) = app.get_webview_window("popup") {
-        let _ = window.set_size(LogicalSize::new(
-            POPUP_WIDTH * scale,
-            POPUP_HEIGHT * scale,
-        ));
+        let (width, height) = popup_size(scale);
+        let _ = window.set_size(LogicalSize::new(width, height));
         let _ = position_bottom_right(&window);
     }
     if let Some(window) = app.get_webview_window("widget") {
-        let _ = window.set_size(LogicalSize::new(
-            WIDGET_WIDTH * scale,
-            WIDGET_HEIGHT * scale,
-        ));
+        let (width, height) = widget_size(scale);
+        let _ = window.set_size(LogicalSize::new(width, height));
         let _ = position_bottom_right(&window);
     }
 }
@@ -228,10 +243,11 @@ fn position_bottom_right(window: &WebviewWindow) -> tauri::Result<()> {
         let size = window.outer_size()?;
         let monitor_size = monitor.size();
         let monitor_position = monitor.position();
-        let margin = 24i32;
-        let x = monitor_position.x + monitor_size.width as i32 - size.width as i32 - margin;
-        let y = monitor_position.y + monitor_size.height as i32 - size.height as i32 - margin
-            - TASKBAR_OFFSET;
+        let (x, y) = bottom_right_position(
+            (monitor_position.x, monitor_position.y),
+            (monitor_size.width, monitor_size.height),
+            (size.width, size.height),
+        );
         window.set_position(PhysicalPosition::new(x, y))?;
     }
     Ok(())
@@ -272,4 +288,94 @@ fn show_without_activation(window: &WebviewWindow) -> tauri::Result<()> {
 #[cfg(not(target_os = "windows"))]
 fn show_without_activation(window: &WebviewWindow) -> tauri::Result<()> {
     window.show()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const FULL_HD: (u32, u32) = (1920, 1080);
+
+    #[test]
+    fn scales_popup_size() {
+        assert_eq!(popup_size(1.0), (392.0, 280.0));
+        assert_eq!(popup_size(1.5), (588.0, 420.0));
+        assert_eq!(popup_size(2.0), (784.0, 560.0));
+    }
+
+    #[test]
+    fn scales_widget_size() {
+        assert_eq!(widget_size(1.0), (340.0, 248.0));
+        assert_eq!(widget_size(1.5), (510.0, 372.0));
+        assert_eq!(widget_size(2.0), (680.0, 496.0));
+    }
+
+    #[test]
+    fn positions_popup_at_bottom_right_with_taskbar_gap() {
+        // 1920 - 392 - 24 = 1504; 1080 - 280 - 24 - 52 = 724
+        assert_eq!(
+            bottom_right_position((0, 0), FULL_HD, (392, 280)),
+            (1504, 724)
+        );
+    }
+
+    #[test]
+    fn positions_widget_at_bottom_right_with_taskbar_gap() {
+        // 1920 - 340 - 24 = 1556; 1080 - 248 - 24 - 52 = 756
+        assert_eq!(
+            bottom_right_position((0, 0), FULL_HD, (340, 248)),
+            (1556, 756)
+        );
+    }
+
+    #[test]
+    fn positions_respect_scaled_window_size() {
+        let (width, height) = popup_size(1.25);
+        assert_eq!(
+            bottom_right_position((0, 0), FULL_HD, (width as u32, height as u32)),
+            (1406, 654)
+        );
+    }
+
+    #[test]
+    fn positions_on_secondary_monitor_use_monitor_offset() {
+        // Monitor a la derecha del principal.
+        assert_eq!(
+            bottom_right_position((1920, 0), FULL_HD, (392, 280)),
+            (3424, 724)
+        );
+        // Monitor a la izquierda: coordenadas negativas.
+        assert_eq!(
+            bottom_right_position((-1920, 0), FULL_HD, (392, 280)),
+            (-416, 724)
+        );
+        // Monitor encima del principal.
+        assert_eq!(
+            bottom_right_position((0, -1080), FULL_HD, (392, 280)),
+            (1504, -356)
+        );
+    }
+
+    #[test]
+    fn positions_handle_small_and_high_dpi_monitors() {
+        // 1366x768: 1366 - 392 - 24 = 950; 768 - 280 - 24 - 52 = 412
+        assert_eq!(
+            bottom_right_position((0, 0), (1366, 768), (392, 280)),
+            (950, 412)
+        );
+        // Monitor 4K: 3840 - 392 - 24 = 3424; 2160 - 280 - 24 - 52 = 1804
+        assert_eq!(
+            bottom_right_position((0, 0), (3840, 2160), (392, 280)),
+            (3424, 1804)
+        );
+    }
+
+    #[test]
+    fn positions_can_be_negative_when_window_is_larger_than_monitor() {
+        // No debe entrar en pánico ni saturar: la resta es con signo.
+        assert_eq!(
+            bottom_right_position((0, 0), (300, 200), (392, 280)),
+            (-116, -156)
+        );
+    }
 }

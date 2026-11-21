@@ -42,6 +42,22 @@ npm run tauri build
 
 Build de producción (más lento, LTO activado). El instalador sale en `src-tauri/target/release/bundle/`.
 
+## Publicar una release
+
+1. Subir la versión en `package.json`, `src-tauri/Cargo.toml` y `src-tauri/tauri.conf.json`.
+2. Crear y empujar la etiqueta:
+
+   ```powershell
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+
+3. GitHub Actions compila y publica el MSI y el NSIS en **Releases**. El workflow `release.yml`
+   falla si la etiqueta no coincide con la versión de `tauri.conf.json`. También se puede lanzar a
+   mano desde la pestaña Actions indicando la etiqueta.
+
+La CI (`ci.yml`) se ejecuta en cada push a `main` y en cada pull request.
+
 ## Comprobaciones
 
 ```powershell

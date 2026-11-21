@@ -17,6 +17,20 @@ pub struct TrayState {
     pub toast_mode: CheckMenuItem<tauri::Wry>,
 }
 
+/// Etiqueta del ítem de pausa según el estado actual.
+fn pause_label(language: &str, paused: bool) -> &'static str {
+    if paused {
+        i18n::resume(language)
+    } else {
+        i18n::pause(language)
+    }
+}
+
+/// Marca de verificación de cada modo del submenú: (popup, widget, toast).
+fn mode_flags(mode: &str) -> (bool, bool, bool) {
+    (mode == "popup", mode == "widget", mode == "toast")
+}
+
 fn current_settings(app: &AppHandle) -> crate::models::Settings {
     app.state::<AppState>()
         .db
@@ -41,22 +55,19 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
     let pause = MenuItem::with_id(
         app,
         "pause",
-        if settings.paused {
-            i18n::resume(language)
-        } else {
-            i18n::pause(language)
-        },
+        pause_label(language, settings.paused),
         true,
         None::<&str>,
     )?;
     let quit = MenuItem::with_id(app, "quit", i18n::quit(language), true, None::<&str>)?;
 
+    let (popup_checked, widget_checked, toast_checked) = mode_flags(&settings.mode);
     let popup_mode = CheckMenuItem::with_id(
         app,
         "mode_popup",
         "Popup",
         true,
-        settings.mode == "popup",
+        popup_checked,
         None::<&str>,
     )?;
     let widget_mode = CheckMenuItem::with_id(
@@ -64,7 +75,7 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
         "mode_widget",
         "Widget",
         true,
-        settings.mode == "widget",
+        widget_checked,
         None::<&str>,
     )?;
     let toast_mode = CheckMenuItem::with_id(
@@ -72,7 +83,7 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
         "mode_toast",
         "Toast",
         true,
-        settings.mode == "toast",
+        toast_checked,
         None::<&str>,
     )?;
     let mode_menu = Submenu::with_items(
@@ -152,20 +163,17 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
 
 pub fn sync_mode(app: &AppHandle, mode: &str) {
     if let Some(tray) = app.try_state::<TrayState>() {
-        let _ = tray.popup_mode.set_checked(mode == "popup");
-        let _ = tray.widget_mode.set_checked(mode == "widget");
-        let _ = tray.toast_mode.set_checked(mode == "toast");
+        let (popup, widget, toast) = mode_flags(mode);
+        let _ = tray.popup_mode.set_checked(popup);
+        let _ = tray.widget_mode.set_checked(widget);
+        let _ = tray.toast_mode.set_checked(toast);
     }
 }
 
 pub fn sync_pause(app: &AppHandle, paused: bool) {
     let language = current_settings(app).language;
     if let Some(tray) = app.try_state::<TrayState>() {
-        let _ = tray.pause_item.set_text(if paused {
-            i18n::resume(&language)
-        } else {
-            i18n::pause(&language)
-        });
+        let _ = tray.pause_item.set_text(pause_label(&language, paused));
     }
 }
 
@@ -175,15 +183,64 @@ pub fn sync_language(app: &AppHandle, language: &str) {
     if let Some(tray) = app.try_state::<TrayState>() {
         let _ = tray.practice_item.set_text(i18n::practice_now(language));
         let _ = tray.open_item.set_text(i18n::open_app(language));
-        let _ = tray.pause_item.set_text(if paused {
-            i18n::resume(language)
-        } else {
-            i18n::pause(language)
-        });
+        let _ = tray.pause_item.set_text(pause_label(language, paused));
         let _ = tray.quit_item.set_text(i18n::quit(language));
         let _ = tray.mode_menu.set_text(i18n::mode(language));
     }
     if let Some(tray) = app.tray_by_id("main-tray") {
         let _ = tray.set_tooltip(Some(i18n::tooltip(language)));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const MODES: [&str; 3] = ["popup", "widget", "toast"];
+
+    #[test]
+    fn pause_label_shows_resume_when_paused() {
+        assert_eq!(pause_label("es", true), "Reanudar");
+        assert_eq!(pause_label("en", true), "Resume");
+        assert_eq!(pause_label("ja", true), "再開");
+    }
+
+    #[test]
+    fn pause_label_shows_pause_when_running() {
+        assert_eq!(pause_label("es", false), "Pausar");
+        assert_eq!(pause_label("en", false), "Pause");
+        assert_eq!(pause_label("ja", false), "一時停止");
+    }
+
+    #[test]
+    fn pause_label_falls_back_to_spanish() {
+        assert_eq!(pause_label("fr", false), pause_label("es", false));
+        assert_eq!(pause_label("fr", true), pause_label("es", true));
+    }
+
+    #[test]
+    fn mode_flags_checks_only_the_active_mode() {
+        assert_eq!(mode_flags("popup"), (true, false, false));
+        assert_eq!(mode_flags("widget"), (false, true, false));
+        assert_eq!(mode_flags("toast"), (false, false, true));
+    }
+
+    #[test]
+    fn mode_flags_have_exactly_one_check_for_known_modes() {
+        for mode in MODES {
+            let checked = mode_flags(mode);
+            let count = [checked.0, checked.1, checked.2]
+                .iter()
+                .filter(|value| **value)
+                .count();
+            assert_eq!(count, 1, "modo {mode} debería marcar un solo ítem");
+        }
+    }
+
+    #[test]
+    fn mode_flags_ignore_unknown_modes() {
+        for mode in ["", "Popup", "WIDGET", "unknown"] {
+            assert_eq!(mode_flags(mode), (false, false, false), "modo {mode}");
+        }
     }
 }

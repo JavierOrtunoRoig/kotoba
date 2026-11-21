@@ -28,6 +28,29 @@ fn to_err(error: impl std::fmt::Display) -> String {
     error.to_string()
 }
 
+/// Alterna la dirección respecto a la última respuesta.
+fn alternate_direction(last: Option<&str>) -> &'static str {
+    match last {
+        Some("jp_to_es") => "es_to_jp",
+        _ => "jp_to_es",
+    }
+}
+
+/// Calidad SM-2 según acierto, latencia y respuesta vacía.
+fn review_quality(correct: bool, answer: &str, latency_ms: i64) -> u8 {
+    if correct {
+        if latency_ms <= 5_000 {
+            5
+        } else {
+            4
+        }
+    } else if answer.trim().is_empty() {
+        1
+    } else {
+        2
+    }
+}
+
 #[tauri::command]
 fn bootstrap(state: State<AppState>) -> Result<Bootstrap, String> {
     let conn = state.db.lock().map_err(to_err)?;
@@ -173,10 +196,7 @@ fn next_challenge(
     };
 
     let direction = if settings.direction_mode == "alternate" {
-        match db::last_direction(&conn).map_err(to_err)?.as_deref() {
-            Some("jp_to_es") => "es_to_jp",
-            _ => "jp_to_es",
-        }
+        alternate_direction(db::last_direction(&conn).map_err(to_err)?.as_deref())
     } else if rand::random::<bool>() {
         "jp_to_es"
     } else {
@@ -213,17 +233,7 @@ fn submit_answer(
         text::check_es_to_jp(&answer, &item)
     };
 
-    let quality = if correct {
-        if latency_ms <= 5_000 {
-            5
-        } else {
-            4
-        }
-    } else if answer.trim().is_empty() {
-        1
-    } else {
-        2
-    };
+    let quality = review_quality(correct, &answer, latency_ms);
 
     let outcome = db::record_review(&mut conn, item_id, quality, &direction, latency_ms)
         .map_err(to_err)?;
@@ -652,4 +662,126 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn alternates_against_the_last_direction() {
+        assert_eq!(alternate_direction(Some("jp_to_es")), "es_to_jp");
+        assert_eq!(alternate_direction(Some("es_to_jp")), "jp_to_es");
+    }
+
+    #[test]
+    fn alternate_defaults_to_japanese_to_spanish() {
+        assert_eq!(alternate_direction(None), "jp_to_es");
+        assert_eq!(alternate_direction(Some("")), "jp_to_es");
+        assert_eq!(alternate_direction(Some("unknown")), "jp_to_es");
+    }
+
+    #[test]
+    fn fast_correct_answers_get_top_quality() {
+        assert_eq!(review_quality(true, "四", 0), 5);
+        assert_eq!(review_quality(true, "四", 5_000), 5);
+    }
+
+    #[test]
+    fn slow_correct_answers_lose_one_point() {
+        assert_eq!(review_quality(true, "四", 5_001), 4);
+        assert_eq!(review_quality(true, "四", 60_000), 4);
+    }
+
+    #[test]
+    fn empty_wrong_answers_get_lowest_quality() {
+        assert_eq!(review_quality(false, "", 1_000), 1);
+        assert_eq!(review_quality(false, "   ", 1_000), 1);
+        assert_eq!(review_quality(false, "\n\t", 1_000), 1);
+    }
+
+    #[test]
+    fn wrong_answers_get_quality_two() {
+        assert_eq!(review_quality(false, "ご", 1_000), 2);
+        assert_eq!(review_quality(false, "ご", 60_000), 2);
+    }
+
+    #[test]
+    fn correct_answer_wins_over_empty_check() {
+        assert_eq!(review_quality(true, "", 1_000), 5);
+    }
+
+    #[test]
+    fn csv_escape_keeps_simple_values() {
+        assert_eq!(csv_escape("escuela"), "escuela");
+        assert_eq!(csv_escape(""), "");
+        assert_eq!(csv_escape("日本語"), "日本語");
+    }
+
+    #[test]
+    fn csv_escape_quotes_separators_and_newlines() {
+        assert_eq!(csv_escape("a,b"), "\"a,b\"");
+        assert_eq!(csv_escape("a\nb"), "\"a\nb\"");
+        assert_eq!(csv_escape("a\rb"), "\"a\rb\"");
+    }
+
+    #[test]
+    fn csv_escape_doubles_inner_quotes() {
+        assert_eq!(csv_escape("decir \"hola\""), "\"decir \"\"hola\"\"\"");
+    }
+
+    #[test]
+    fn copy_media_copies_top_level_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let source = dir.path().join("source");
+        let target = dir.path().join("target");
+        fs::create_dir_all(&source).unwrap();
+        fs::write(source.join("a.mp3"), b"audio").unwrap();
+        fs::write(source.join("b.png"), b"image").unwrap();
+
+        copy_media(&source, &target).unwrap();
+
+        assert_eq!(fs::read(target.join("a.mp3")).unwrap(), b"audio");
+        assert_eq!(fs::read(target.join("b.png")).unwrap(), b"image");
+    }
+
+    #[test]
+    fn copy_media_skips_subdirectories() {
+        let dir = tempfile::tempdir().unwrap();
+        let source = dir.path().join("source");
+        let target = dir.path().join("target");
+        fs::create_dir_all(source.join("nested")).unwrap();
+        fs::write(source.join("nested").join("c.mp3"), b"audio").unwrap();
+        fs::write(source.join("top.mp3"), b"audio").unwrap();
+
+        copy_media(&source, &target).unwrap();
+
+        assert!(target.join("top.mp3").is_file());
+        assert!(!target.join("nested").exists());
+    }
+
+    #[test]
+    fn copy_media_handles_missing_source() {
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("target");
+
+        copy_media(&dir.path().join("missing"), &target).unwrap();
+
+        assert!(target.is_dir());
+        assert_eq!(fs::read_dir(&target).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn copy_media_creates_nested_target() {
+        let dir = tempfile::tempdir().unwrap();
+        let source = dir.path().join("source");
+        let target = dir.path().join("a").join("b");
+        fs::create_dir_all(&source).unwrap();
+        fs::write(source.join("x.mp3"), b"audio").unwrap();
+
+        copy_media(&source, &target).unwrap();
+
+        assert_eq!(fs::read(target.join("x.mp3")).unwrap(), b"audio");
+    }
 }
