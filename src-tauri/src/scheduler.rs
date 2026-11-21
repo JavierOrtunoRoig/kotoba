@@ -2,7 +2,7 @@ use crate::db;
 use crate::models::Settings;
 use crate::{shell, AppState};
 use chrono::Timelike;
-use rand::Rng;
+use rand::RngExt;
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
@@ -73,7 +73,7 @@ pub fn start(app: AppHandle) {
 
             let min = settings.interval_min_minutes.max(1) as u64;
             let max = settings.interval_max_minutes.max(settings.interval_min_minutes) as u64;
-            let minutes = rand::thread_rng().gen_range(min..=max);
+            let minutes = rand::rng().random_range(min..=max);
             next_run = Instant::now() + Duration::from_secs(minutes * 60);
         }
     });
