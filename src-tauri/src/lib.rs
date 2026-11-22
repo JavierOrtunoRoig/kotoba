@@ -68,6 +68,7 @@ fn bootstrap(state: State<AppState>) -> Result<Bootstrap, String> {
         item_count,
         settings,
         stats,
+        dev_build: cfg!(debug_assertions),
     })
 }
 

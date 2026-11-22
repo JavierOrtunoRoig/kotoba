@@ -37,18 +37,22 @@ function Toggle({
   checked,
   onChange,
   label,
+  disabled,
 }: {
   checked: boolean;
   onChange: (value: boolean) => void;
   label: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-disabled={disabled || undefined}
       aria-label={label}
       className={`switch ${checked ? "on" : ""}`}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
     />
   );
@@ -74,15 +78,25 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
   }, []);
 
   useEffect(() => {
+    // En desarrollo el binario es de consola y carga el devUrl: arrancar con Windows deja
+    // una ventana abierta y una página de error. Solo se permite desde la app instalada.
+    if (boot.dev_build) {
+      setAutostart(false);
+      setSettings((current) => ({ ...current, launch_at_startup: false }));
+      return;
+    }
     isAutostartEnabled()
       .then((enabled) => {
         setAutostart(enabled);
         setSettings((current) => ({ ...current, launch_at_startup: enabled }));
       })
       .catch(() => undefined);
-  }, []);
+  }, [boot.dev_build]);
 
-  const dirty = JSON.stringify(settings) !== JSON.stringify(boot.settings);
+  // El autostart se aplica al instante con el plugin; no cuenta como cambio sin guardar.
+  const dirty =
+    JSON.stringify({ ...settings, launch_at_startup: false }) !==
+    JSON.stringify({ ...boot.settings, launch_at_startup: false });
 
   useEffect(() => {
     applyAppearance(settings.theme, settings.font_scale);
@@ -130,6 +144,10 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
   }
 
   async function toggleAutostart(next: boolean) {
+    if (boot.dev_build) {
+      onToast(t("No disponible en la compilación de desarrollo."));
+      return;
+    }
     try {
       if (next) {
         await enableAutostart();
@@ -822,13 +840,16 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
           <div>
             <div className="field-label">{t("Arrancar con Windows")}</div>
             <div className="field-desc">
-              {t("kotoba se inicia en la bandeja sin abrir ninguna ventana.")}
+              {boot.dev_build
+                ? t("No disponible en la compilación de desarrollo.")
+                : t("kotoba se inicia en la bandeja sin abrir ninguna ventana.")}
             </div>
           </div>
           <Toggle
             checked={autostart}
             onChange={(value) => void toggleAutostart(value)}
             label={t("Arrancar con Windows")}
+            disabled={boot.dev_build}
           />
         </div>
 

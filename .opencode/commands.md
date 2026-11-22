@@ -34,6 +34,11 @@ npm run tauri dev
 Esto levanta Vite en `http://localhost:1420` y abre la app Tauri. La ventana principal se muestra
 sola si la biblioteca está vacía; si ya hay ítems, la app vive en la bandeja.
 
+El binario de desarrollo es de consola y carga el `devUrl`: **no actives «Arrancar con Windows»** en
+esa build. Si se ejecuta sin Vite (por ejemplo, desde el autostart), abre una consola con los logs y
+una página `ERR_CONNECTION_REFUSED`. La opción está deshabilitada en compilaciones debug; para
+autostart, instala el MSI/NSIS de una release y actívala desde esa app.
+
 ## Build
 
 ```powershell

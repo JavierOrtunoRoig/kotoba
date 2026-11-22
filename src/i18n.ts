@@ -279,6 +279,8 @@ const en: Dict = {
   "Arrancar con Windows": "Start with Windows",
   "kotoba se inicia en la bandeja sin abrir ninguna ventana.":
     "kotoba starts in the tray without opening any window.",
+  "No disponible en la compilación de desarrollo.":
+    "Not available in development builds.",
   "Registro de la app": "App log",
   "Abre la carpeta con los logs para diagnosticar problemas.":
     "Open the logs folder to diagnose problems.",
@@ -630,6 +632,8 @@ const ja: Dict = {
   "Arrancar con Windows": "Windows と同時に起動",
   "kotoba se inicia en la bandeja sin abrir ninguna ventana.":
     "ウィンドウを開かずトレイで起動します。",
+  "No disponible en la compilación de desarrollo.":
+    "開発ビルドでは利用できません。",
   "Registro de la app": "アプリのログ",
   "Abre la carpeta con los logs para diagnosticar problemas.":
     "問題の診断用にログフォルダーを開きます。",

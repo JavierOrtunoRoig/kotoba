@@ -139,6 +139,7 @@ export interface Bootstrap {
   item_count: number;
   settings: Settings;
   stats: Stats;
+  dev_build: boolean;
 }
 
 export interface ImportSummary {

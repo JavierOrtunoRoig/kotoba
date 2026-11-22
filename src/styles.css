@@ -1757,6 +1757,11 @@ input[type="time"]:disabled {
   background: var(--moss);
 }
 
+.switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .switch.on::after {
   transform: translateX(18px);
 }

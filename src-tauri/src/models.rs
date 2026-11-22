@@ -275,6 +275,9 @@ pub struct Bootstrap {
     pub item_count: i64,
     pub settings: Settings,
     pub stats: Stats,
+    /// `true` en compilaciones de desarrollo. La UI desactiva lo que solo funciona en release
+    /// (por ejemplo, arrancar con Windows: un binario debug abre consola y carga el devUrl).
+    pub dev_build: bool,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

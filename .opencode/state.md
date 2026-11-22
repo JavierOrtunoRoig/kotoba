@@ -13,6 +13,9 @@
   obligó a migrar el scheduler a `rand::rng().random_range()` con el rasgo `RngExt`; `zip` 9,
   `zstd` 0.14, `sha1` 0.11, `windows-sys` 0.61, TypeScript 7 y las actions actualizadas sin
   cambios de código. Proceso automatizado como skill local: `skills/dependabot-prs/`.
+- **Autostart solo en release (2026-11-22):** el binario debug usa el `devUrl` y abre consola. La UI
+  deshabilita «Arrancar con Windows» cuando `Bootstrap.dev_build` es true para no registrar el exe de
+  `target/debug` en el arranque de Windows.
 
 ## Fase actual
 
