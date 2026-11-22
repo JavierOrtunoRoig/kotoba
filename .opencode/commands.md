@@ -77,8 +77,8 @@ npm run tauri build
 2. Crear y empujar la etiqueta:
 
    ```powershell
-   git tag v0.1.0
-   git push origin v0.1.0
+   git tag v0.1.1
+   git push origin v0.1.1
    ```
 
 3. GitHub Actions compila y publica en **Releases** el MSI, el NSIS, sus `.sig` y `latest.json` para

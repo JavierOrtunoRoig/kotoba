@@ -46,4 +46,4 @@ La visión de producto sigue estando en [`../docs/plan.md`](../docs/plan.md).
   **66 plantillas**.
 - Windows only, Tauri 2 + React 19 + SQLite, sin red.
 - Pendiente: AnkiConnect, más mazos y firma del instalador.
-- CI y releases en `.github/workflows/`; la etiqueta `v0.1.0` genera MSI y NSIS.
+- CI y releases en `.github/workflows/`; la etiqueta `v0.1.1` genera MSI y NSIS.
