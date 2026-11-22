@@ -47,6 +47,29 @@ npm run tauri build
 
 Build de producción (más lento, LTO activado). El instalador sale en `src-tauri/target/release/bundle/`.
 
+Con `bundle.createUpdaterArtifacts` activo, el build de release exige la clave de firma:
+
+```powershell
+$env:TAURI_SIGNING_PRIVATE_KEY = Get-Content "$env:USERPROFILE\.tauri\kotoba-updater\kotoba.key" -Raw
+$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = "<contraseña de la clave>"
+npm run tauri build
+```
+
+## Actualizaciones automáticas
+
+- Plugin: `tauri-plugin-updater` + `tauri-plugin-process`.
+- Endpoint: `https://github.com/JavierOrtunoRoig/kotoba/releases/latest/download/latest.json`.
+- Clave pública: `plugins.updater.pubkey` en `src-tauri/tauri.conf.json`.
+- Clave privada: `%USERPROFILE%\.tauri\kotoba-updater\kotoba.key` (nunca al repo; `*.key` ignorado).
+- Secrets de GitHub: `TAURI_SIGNING_PRIVATE_KEY` (contenido) y `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+- Generar un par nuevo (rompe las actualizaciones de instalaciones existentes):
+
+  ```powershell
+  npx tauri signer generate -w "$env:USERPROFILE\.tauri\kotoba-updater\kotoba.key"
+  ```
+
+- Comprobar a mano: Ajustes → Sistema → «Buscar actualizaciones».
+
 ## Publicar una release
 
 1. Subir la versión en `package.json`, `src-tauri/Cargo.toml` y `src-tauri/tauri.conf.json`.
@@ -57,9 +80,10 @@ Build de producción (más lento, LTO activado). El instalador sale en `src-taur
    git push origin v0.1.0
    ```
 
-3. GitHub Actions compila y publica el MSI y el NSIS en **Releases**. El workflow `release.yml`
-   falla si la etiqueta no coincide con la versión de `tauri.conf.json`. También se puede lanzar a
-   mano desde la pestaña Actions indicando la etiqueta.
+3. GitHub Actions compila y publica en **Releases** el MSI, el NSIS, sus `.sig` y `latest.json` para
+   el updater. El workflow `release.yml` falla si la etiqueta no coincide con la versión de
+   `tauri.conf.json` o si faltan los secrets de firma. También se puede lanzar a mano desde la
+   pestaña Actions indicando la etiqueta.
 
 La CI (`ci.yml`) se ejecuta en cada push a `main` y en cada pull request.
 

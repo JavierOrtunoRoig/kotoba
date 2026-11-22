@@ -131,6 +131,10 @@ Los instaladores de la última versión están en
 > Los binarios todavía no están firmados digitalmente, así que Windows SmartScreen puede pedir
 > confirmación la primera vez. También puedes compilarlo tú mismo con las instrucciones de abajo.
 
+A partir de la versión con updater, kotoba comprueba GitHub Releases al arrancar y ofrece instalarse
+la nueva versión (también a mano en Ajustes → Sistema). Esa primera instalación sigue siendo manual;
+después las actualizaciones se descargan y aplican desde la propia app.
+
 ### Requisitos
 
 - Windows 10 u 11 con **WebView2** (viene preinstalado en Windows 11 y en la mayoría de Windows 10).

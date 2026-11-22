@@ -289,3 +289,17 @@ nombres conocidos y cae a posiciones Genki; el usuario puede corregirla. Anki us
 **Consecuencias:** se pueden importar mazos con otros campos sin cambiar el código, y también
 reimportar conservando el progreso. Los mapeos viven solo en la importación; no se guardan como
 preferencia. El contenido del mazo sigue siendo responsable de la calidad de los datos mapeados.
+
+## D-032 — Actualizaciones automáticas con tauri-plugin-updater
+
+**Contexto:** la app se distribuye como MSI/NSIS en GitHub Releases y no avisaba de versiones nuevas.
+Sin aviso, cada actualización depende de que el usuario revise la página del proyecto.
+**Decisión:** usar `tauri-plugin-updater` con `latest.json` publicado por `tauri-action` en cada
+release. El endpoint es `releases/latest/download/latest.json`. Los artefactos se firman con minisign
+(clave privada en secrets de GitHub; pública embebida en `tauri.conf.json`). La app comprueba al
+arrancar, avisa con un diálogo y, si se acepta, descarga, instala y reinicia. Se puede comprobar a
+mano desde Ajustes → Sistema. El aviso automático se puede posponer por versión (localStorage).
+**Consecuencias:** las instalaciones con esta versión en adelante se actualizan solas; las anteriores
+requieren una descarga manual. La firma del updater no sustituye a la firma Authenticode: SmartScreen
+sigue avisando. Si se pierde la clave privada, las instalaciones existentes rechazan actualizaciones
+futuras y hay que reinstalar una vez. La clave y su contraseña deben guardarse fuera del repo.

@@ -276,6 +276,17 @@ const en: Dict = {
   "Audio automático": "Automatic audio",
   Sistema: "System",
   "Integración con Windows.": "Windows integration.",
+  Actualizaciones: "Updates",
+  "Comprueba si hay una versión nueva de kotoba.":
+    "Check whether a new kotoba version is available.",
+  "Buscar actualizaciones": "Check for updates",
+  "Comprobando…": "Checking…",
+  "Ya tienes la última versión.": "You're on the latest version.",
+  "Actualización disponible": "Update available",
+  "kotoba {version} está disponible. ¿Actualizar ahora?":
+    "kotoba {version} is available. Update now?",
+  "Actualizar ahora": "Update now",
+  "Descargando la actualización…": "Downloading the update…",
   "Arrancar con Windows": "Start with Windows",
   "kotoba se inicia en la bandeja sin abrir ninguna ventana.":
     "kotoba starts in the tray without opening any window.",
@@ -629,6 +640,17 @@ const ja: Dict = {
   "Audio automático": "音声の自動再生",
   Sistema: "システム",
   "Integración con Windows.": "Windows との連携。",
+  Actualizaciones: "アップデート",
+  "Comprueba si hay una versión nueva de kotoba.":
+    "kotoba の新しいバージョンがあるか確認します。",
+  "Buscar actualizaciones": "アップデートを確認",
+  "Comprobando…": "確認中…",
+  "Ya tienes la última versión.": "最新バージョンです。",
+  "Actualización disponible": "アップデートがあります",
+  "kotoba {version} está disponible. ¿Actualizar ahora?":
+    "kotoba {version} が利用可能です。今すぐ更新しますか？",
+  "Actualizar ahora": "今すぐ更新",
+  "Descargando la actualización…": "アップデートをダウンロードしています…",
   "Arrancar con Windows": "Windows と同時に起動",
   "kotoba se inicia en la bandeja sin abrir ninguna ventana.":
     "ウィンドウを開かずトレイで起動します。",

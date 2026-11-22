@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { open, save as saveDialog } from "@tauri-apps/plugin-dialog";
+import { ask, open, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
 import {
   disable as disableAutostart,
@@ -17,6 +17,7 @@ import {
 import { applyAppearance } from "./appearance";
 import { LANGUAGES, useT } from "./i18n";
 import MappingDialog from "./MappingDialog";
+import { findUpdate, installUpdate } from "./updates";
 import {
   IconArchive,
   IconDownload,
@@ -62,6 +63,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
   const [settings, setSettings] = useState<Settings>(boot.settings);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [autostart, setAutostart] = useState(false);
   const [progress, setProgress] = useState<ImportProgress | null>(null);
   const [inspection, setInspection] = useState<ImportInspection | null>(null);
@@ -158,6 +160,42 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
       update("launch_at_startup", next);
     } catch (caught) {
       onToast(String(caught));
+    }
+  }
+
+  async function checkUpdates() {
+    if (boot.dev_build) {
+      onToast(t("No disponible en la compilación de desarrollo."));
+      return;
+    }
+    setUpdating(true);
+    try {
+      const update = await findUpdate();
+      if (!update) {
+        onToast(t("Ya tienes la última versión."));
+        return;
+      }
+      const accepted = await ask(
+        t("kotoba {version} está disponible. ¿Actualizar ahora?", {
+          version: update.version,
+        }),
+        {
+          title: t("Actualización disponible"),
+          kind: "info",
+          okLabel: t("Actualizar ahora"),
+          cancelLabel: t("Ahora no"),
+        },
+      );
+      if (!accepted) {
+        await update.close();
+        return;
+      }
+      onToast(t("Descargando la actualización…"));
+      await installUpdate(update);
+    } catch (caught) {
+      onToast(String(caught));
+    } finally {
+      setUpdating(false);
     }
   }
 
@@ -851,6 +889,26 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             label={t("Arrancar con Windows")}
             disabled={boot.dev_build}
           />
+        </div>
+
+        <div className="field">
+          <div>
+            <div className="field-label">{t("Actualizaciones")}</div>
+            <div className="field-desc">
+              {boot.dev_build
+                ? t("No disponible en la compilación de desarrollo.")
+                : t("Comprueba si hay una versión nueva de kotoba.")}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="ghost"
+            disabled={updating || boot.dev_build}
+            onClick={() => void checkUpdates()}
+          >
+            <IconRefresh size={16} />
+            {updating ? t("Comprobando…") : t("Buscar actualizaciones")}
+          </button>
         </div>
 
         <div className="field">

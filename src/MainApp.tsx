@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { api, type Bootstrap } from "./api";
 import { applyAppearance } from "./appearance";
 import { useT } from "./i18n";
@@ -7,6 +9,7 @@ import ImportPanel from "./ImportPanel";
 import PracticePanel from "./PracticePanel";
 import StatsPanel from "./StatsPanel";
 import SettingsPanel from "./SettingsPanel";
+import { findUpdate, installUpdate } from "./updates";
 import {
   IconChart,
   IconPractice,
@@ -14,6 +17,9 @@ import {
 } from "./Icons";
 
 type View = "practice" | "stats" | "settings";
+
+/** Versión que el usuario decidió posponer, para no repetir el aviso en cada arranque. */
+const SKIPPED_UPDATE = "kotoba.skipped_update";
 
 export default function MainApp() {
   const [boot, setBoot] = useState<Bootstrap | null>(null);
@@ -61,6 +67,51 @@ export default function MainApp() {
       applyAppearance(boot.settings.theme, boot.settings.font_scale);
     }
   }, [boot?.settings.theme, boot?.settings.font_scale]);
+
+  // Aviso de actualización al arrancar. Solo en la app instalada: firmar y actualizar un
+  // binario de desarrollo rompería el flujo de `tauri dev`.
+  useEffect(() => {
+    if (!boot || boot.dev_build) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const update = await findUpdate();
+        if (!alive || !update) return;
+        if (window.localStorage.getItem(SKIPPED_UPDATE) === update.version) {
+          await update.close();
+          return;
+        }
+
+        const win = getCurrentWindow();
+        await win.show();
+        await win.setFocus();
+        const accepted = await ask(
+          t("kotoba {version} está disponible. ¿Actualizar ahora?", {
+            version: update.version,
+          }),
+          {
+            title: t("Actualización disponible"),
+            kind: "info",
+            okLabel: t("Actualizar ahora"),
+            cancelLabel: t("Ahora no"),
+          },
+        );
+        if (!accepted) {
+          window.localStorage.setItem(SKIPPED_UPDATE, update.version);
+          await update.close();
+          return;
+        }
+        await installUpdate(update);
+      } catch {
+        // Sin red o sin `latest.json`: no molestar en el arranque.
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+    // `t` cambia con el idioma; el aviso se lanza una vez por sesión.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boot?.dev_build]);
 
   if (!boot) {
     return (

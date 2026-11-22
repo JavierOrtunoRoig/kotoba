@@ -16,6 +16,10 @@ pnpm-debug.log*
 src-tauri/target/
 src-tauri/gen/
 
+# --- Claves de firma de actualizaciones (nunca versionar) ---
+*.key
+*.key.pub
+
 # --- Tauri build artifacts ---
 target/
 *.app
