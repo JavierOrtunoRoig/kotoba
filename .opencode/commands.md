@@ -59,6 +59,7 @@ npm run tauri build
 
 - Plugin: `tauri-plugin-updater` + `tauri-plugin-process`.
 - Endpoint: `https://github.com/JavierOrtunoRoig/kotoba/releases/latest/download/latest.json`.
+- `latest.json` apunta al NSIS (`updaterJsonPreferNsis: true`): instalación por usuario y sin admin.
 - Clave pública: `plugins.updater.pubkey` en `src-tauri/tauri.conf.json`.
 - Clave privada: `%USERPROFILE%\.tauri\kotoba-updater\kotoba.key` (nunca al repo; `*.key` ignorado).
 - Secrets de GitHub: `TAURI_SIGNING_PRIVATE_KEY` (contenido) y `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.

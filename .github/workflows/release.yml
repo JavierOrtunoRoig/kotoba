@@ -68,15 +68,21 @@ jobs:
         with:
           tagName: ${{ steps.tag.outputs.tag }}
           uploadUpdaterJson: true
+          # El updater usa el NSIS (instalación por usuario, sin admin). El MSI sigue disponible
+          # como descarga manual.
+          updaterJsonPreferNsis: true
           releaseName: "kotoba ${{ steps.tag.outputs.tag }}"
           releaseBody: |
             Instaladores de kotoba ${{ steps.tag.outputs.tag }} para Windows 10 y 11 (x64).
 
+            - **NSIS (recomendado)**: `kotoba_${{ steps.tag.outputs.version }}_x64-setup.exe`
             - **MSI**: `kotoba_${{ steps.tag.outputs.version }}_x64_en-US.msi`
-            - **NSIS**: `kotoba_${{ steps.tag.outputs.version }}_x64-setup.exe`
 
-            Descarga el que prefieras: el MSI es el instalador clásico de Windows y el NSIS permite
-            instalar sin permisos de administrador.
+            El NSIS instala por usuario, sin permisos de administrador, y es el formato que usa el
+            updater automático. El MSI es el instalador clásico de Windows.
+
+            Después de esta versión, kotoba comprueba actualizaciones al arrancar y desde
+            Ajustes → Sistema.
 
             Los binarios **no están firmados digitalmente**, así que SmartScreen puede pedir
             confirmación la primera vez. El código fuente de esta versión está en la etiqueta

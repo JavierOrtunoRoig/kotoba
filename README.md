@@ -125,8 +125,9 @@ flowchart LR
 Los instaladores de la última versión están en
 [**Releases**](https://github.com/JavierOrtunoRoig/kotoba/releases):
 
-- `kotoba_0.1.0_x64_en-US.msi` — instalador clásico de Windows.
-- `kotoba_0.1.0_x64-setup.exe` — instalador NSIS, útil sin permisos de administrador.
+- `kotoba_0.1.0_x64-setup.exe` — instalador NSIS, sin permisos de administrador. **Recomendado**:
+  el updater automático usa este formato.
+- `kotoba_0.1.0_x64_en-US.msi` — instalador clásico de Windows (requiere administrador).
 
 > Los binarios todavía no están firmados digitalmente, así que Windows SmartScreen puede pedir
 > confirmación la primera vez. También puedes compilarlo tú mismo con las instrucciones de abajo.
