@@ -10,6 +10,8 @@ La visión de producto sigue estando en [`../docs/plan.md`](../docs/plan.md).
 | Documento | Para qué sirve |
 |---|---|
 | [`commands.md`](commands.md) | Comandos de desarrollo, build, tests, inspección de datos y diagnóstico |
+| [`workflows.md`](workflows.md) | Qué flujo usar según la petición, definition of done y convenciones de ramas |
+| [`inbox.md`](inbox.md) | Ideas sueltas pendientes de convertirse en issue |
 | [`decisions.md`](decisions.md) | Decisiones de arquitectura y producto, con su motivo y consecuencias |
 | [`requirements.md`](requirements.md) | Requisitos implementados, criterios de aceptación y backlog futuro |
 | [`architecture.md`](architecture.md) | Módulos, esquema SQLite, flujo de importación, comandos IPC y UI |
