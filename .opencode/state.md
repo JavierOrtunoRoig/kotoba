@@ -8,7 +8,7 @@
 - Configuración de agentes versionada (`AGENTS.md`, `opencode.jsonc`, `.mcp.json`,
   `skills-lock.json`); el índice local `.codegraph/` queda ignorado.
 - CI y releases en `.github/workflows/`: `ci.yml` valida TypeScript y Rust en cada push/PR, y
-  `release.yml` publica MSI y NSIS al empujar una etiqueta `v*`. Release `v0.1.1` publicada.
+  `release.yml` publica MSI y NSIS al empujar una etiqueta `v*`. Release `v0.2.0` publicada (MSI + NSIS firmados con `.sig` y `latest.json` en la release).
 - **Dependabot al día (2026-11-21):** los 7 PRs de la primera ronda están mergeados. `rand` 0.10
   obligó a migrar el scheduler a `rand::rng().random_range()` con el rasgo `RngExt`; `zip` 9,
   `zstd` 0.14, `sha1` 0.11, `windows-sys` 0.61, TypeScript 7 y las actions actualizadas sin
