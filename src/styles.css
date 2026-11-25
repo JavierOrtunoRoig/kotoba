@@ -2430,6 +2430,28 @@ input[type="time"]:disabled {
   color: var(--vermilion);
 }
 
+.mapping-media-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mapping-media-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11.5px;
+}
+
+.mapping-media-row input::placeholder {
+  color: var(--ink-soft);
+}
+
 .mapping-actions {
   display: flex;
   align-items: center;

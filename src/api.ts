@@ -182,6 +182,7 @@ export interface ImportSummary {
   sources: number;
   audio_extracted: number;
   audio_reused: number;
+  audio_missing: number;
   patterns: number;
   deck_name: string;
   warnings: string[];
@@ -213,6 +214,8 @@ export interface NoteTypeMapping {
 export interface ImportMapping {
   txt: FieldMapping | null;
   note_types: NoteTypeMapping[];
+  /** Carpeta de medios del .txt; vacío usa la hermana con el nombre del archivo. */
+  media_folder: string | null;
 }
 
 export interface NoteTypeInfo {
@@ -232,6 +235,8 @@ export interface ImportInspection {
   sample: string[][];
   suggested: FieldMapping | null;
   note_types: NoteTypeInfo[];
+  /** Carpeta de audio hermana detectada para un .txt. */
+  media_folder: string | null;
 }
 
 export const api = {

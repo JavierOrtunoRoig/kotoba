@@ -136,7 +136,9 @@ export default function ImportPanel({ language, onImported }: Props) {
                   <IconImport size={30} />
                   <strong>{t("Elegir archivo .apkg")}</strong>
                   <span className="small">
-                    {t("También acepta exports .txt de Anki (sin audio)")}
+                    {t(
+                      "También acepta exports .txt de Anki (con su carpeta de audio)",
+                    )}
                   </span>
                 </>
               )}
@@ -207,6 +209,12 @@ export default function ImportPanel({ language, onImported }: Props) {
                   "{n} notas duplicadas se han unido a su palabra principal.",
                   { n: summary.items_merged },
                 )}
+              </p>
+            )}
+
+            {summary.audio_missing > 0 && (
+              <p className="small muted">
+                {t("{n} audios no encontrados.", { n: summary.audio_missing })}
               </p>
             )}
 
