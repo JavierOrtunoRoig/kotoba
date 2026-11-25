@@ -14,3 +14,15 @@ Contexto: una o dos líneas.
 ---
 
 <!-- Nuevas entradas debajo de esta línea -->
+
+## 2026-11-25 — Segunda instancia de la app → #18
+
+Área: shell
+Contexto: Con kotoba ya en la bandeja del sistema, ejecutar otra vez el `.exe` abre una segunda
+instancia y deja dos iconos. Debería activar la instancia existente en lugar de arrancar otra.
+
+## 2026-11-25 — Niveles de maestría por lección
+
+Área: srs
+Contexto: Hoy la maestría de una lección es un único umbral (intervalo ≥ 7 días). Podría haber
+varios niveles como en Anki y una visualización mejor del porcentaje de maestría por lección.
