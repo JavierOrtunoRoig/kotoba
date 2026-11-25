@@ -348,3 +348,22 @@ argumentos y sale antes de abrir la base de datos o el scheduler.
 **Consecuencias:** un solo proceso, bandeja y scheduler por sesión de Windows. El lanzamiento manual,
 el del menú Inicio y el del autostart convergen en la misma instancia. En `tauri dev` también enfoca
 la primera instancia en vez de abrir otra.
+
+## D-036 — Madurez por palabra y dominio por lección
+
+**Contexto:** la maestría era binaria: una palabra dominaba al llegar a 7 días y una lección al superar
+un umbral de palabras dominadas. La idea del inbox pedía niveles como Anki y ver el progreso
+intermedio. La definición vigente está en D-027.
+**Decisión:** cinco estados derivados del intervalo, con los cortes de Anki: nueva (sin repasar),
+aprendiendo (< 1 día y nunca llegó a 1 día), reaprendiendo (ya llegó a 1 día y ahora está por debajo),
+joven (1-20 días) y madura (≥ 21 días). `srs_state` gana `max_interval_minutes` para distinguir
+reaprendiendo de aprendiendo; el SRS no cambia. El dominio de una lección es el porcentaje de palabras
+maduras, y una lección está dominada cuando no tiene palabras nuevas y alcanza el umbral configurable
+(default 80 % solo en instalaciones nuevas; quien ya lo tenga guardado lo conserva). El total de la
+lección respeta `include_patterns`, y badge y logros comparten el mismo predicado. Vocabulario en
+`GLOSSARY.md` y decisión completa en `docs/adr/0001-word-maturity-and-lesson-dominance.md`.
+**Consecuencias:** dominar una lección pasa a ser un objetivo de meses. Los logros ya desbloqueados se
+conservan. La migración rellena `max_interval_minutes` con el intervalo actual, así que una palabra que
+falló antes de este cambio se verá como aprendiendo hasta su siguiente fallo. Cambian Progreso,
+Ajustes y las consultas de estadísticas; el popup y la práctica no muestran el estado. Sustituye la
+definición de maestría por lección de D-027 cuando se implemente.
