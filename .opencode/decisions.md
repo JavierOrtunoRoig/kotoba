@@ -337,3 +337,14 @@ planificar.
 PRs pequeños no llevan revisión profunda para no frenar sesiones de 30-60 min. El inbox evita crear
 issues prematuros sin perder ideas. `workflows.md` es el documento que hay que editar si el ritmo o la
 formalidad cambian.
+
+## D-035 — Instancia única con `tauri-plugin-single-instance`
+
+**Contexto:** dos procesos abren la misma base SQLite y cada uno levanta su scheduler y su icono de
+bandeja, con riesgo de retos y repasos duplicados y de contención WAL.
+**Decisión:** registrar `tauri-plugin-single-instance` como primer plugin de `tauri::Builder`. El
+callback de la primera instancia muestra y enfoca la ventana principal; la segunda entrega sus
+argumentos y sale antes de abrir la base de datos o el scheduler.
+**Consecuencias:** un solo proceso, bandeja y scheduler por sesión de Windows. El lanzamiento manual,
+el del menú Inicio y el del autostart convergen en la misma instancia. En `tauri dev` también enfoca
+la primera instancia en vez de abrir otra.

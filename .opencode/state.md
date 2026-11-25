@@ -32,6 +32,10 @@
   audio del mapeo, copia desde una carpeta de medios elegida en el diálogo (por defecto, la hermana
   con el nombre del `.txt`) y reutiliza `media::store_bytes`: SHA-1, nombre por hash y deduplicación.
   Un archivo ausente suma `audio_missing` y un aviso, sin abortar la importación.
+- **Instancia única (2026-11-25):** #18 registra `tauri-plugin-single-instance` antes que el resto de
+  plugins. La segunda ejecución entrega sus argumentos y sale sin abrir SQLite ni scheduler; la
+  primera muestra y enfoca la ventana principal. Verificado lanzando el exe dos veces: un solo
+  proceso, la segunda sale en 0,05 s y la ventana queda en primer plano.
 
 ## Fase actual
 
@@ -151,6 +155,9 @@ progreso y ajustes.
 - **Verificado con el mazo real:** tipo `Genki Model ES` con campos `kana`, `kanjis`, `tipo`,
   `español`, `significado`, `sonido`, `id_orden` y `uid`; reimportación correcta manteniendo 1.012
   ítems. Se registró la colación `unicase` de Anki para leer los nombres de campo.
+- **Instancia única:** con kotoba ya arrancado, una segunda ejecución del exe sale con código 0 en
+  0,05 s, deja un único proceso `kotoba` y trae la ventana principal al frente
+  (`GetForegroundWindow` = «kotoba»).
 
 ## Datos de prueba en el equipo
 

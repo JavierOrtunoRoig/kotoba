@@ -596,6 +596,12 @@ fn open_logs(app: tauri::AppHandle) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // Debe ir antes que el resto de plugins: en Windows y Linux es lo que detecta una
+        // segunda instancia. La primera recibe el aviso y trae su ventana principal al frente;
+        // la segunda entrega los argumentos y sale sin abrir base de datos ni scheduler.
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            shell::show_main(app);
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
