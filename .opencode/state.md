@@ -19,6 +19,9 @@
 - **Autostart solo en release (2026-11-22):** el binario debug usa el `devUrl` y abre consola. La UI
   deshabilita «Arrancar con Windows» cuando `Bootstrap.dev_build` es true para no registrar el exe de
   `target/debug` en el arranque de Windows.
+- **Flujos de trabajo (2026-11-25):** skills de ingeniería de `mattpocock/skills` versionadas en
+  `.agents/skills/`, con `.opencode/workflows.md` como playbook (issue → rama → PR, spec solo si es
+  multi-sesión, review solo en PRs grandes) y `.opencode/inbox.md` para ideas sueltas.
 
 ## Fase actual
 

@@ -23,3 +23,30 @@ Vocabulario canónico: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-f
 
 Single-context: `GLOSSARY.md` y `docs/adr/` en la raíz (se crean cuando haga falta). El conocimiento actual está en `.opencode/`. Ver `docs/agents/domain.md`.
 
+## Cómo trabajar aquí
+
+Playbook completo en `.opencode/workflows.md`. Estas reglas mandan sobre el criterio de las skills:
+
+- **Cambia comportamiento → issue primero** (`gh issue create`, cuerpo en inglés). Docs, versión o CI →
+  PR directo sin issue. Los issues propios no se triajan.
+- **Nunca commit directo a `main`**: rama + PR, una rama por issue.
+- **Autonomía técnica**: decide e implementa sin preguntar. Consulta solo producto, UX y alcance.
+- **Artefactos en inglés** (código, commits, issues, PRs, specs). Docs del repo y conversación en español.
+- **Terminado** = checks locales verdes + CI verde + test del cambio + `.opencode/state.md` actualizado.
+- **Release** solo al cerrar un feature, no en cada PR.
+- **Ideas sueltas** → `.opencode/inbox.md`.
+
+### Enrutado
+
+| Si piden… | Hacer |
+|---|---|
+| «apunta esta idea» | añadirla a `.opencode/inbox.md` |
+| «arregla X» / un bug | issue + rama `fix/N-slug`; `diagnosing-bugs` si la causa no es obvia |
+| «implementa #N» | sesión limpia, rama `feat/N-slug`, skill `implement` |
+| «quiero X» (feature) | `grill-with-docs`; si no cabe en una sesión, `to-spec` → `to-tickets` |
+| «revisa esto» | `code-review` |
+| «publica release» | flujo 6 de `workflows.md` |
+| «actualiza dependencias» | skill `dependabot-prs` |
+| «esto está mal diseñado» | `improve-codebase-architecture` |
+| «investiga X» | `research` |
+

@@ -321,3 +321,19 @@ actualizaciones se ven como diff en el PR. Para actualizarlas: `npx skills@lates
 triage usa GitHub Issues y las etiquetas `needs-triage`, `needs-info`, `ready-for-agent`,
 `ready-for-human` y `wontfix`, ya creadas en el repo. Las decisiones del proyecto siguen en este
 archivo (`D-0xx`); `docs/adr/` y `GLOSSARY.md` se crearán solo cuando el modelado de dominio lo pida.
+
+## D-034 — Flujos de trabajo por tamaño y captura de ideas
+
+**Contexto:** con 19 skills instaladas, la decisión de «qué flujo uso» quedaba difusa. El proyecto es
+de una sola persona, con sesiones cortas, y venía trabajando en commit directo a `main` sin issues.
+**Decisión:** fijar un perfil de trabajo en `.opencode/workflows.md` y un bloque operativo en
+`AGENTS.md` con el enrutado petición → flujo. Resumen: issue para todo lo que cambia comportamiento;
+rama + PR por issue; spec solo si el trabajo no cabe en una sesión; revisión completa solo en PRs que
+tocan varios módulos, esquema/IPC, `db.rs`, `scheduler.rs` o la firma de releases; release al cerrar un
+feature; artefactos en inglés y docs/conversación en español; autonomía técnica con consulta en
+producto y UX. Las ideas sueltas se capturan en `.opencode/inbox.md` y se convierten en issues al
+planificar.
+**Consecuencias:** se acaba el commit directo a `main`, así que cada cambio pasa por CI en un PR. Los
+PRs pequeños no llevan revisión profunda para no frenar sesiones de 30-60 min. El inbox evita crear
+issues prematuros sin perder ideas. `workflows.md` es el documento que hay que editar si el ritmo o la
+formalidad cambian.
