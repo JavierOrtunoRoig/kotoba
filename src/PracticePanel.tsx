@@ -15,12 +15,17 @@ import { IconArrow, IconEye, IconRefresh, IconSound } from "./Icons";
 
 type Props = {
   settings: Settings;
+  nextDueSeconds: number | null;
   onRefresh: () => Promise<void> | void;
 };
 
 type Status = "loading" | "ready" | "answered" | "empty";
 
-export default function PracticePanel({ settings, onRefresh }: Props) {
+export default function PracticePanel({
+  settings,
+  nextDueSeconds,
+  onRefresh,
+}: Props) {
   const t = useT(settings.language);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [status, setStatus] = useState<Status>("loading");
@@ -139,6 +144,10 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
   }
 
   if (status === "empty" || !challenge) {
+    const nextDue =
+      nextDueSeconds === null
+        ? null
+        : formatInterval(Math.max(1, Math.ceil(nextDueSeconds / 60)), settings.language);
     return (
       <section className="practice">
         <header className="practice-head">
@@ -146,12 +155,20 @@ export default function PracticePanel({ settings, onRefresh }: Props) {
         </header>
         <div className="flashcard empty-card">
           <span className="empty-mark">空</span>
-          <h2>{t("No hay palabras que practicar")}</h2>
+          <h2>
+            {nextDue
+              ? t("Nada que repasar todavía")
+              : t("No hay palabras que practicar")}
+          </h2>
           <p>
             {error ??
-              t(
-                "Importa un mazo desde Ajustes o espera a que haya ítems disponibles.",
-              )}
+              (nextDue
+                ? t("La próxima palabra vence en {interval}.", {
+                    interval: nextDue,
+                  })
+                : t(
+                    "Importa un mazo desde Ajustes o espera a que haya ítems disponibles.",
+                  ))}
           </p>
           <div className="empty-actions">
             <button type="button" className="ghost" onClick={() => void load()}>

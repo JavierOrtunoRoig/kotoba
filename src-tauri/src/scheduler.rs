@@ -34,7 +34,6 @@ pub fn start(app: AppHandle) {
                 settings.include_patterns,
                 settings.new_per_day,
                 settings.new_mix_percent,
-                false,
             )
             .map(|item| item.is_some())
             .unwrap_or(false);

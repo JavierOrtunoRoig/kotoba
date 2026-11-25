@@ -30,6 +30,8 @@ const en: Dict = {
   "Saltar al contenido": "Skip to content",
   "{n} pendientes": "{n} due",
   "No hay palabras que practicar": "No words to practice",
+  "Nada que repasar todavía": "Nothing to review yet",
+  "La próxima palabra vence en {interval}.": "Next word is due in {interval}.",
   "Importa un mazo desde Ajustes o espera a que haya ítems disponibles.":
     "Import a deck from Settings or wait until items are available.",
   Reintentar: "Retry",
@@ -401,6 +403,8 @@ const ja: Dict = {
   "Saltar al contenido": "コンテンツへスキップ",
   "{n} pendientes": "残り{n}語",
   "No hay palabras que practicar": "練習する単語がありません",
+  "Nada que repasar todavía": "まだ復習する単語がありません",
+  "La próxima palabra vence en {interval}.": "次の単語は{interval}後に出題されます。",
   "Importa un mazo desde Ajustes o espera a que haya ítems disponibles.":
     "設定からデッキをインポートするか、単語が利用可能になるまでお待ちください。",
   Reintentar: "再試行",

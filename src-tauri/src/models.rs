@@ -150,6 +150,8 @@ pub struct Challenge {
     pub due_count: i64,
     /// Palabras nuevas disponibles sin introducir.
     pub new_count: i64,
+    /// Segundos hasta el próximo repaso programado (null si no queda ninguna palabra vista).
+    pub next_due_seconds: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -237,6 +239,8 @@ pub struct Stats {
     pub new_available: i64,
     /// Palabras nuevas introducidas hoy.
     pub new_today: i64,
+    /// Segundos hasta el próximo repaso programado (null si no queda ninguna palabra vista).
+    pub next_due_seconds: Option<i64>,
     /// Límite diario de palabras nuevas.
     pub new_per_day: i64,
     pub activity: Vec<DayCount>,

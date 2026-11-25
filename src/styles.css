@@ -2065,6 +2065,12 @@ input[type="time"]:disabled {
   gap: 8px;
 }
 
+.popup-empty-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
 /* Widget persistente: misma tarjeta, algo más compacta. */
 .popup-card.widget .popup-top {
   padding: 8px 10px 6px 12px;

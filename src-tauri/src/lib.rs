@@ -189,7 +189,6 @@ fn next_challenge(
         settings.include_patterns,
         settings.new_per_day,
         settings.new_mix_percent,
-        true,
     )
     .map_err(to_err)?
     else {
@@ -206,11 +205,14 @@ fn next_challenge(
 
     let due_count = db::due_count(&conn, settings.include_patterns).map_err(to_err)?;
     let new_count = db::new_count(&conn, settings.include_patterns).map_err(to_err)?;
+    let next_due_seconds =
+        db::next_due_in_seconds(&conn, settings.include_patterns).map_err(to_err)?;
     Ok(Some(Challenge {
         item,
         direction: direction.to_string(),
         due_count,
         new_count,
+        next_due_seconds,
     }))
 }
 

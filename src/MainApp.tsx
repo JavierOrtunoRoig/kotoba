@@ -192,7 +192,11 @@ export default function MainApp() {
 
       <main className="content" id="main-content" tabIndex={-1}>
         {view === "practice" && (
-          <PracticePanel settings={boot.settings} onRefresh={refresh} />
+          <PracticePanel
+            settings={boot.settings}
+            nextDueSeconds={boot.stats.next_due_seconds}
+            onRefresh={refresh}
+          />
         )}
         {view === "stats" && (
           <StatsPanel language={language} onPractice={() => setView("practice")} />

@@ -4,6 +4,7 @@ import {
   api,
   directionHint,
   directionLabel,
+  formatInterval,
   japaneseDisplay,
   type AnswerResult,
   type Challenge,
@@ -27,6 +28,7 @@ export default function PopupApp({ variant }: Props) {
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<AnswerResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [nextDueSeconds, setNextDueSeconds] = useState<number | null>(null);
 
   const language = settings?.language ?? "es";
   const t = useT(language);
@@ -46,8 +48,14 @@ export default function PopupApp({ variant }: Props) {
         if (!next) {
           setChallenge(null);
           setStatus("empty");
+          // Nada vencido: decir cuándo toca la próxima palabra en vez de un mensaje genérico.
+          api
+            .getStats()
+            .then((stats) => setNextDueSeconds(stats.next_due_seconds))
+            .catch(() => setNextDueSeconds(null));
           return;
         }
+        setNextDueSeconds(null);
         setChallenge(next);
         shownAt.current = Date.now();
         setStatus("ready");
@@ -209,7 +217,22 @@ export default function PopupApp({ variant }: Props) {
         {status === "empty" && (
           <div className="popup-body popup-empty">
             <span className="empty-mark small">空</span>
-            <p>{error ?? t("No hay palabras disponibles.")}</p>
+            <p>
+              {error ??
+                (nextDueSeconds === null
+                  ? t("No hay palabras disponibles.")
+                  : t("Nada que repasar todavía"))}
+            </p>
+            {!error && nextDueSeconds !== null && (
+              <p className="popup-empty-hint">
+                {t("La próxima palabra vence en {interval}.", {
+                  interval: formatInterval(
+                    Math.max(1, Math.ceil(nextDueSeconds / 60)),
+                    language,
+                  ),
+                })}
+              </p>
+            )}
             <button type="button" className="ghost small" onClick={openApp}>
               {t("Abrir kotoba")}
             </button>

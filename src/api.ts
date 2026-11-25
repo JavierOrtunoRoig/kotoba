@@ -50,6 +50,8 @@ export interface Challenge {
   direction: Direction;
   due_count: number;
   new_count: number;
+  /** Segundos hasta el próximo repaso programado (null si no queda ninguna palabra vista). */
+  next_due_seconds: number | null;
 }
 
 export interface AnswerResult {
@@ -117,6 +119,8 @@ export interface Stats {
   new_available: number;
   new_today: number;
   new_per_day: number;
+  /** Segundos hasta el próximo repaso programado (null si no queda ninguna palabra vista). */
+  next_due_seconds: number | null;
   activity: DayCount[];
   lessons: LessonStat[];
   difficult: DifficultItem[];

@@ -20,6 +20,10 @@ pub const MAX_STREAK_SAVERS: i64 = 2;
 ///
 /// `quality`: 0-5 (5 = acierto rápido, 4 = acierto, 2 = fallo, 1 = no lo sé).
 /// Devuelve `(reps, interval_minutes, ease)`.
+///
+/// La escalera de aprendizaje tiene dos peldaños: 10 minutos y 1 día. Cada acierto sube como mucho un
+/// peldaño, y solo se multiplica por el `ease` cuando ya hay un intervalo diario real. Practicar una
+/// palabra varias veces seguidas sin que venza no la dispara a días.
 pub fn sm2_next(
     quality: u8,
     reps: i64,
@@ -33,17 +37,17 @@ pub fn sm2_next(
         return (0, LEARNING_INTERVAL_MINUTES, ease);
     }
 
-    let (reps, interval) = match reps {
-        0 => (1, LEARNING_INTERVAL_MINUTES),
-        1 => (2, FIRST_REVIEW_INTERVAL_MINUTES),
-        _ => {
-            let days = (interval_minutes as f64 / 1440.0) * ease;
-            let interval = (days * 1440.0).round().max(1440.0) as i64;
-            (reps + 1, interval.min(MAX_INTERVAL_MINUTES))
+    // Peldaño de aprendizaje: mientras no haya intervalo diario, solo se avanza al peldaño siguiente.
+    if interval_minutes < FIRST_REVIEW_INTERVAL_MINUTES {
+        if interval_minutes < LEARNING_INTERVAL_MINUTES {
+            return (reps + 1, LEARNING_INTERVAL_MINUTES, ease);
         }
-    };
+        return (reps + 1, FIRST_REVIEW_INTERVAL_MINUTES, ease);
+    }
 
-    (reps, interval, ease)
+    let days = (interval_minutes as f64 / 1440.0) * ease;
+    let interval = (days * 1440.0).round().max(1440.0) as i64;
+    (reps + 1, interval.min(MAX_INTERVAL_MINUTES), ease)
 }
 
 /// XP por respuesta correcta según la calidad SM-2. Un fallo no da XP.
@@ -679,15 +683,17 @@ pub fn all_items(conn: &Connection) -> Result<Vec<Item>> {
 ///
 /// Prioridad: repasos vencidos antes que palabras nuevas. `new_mix_percent`
 /// permite mezclar nuevas cuando también hay repasos. Las nuevas siguen el
-/// orden del mazo: lección, subapartado y orden de importación. `allow_extra`
-/// permite reutilizar una palabra ya vista cuando no hay nada vencido.
+/// orden del mazo: lección, subapartado y orden de importación.
+///
+/// Nunca devuelve una palabra cuyo repaso aún no vence (`due_at` en el futuro):
+/// eso rompería la repetición espaciada y repetiría la misma palabra una y otra
+/// vez. Si no hay nada que practicar, devuelve `None`.
 pub fn next_item(
     conn: &Connection,
     exclude_id: i64,
     include_patterns: bool,
     new_per_day: i64,
     new_mix_percent: i64,
-    allow_extra: bool,
 ) -> Result<Option<Item>> {
     let due_reviews = due_count(conn, include_patterns)?;
     let new_available = new_count(conn, include_patterns)?;
@@ -717,11 +723,25 @@ pub fn next_item(
         }
     }
 
-    if allow_extra {
-        return query_seen_early(conn, exclude_id, include_patterns);
-    }
-
     Ok(None)
+}
+
+/// Segundos hasta el próximo repaso programado. `None` si no queda ninguna palabra vista.
+pub fn next_due_in_seconds(conn: &Connection, include_patterns: bool) -> Result<Option<i64>> {
+    let due_at: Option<i64> = conn
+        .query_row(
+            r#"
+            SELECT MIN(s.due_at)
+            FROM items i
+            JOIN srs_state s ON s.item_id = i.id
+            WHERE (?1 = 1 OR i.is_pattern = 0)
+            "#,
+            params![include_patterns as i32],
+            |row| row.get(0),
+        )
+        .optional()?
+        .flatten();
+    Ok(due_at.map(|due_at| (due_at - now_ts()).max(0)))
 }
 
 fn new_item_sql() -> String {
@@ -776,27 +796,6 @@ fn query_due(
             params![include_patterns as i32, exclude_id, now_ts()],
             map_item,
         )
-        .optional()?)
-}
-
-fn query_seen_early(
-    conn: &Connection,
-    exclude_id: i64,
-    include_patterns: bool,
-) -> Result<Option<Item>> {
-    let sql = format!(
-        r#"
-        SELECT {ITEM_COLUMNS}
-        FROM items i
-        JOIN srs_state s ON s.item_id = i.id
-        WHERE (?1 = 1 OR i.is_pattern = 0)
-          AND i.id <> ?2
-        ORDER BY s.due_at ASC, RANDOM()
-        LIMIT 1
-        "#
-    );
-    Ok(conn
-        .query_row(&sql, params![include_patterns as i32, exclude_id], map_item)
         .optional()?)
 }
 
@@ -972,6 +971,7 @@ pub fn stats(
     let due_now = due_count(conn, include_patterns)?;
     let new_available = new_count(conn, include_patterns)?;
     let new_today = new_today_count(conn)?;
+    let next_due_seconds = next_due_in_seconds(conn, include_patterns)?;
 
     let (xp_total, _stored_level, stored_best) = profile(conn).unwrap_or((0, 1, 0));
     let (level, level_progress_value, next_level_xp) = level_progress(xp_total);
@@ -993,6 +993,7 @@ pub fn stats(
         new_available,
         new_today,
         new_per_day,
+        next_due_seconds,
         activity: activity(conn)?,
         lessons: lessons(conn, lesson_mastery_percent)?,
         difficult: difficult(conn)?,
@@ -1345,21 +1346,50 @@ mod tests {
 
     #[test]
     fn sm2_first_day_and_growth() {
-        let (reps, interval, ease) = sm2_next(4, 1, 10, 2.5);
-        assert_eq!((reps, interval), (2, 1440));
+        // Paso de aprendizaje consumido: ahora sí salta al primer intervalo diario.
+        let (reps, interval, ease) = sm2_next(4, 2, 10, 2.5);
+        assert_eq!((reps, interval), (3, 1440));
         assert!((ease - 2.5).abs() < 1e-9);
 
-        let (reps, interval, ease) = sm2_next(4, 2, 1440, 2.5);
-        assert_eq!(reps, 3);
+        let (reps, interval, ease) = sm2_next(4, 3, 1440, 2.5);
+        assert_eq!(reps, 4);
         assert_eq!(interval, 3600);
         assert!((ease - 2.5).abs() < 1e-9);
     }
 
+    /// La escalera de aprendizaje tiene dos peldaños y nunca se salta ninguno.
     #[test]
-    fn sm2_lapse_resets() {
+    fn sm2_learning_ladder_advances_one_step_at_a_time() {
+        let (reps, interval, _) = sm2_next(5, 0, 0, 2.6);
+        assert_eq!((reps, interval), (1, 10));
+
+        // Todavía en el peldaño de 10 minutos: el siguiente acierto pasa a un día, no a más.
+        let (reps, interval, _) = sm2_next(5, reps, interval, 2.6);
+        assert_eq!((reps, interval), (2, 1440));
+    }
+
+    #[test]
+    fn sm2_lapse_resets_to_learning_step() {
         let (reps, interval, ease) = sm2_next(2, 4, 10080, 2.5);
         assert_eq!((reps, interval), (0, 10));
         assert!((ease - 2.18).abs() < 1e-9);
+    }
+
+    /// Un acierto sobre una palabra que vencía en 2 días crece desde esos 2 días (2 × 2,6 ≈ 5,2 d),
+    /// no desde el peldaño de aprendizaje.
+    #[test]
+    fn sm2_grows_from_the_real_interval_once_it_is_daily() {
+        let (reps, interval, _) = sm2_next(4, 1, 2880, 2.6);
+        assert_eq!((reps, interval), (2, 7488));
+    }
+
+    /// Regresión: acertar una palabra no puede dejarla programada *antes* de lo que ya estaba.
+    #[test]
+    fn sm2_never_shrinks_interval_on_a_correct_answer() {
+        for interval in [1440, 2880, 10080, MAX_INTERVAL_MINUTES] {
+            let (_, next_interval, _) = sm2_next(5, 3, interval, 2.5);
+            assert!(next_interval >= interval, "{next_interval} < {interval}");
+        }
     }
 
     #[test]
@@ -1635,19 +1665,19 @@ mod tests {
         let later_subsection = insert_order_item(&conn, "u2", "L01", "02 Saludos");
         let first_word = insert_order_item(&conn, "u1", "L01", "01 Vocabulario");
 
-        let first = next_item(&conn, 0, false, 10, 0, false)
+        let first = next_item(&conn, 0, false, 10, 0)
             .expect("query")
             .expect("item");
         assert_eq!(first.id, first_word);
 
         mark_seen(&conn, first_word, now_ts() + 60);
-        let second = next_item(&conn, 0, false, 10, 0, false)
+        let second = next_item(&conn, 0, false, 10, 0)
             .expect("query")
             .expect("item");
         assert_eq!(second.id, later_subsection);
 
         mark_seen(&conn, later_subsection, now_ts() + 60);
-        let third = next_item(&conn, 0, false, 10, 0, false)
+        let third = next_item(&conn, 0, false, 10, 0)
             .expect("query")
             .expect("item");
         assert_eq!(third.id, later_lesson);
@@ -1661,19 +1691,19 @@ mod tests {
         let review_word = insert_order_item(&conn, "due", "L01", "02 Saludos");
         mark_seen(&conn, review_word, now_ts() - 60);
 
-        let review = next_item(&conn, 0, false, 10, 0, false)
+        let review = next_item(&conn, 0, false, 10, 0)
             .expect("query")
             .expect("item");
         assert_eq!(review.id, review_word);
 
-        let mixed = next_item(&conn, 0, false, 10, 100, false)
+        let mixed = next_item(&conn, 0, false, 10, 100)
             .expect("query")
             .expect("item");
         assert_eq!(mixed.id, new_word);
     }
 
     #[test]
-    fn respects_daily_new_limit_and_falls_back_to_seen_words() {
+    fn respects_daily_new_limit_and_stops_when_nothing_is_due() {
         let mut conn = Connection::open_in_memory().expect("db");
         migrate(&mut conn).expect("migrate");
         let seen = insert_order_item(&conn, "seen", "L01", "01 Vocabulario");
@@ -1688,19 +1718,50 @@ mod tests {
         .expect("review");
         assert_eq!(new_today_count(&conn).expect("new today"), 1);
 
-        assert!(next_item(&conn, 0, false, 1, 0, false)
+        assert!(next_item(&conn, 0, false, 1, 0)
             .expect("query")
             .is_none());
 
-        let fallback = next_item(&conn, 0, false, 1, 0, true)
+        // La palabra vista vuelve cuando vence, no antes.
+        assert_eq!(
+            next_due_in_seconds(&conn, false).expect("next due"),
+            Some(3600)
+        );
+        conn.execute("UPDATE srs_state SET due_at = ?1", [now_ts() - 1])
+            .expect("due now");
+        let due_again = next_item(&conn, 0, false, 1, 0)
             .expect("query")
-            .expect("fallback");
-        assert_eq!(fallback.id, seen);
+            .expect("due");
+        assert_eq!(due_again.id, seen);
 
-        let next_new = next_item(&conn, 0, false, 2, 0, false)
+        let next_new = next_item(&conn, seen, false, 2, 0)
             .expect("query")
             .expect("new");
         assert_eq!(next_new.id, new_word);
+    }
+
+    /// Regresión: practicar repetidamente repetía la misma palabra, porque se servían palabras
+    /// cuyo repaso no vencía hasta dentro de días (o incluso de minutos).
+    #[test]
+    fn never_serves_words_before_they_are_due() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        let item = insert_order_item(&conn, "later", "L01", "01 Vocabulario");
+        mark_seen(&conn, item, now_ts() + 2 * 1440 * 60);
+
+        for _ in 0..10 {
+            assert!(next_item(&conn, 0, false, 10, 0)
+                .expect("query")
+                .is_none());
+            assert!(next_item(&conn, item, false, 10, 0)
+                .expect("query")
+                .is_none());
+        }
+        assert_eq!(due_count(&conn, false).expect("due"), 0);
+        assert_eq!(
+            next_due_in_seconds(&conn, false).expect("next due"),
+            Some(2 * 1440 * 60)
+        );
     }
 
     #[test]
