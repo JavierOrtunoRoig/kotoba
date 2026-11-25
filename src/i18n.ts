@@ -95,8 +95,8 @@ const en: Dict = {
   "Extrayendo notas y audio. Puede tardar unos segundos.":
     "Extracting notes and audio. This may take a few seconds.",
   "Elegir archivo .apkg": "Choose .apkg file",
-  "También acepta exports .txt de Anki (sin audio)":
-    "Also accepts Anki .txt exports (no audio)",
+  "También acepta exports .txt de Anki (con su carpeta de audio)":
+    "Also accepts Anki .txt exports (with their audio folder)",
   "Todo se guarda en tu equipo. Nada sale de aquí.":
     "Everything stays on your device. Nothing leaves it.",
   "El progreso de Anki no se toca: kotoba usa su propio repaso.":
@@ -110,6 +110,7 @@ const en: Dict = {
   "notas leídas": "notes read",
   "{n} notas duplicadas se han unido a su palabra principal.":
     "{n} duplicate notes were merged into their main word.",
+  "{n} audios no encontrados.": "{n} audio files not found.",
   "{n} avisos durante la importación": "{n} warnings during import",
   "Importar otro": "Import another",
   "Empezar a repasar": "Start reviewing",
@@ -135,6 +136,13 @@ const en: Dict = {
   "Selecciona lectura y significado para continuar.":
     "Select reading and meaning to continue.",
   "Listo para importar.": "Ready to import.",
+  "Carpeta de medios": "Media folder",
+  "Carpeta hermana con el nombre del .txt":
+    "Sibling folder named like the .txt",
+  "Elegir carpeta…": "Choose folder…",
+  "Quitar": "Clear",
+  "Los audios de [sound: …] se copian desde esta carpeta. Si está vacía, se usa la carpeta hermana con el nombre del .txt.":
+    "Audio from [sound: …] is copied from this folder. If empty, the sibling folder named like the .txt is used.",
 
   // Progreso
   "Tu progreso": "Your progress",
@@ -484,8 +492,8 @@ const ja: Dict = {
   "Extrayendo notas y audio. Puede tardar unos segundos.":
     "ノートと音声を抽出しています。数秒かかる場合があります。",
   "Elegir archivo .apkg": ".apkg ファイルを選ぶ",
-  "También acepta exports .txt de Anki (sin audio)":
-    "Anki の .txt 書き出しにも対応（音声なし）",
+  "También acepta exports .txt de Anki (con su carpeta de audio)":
+    "Anki の .txt 書き出しにも対応（音声フォルダー込み）",
   "Todo se guarda en tu equipo. Nada sale de aquí.":
     "すべてお使いの端末に保存されます。外部には送信されません。",
   "El progreso de Anki no se toca: kotoba usa su propio repaso.":
@@ -499,6 +507,7 @@ const ja: Dict = {
   "notas leídas": "読み込んだノート",
   "{n} notas duplicadas se han unido a su palabra principal.":
     "{n} 件の重複ノートを主な単語にまとめました。",
+  "{n} audios no encontrados.": "{n} 件の音声が見つかりませんでした。",
   "{n} avisos durante la importación": "インポート中の警告 {n} 件",
   "Importar otro": "別のデッキを読み込む",
   "Empezar a repasar": "復習を始める",
@@ -524,6 +533,13 @@ const ja: Dict = {
   "Selecciona lectura y significado para continuar.":
     "続行するには読みと意味を選択してください。",
   "Listo para importar.": "インポートの準備ができました。",
+  "Carpeta de medios": "メディアフォルダー",
+  "Carpeta hermana con el nombre del .txt":
+    ".txt と同じ名前の隣接フォルダー",
+  "Elegir carpeta…": "フォルダーを選択…",
+  "Quitar": "クリア",
+  "Los audios de [sound: …] se copian desde esta carpeta. Si está vacía, se usa la carpeta hermana con el nombre del .txt.":
+    "[sound: …] の音声はこのフォルダーからコピーします。空の場合は .txt と同じ名前の隣接フォルダーを使います。",
 
   "Tu progreso": "あなたの進捗",
   "Sin colas ni deberes: solo lo que has ido reteniendo sin darte cuenta.":

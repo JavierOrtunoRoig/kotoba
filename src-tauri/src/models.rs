@@ -335,6 +335,7 @@ pub struct ImportSummary {
     pub sources: i64,
     pub audio_extracted: i64,
     pub audio_reused: i64,
+    pub audio_missing: i64,
     pub patterns: i64,
     pub deck_name: String,
     pub warnings: Vec<String>,
@@ -368,11 +369,14 @@ pub struct NoteTypeMapping {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ImportMapping {
     /// Mapeo del archivo `.txt` (columnas posicionales).
     pub txt: Option<FieldMapping>,
     /// Mapeo por tipo de nota de Anki.
     pub note_types: Vec<NoteTypeMapping>,
+    /// Carpeta de medios del `.txt`; por defecto, la hermana con su mismo nombre.
+    pub media_folder: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -397,6 +401,8 @@ pub struct ImportInspection {
     pub sample: Vec<Vec<String>>,
     pub suggested: Option<FieldMapping>,
     pub note_types: Vec<NoteTypeInfo>,
+    /// Carpeta de audio hermana detectada para un `.txt`.
+    pub media_folder: Option<String>,
 }
 
 #[cfg(test)]

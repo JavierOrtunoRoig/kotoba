@@ -1,5 +1,7 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
+use sha1::{Digest, Sha1};
 use std::collections::HashMap;
+use std::path::Path;
 
 #[derive(Debug, Clone, Default)]
 pub struct MediaEntry {
@@ -30,6 +32,37 @@ pub fn parse_media_map(bytes: &[u8]) -> Result<Vec<MediaEntry>> {
     }
 
     parse_legacy_json(&decoded)
+}
+
+/// Copia un audio a la carpeta de medios con nombre por hash.
+///
+/// Devuelve el nombre de archivo y si se ha escrito ahora (`true`) o ya existía (`false`).
+/// Cuando hay un SHA-1 esperado (mapa de medios de un `.apkg`) se verifica antes de escribir.
+pub fn store_bytes(
+    bytes: &[u8],
+    name: &str,
+    expected_sha1: Option<&str>,
+    media_dir: &Path,
+) -> Result<Option<(String, bool)>> {
+    let sha = hex::encode(Sha1::digest(bytes));
+    if let Some(expected) = expected_sha1 {
+        if expected != sha {
+            return Err(anyhow!("sha1 no coincide para {name}"));
+        }
+    }
+
+    let extension = Path::new(name)
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or("bin");
+    let filename = format!("{sha}.{extension}");
+    let target = media_dir.join(&filename);
+    let is_new = !target.exists();
+    if is_new {
+        std::fs::write(&target, bytes)
+            .with_context(|| format!("no se pudo escribir {}", target.display()))?;
+    }
+    Ok(Some((filename, is_new)))
 }
 
 fn parse_legacy_json(bytes: &[u8]) -> Result<Vec<MediaEntry>> {

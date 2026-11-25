@@ -28,6 +28,10 @@
 - **Historial en la app (2026-11-25):** #11 añade el comando `review_history` paginado con filtros
   de dirección, resultado y fechas, y una tabla en Progreso con «cargar más» y estado vacío; la
   exportación CSV no cambia y no hay migración nueva.
+- **Audio en `.txt` (2026-11-25):** #10 lee `[sound:…]` (también dentro de HTML) de la columna de
+  audio del mapeo, copia desde una carpeta de medios elegida en el diálogo (por defecto, la hermana
+  con el nombre del `.txt`) y reutiliza `media::store_bytes`: SHA-1, nombre por hash y deduplicación.
+  Un archivo ausente suma `audio_missing` y un aviso, sin abortar la importación.
 
 ## Fase actual
 
@@ -71,7 +75,7 @@ progreso y ajustes.
 | Plantillas (`is_pattern`) | 66 |
 | Avisos de importación | 0 |
 | RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 90 OK (+4 ignored: importación, normalización, progreso y tipos de nota reales) |
+| Tests unitarios Rust | 94 OK (+4 ignored: importación, normalización, progreso y tipos de nota reales) |
 | Respuestas reales validadas | 2.629 |
 | Copia de seguridad | SQLite + 827 audios |
 | Typecheck / build frontend | OK |
@@ -184,7 +188,6 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 
 | Prioridad | Tema | Detalle |
 |---|---|---|
-| Media | `.txt` sin audio | El fallback no puede extraer mp3 |
 | Media | Pantalla completa real | Implementada, pero no probada contra un juego/presentación real |
 | Baja | Accesibilidad | Foco y navegación por teclado mejorables |
 | Baja | Gamificación | Logros/maestría y salvavidas implementados; métricas de retención fuera del MVP |
@@ -194,7 +197,7 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 
 1. **Cerrar cabos de Fase 1-2:** #12 autostart real y #13 pantalla completa real (verificación
    manual, sin código).
-2. **Fase 3:** #9 mazos de terceros y #10 audio en `.txt`; después, sesión de grill para
+2. **Fase 3:** #9 mazos de terceros; después, sesión de grill para
    AnkiConnect.
 3. **Distribución:** #14 firma de los instaladores.
 

@@ -41,7 +41,9 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 - [x] Parseo de cabeceras `#separator`, `#tags column` y `#columns`.
 - [x] Mapeo posicional de Genki (8 columnas) y modo reducido (3 columnas).
-- [~] Sin extracción de audio (el `.txt` solo trae referencias) → #10.
+- [x] Audio en `.txt`: `[sound:…]` (también dentro de HTML) desde la columna mapeada, copiado con
+  SHA-1 y deduplicación desde la carpeta de medios elegida (por defecto, la hermana del `.txt`);
+  los archivos ausentes suman avisos sin abortar. → #10
 - [x] Pantalla de mapeo manual de columnas con vista previa de filas y asignación de lectura,
   kanji, significado, glosa, UID, etiquetas, lección y subapartado.
 

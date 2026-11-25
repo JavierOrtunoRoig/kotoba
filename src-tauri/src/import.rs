@@ -6,11 +6,10 @@ use crate::models::{
 use crate::text;
 use anyhow::{anyhow, Context, Result};
 use rusqlite::Connection;
-use sha1::{Digest, Sha1};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use zip::ZipArchive;
 
 const MAX_WARNINGS: usize = 20;
@@ -32,9 +31,14 @@ pub fn import_file(
         .to_lowercase();
     match extension.as_str() {
         "apkg" => import_apkg(path, conn, media_dir, progress, mapping),
-        "txt" | "tsv" | "csv" => {
-            import_txt(path, conn, progress, mapping.and_then(|m| m.txt.as_ref()))
-        }
+        "txt" | "tsv" | "csv" => import_txt(
+            path,
+            conn,
+            media_dir,
+            progress,
+            mapping.and_then(|m| m.txt.as_ref()),
+            mapping.and_then(|m| m.media_folder.as_deref()),
+        ),
         other => Err(anyhow!(
             "Formato no soportado: {other}. Usa un .apkg o un .txt exportado de Anki."
         )),
@@ -123,7 +127,7 @@ pub fn import_apkg(
                     .find(|note_type| note_type.mid == note.mid)
             })
             .map(|note_type| note_type.mapping.clone())
-            .unwrap_or_else(|| suggest_mapping(&field_names, values.len(), false));
+            .unwrap_or_else(|| suggest_mapping(&field_names, values.len()));
 
         let reading_raw = mapped_value(&values, map.reading).unwrap_or_default();
         let kanji_raw = mapped_value(&values, map.kanji).unwrap_or_default();
@@ -372,27 +376,21 @@ fn ensure_audio(
         bytes = zstd::stream::decode_all(&bytes[..])?;
     }
 
-    let sha = hex::encode(Sha1::digest(&bytes));
-    if let Some(expected) = &entry.sha1 {
-        if expected != &sha {
-            // El hash no coincide: seguimos, pero lo dejamos anotado en la caché.
+    let stored = media::store_bytes(&bytes, &entry.name, entry.sha1.as_deref(), media_dir);
+    match stored {
+        Ok(stored) => {
+            cache.insert(
+                entry.name.clone(),
+                stored.as_ref().map(|(filename, _)| filename.clone()),
+            );
+            Ok(stored)
+        }
+        Err(error) => {
+            // El hash no coincide o la copia falló: lo dejamos anotado en la caché.
             cache.insert(entry.name.clone(), None);
-            return Err(anyhow!("sha1 no coincide para {}", entry.name));
+            Err(error)
         }
     }
-
-    let extension = Path::new(&entry.name)
-        .extension()
-        .and_then(|value| value.to_str())
-        .unwrap_or("bin");
-    let filename = format!("{sha}.{extension}");
-    let target = media_dir.join(&filename);
-    let is_new = !target.exists();
-    if is_new {
-        std::fs::write(&target, &bytes)?;
-    }
-    cache.insert(entry.name.clone(), Some(filename.clone()));
-    Ok(Some((filename, is_new)))
 }
 
 fn non_empty(value: String) -> Option<String> {
@@ -409,7 +407,7 @@ fn mapped_value<'a>(values: &[&'a str], index: Option<usize>) -> Option<&'a str>
 }
 
 /// Sugiere índices a partir de los nombres de campo y del ancho del mazo.
-fn suggest_mapping(fields: &[String], width: usize, is_txt: bool) -> FieldMapping {
+fn suggest_mapping(fields: &[String], width: usize) -> FieldMapping {
     let lower: Vec<String> = fields
         .iter()
         .map(|field| field.trim().to_lowercase())
@@ -439,11 +437,7 @@ fn suggest_mapping(fields: &[String], width: usize, is_txt: bool) -> FieldMappin
         } else {
             None
         });
-    let audio = if is_txt {
-        None
-    } else {
-        lookup(&["sonido", "audio", "sound"]).or(if width > 5 { Some(5) } else { None })
-    };
+    let audio = lookup(&["sonido", "audio", "sound"]).or(if width > 5 { Some(5) } else { None });
     let uid = lookup(&["uid", "guid"]).or(if width > 7 { Some(7) } else { None });
 
     FieldMapping {
@@ -502,14 +496,11 @@ fn inspect_txt(path: &Path) -> Result<ImportInspection> {
         kind: "txt".to_string(),
         deck_name: txt_deck_name(path),
         total_notes: table.lines.len() as i64,
-        suggested: Some(suggest_mapping(
-            &table.columns,
-            table.columns.len(),
-            true,
-        )),
+        suggested: Some(suggest_mapping(&table.columns, table.columns.len())),
         columns: table.columns,
         sample,
         note_types: Vec::new(),
+        media_folder: sibling_media_folder(path),
     })
 }
 
@@ -558,7 +549,7 @@ fn inspect_apkg(path: &Path) -> Result<ImportInspection> {
             fields: fields.clone(),
             count: counts.get(&mid).copied().unwrap_or(0),
             sample,
-            suggested: suggest_mapping(&fields, fields.len(), false),
+            suggested: suggest_mapping(&fields, fields.len()),
         });
     }
 
@@ -577,6 +568,7 @@ fn inspect_apkg(path: &Path) -> Result<ImportInspection> {
         sample: Vec::new(),
         suggested: None,
         note_types,
+        media_folder: None,
     })
 }
 
@@ -697,23 +689,97 @@ fn txt_deck_name(path: &Path) -> String {
         .to_string()
 }
 
+/// Carpeta de audio hermana del `.txt`, con el mismo nombre que el archivo.
+fn sibling_media_folder(path: &Path) -> Option<String> {
+    let folder = path.parent()?.join(path.file_stem()?);
+    folder
+        .is_dir()
+        .then(|| folder.to_string_lossy().into_owned())
+}
+
+/// Carpeta de medios elegida en el diálogo, o la hermana por defecto.
+fn resolve_media_folder(path: &Path, chosen: Option<&str>) -> PathBuf {
+    if let Some(folder) = chosen.map(str::trim).filter(|value| !value.is_empty()) {
+        return PathBuf::from(folder);
+    }
+    path.parent()
+        .map(|parent| parent.join(path.file_stem().unwrap_or_default()))
+        .unwrap_or_else(|| PathBuf::from("."))
+}
+
+/// Lee un audio de la carpeta de medios y lo copia con el nombre por SHA-1.
+fn audio_from_folder(
+    folder: &Path,
+    name: &str,
+    media_dir: &Path,
+    cache: &mut HashMap<String, Option<String>>,
+) -> Result<Option<(String, bool)>> {
+    if let Some(cached) = cache.get(name) {
+        return Ok(cached.clone().map(|filename| (filename, false)));
+    }
+
+    let safe_name = Path::new(name)
+        .file_name()
+        .and_then(|value| value.to_str())
+        .filter(|value| *value == name)
+        .ok_or_else(|| anyhow!("nombre de audio no válido: {name}"))?;
+
+    let source = folder.join(safe_name);
+    let bytes = std::fs::read(&source)
+        .with_context(|| format!("no se encontró {}", source.display()))?;
+
+    let stored = media::store_bytes(&bytes, name, None, media_dir);
+    match stored {
+        Ok(stored) => {
+            cache.insert(
+                name.to_string(),
+                stored.as_ref().map(|(filename, _)| filename.clone()),
+            );
+            Ok(stored)
+        }
+        Err(error) => {
+            cache.insert(name.to_string(), None);
+            Err(error)
+        }
+    }
+}
+
 pub fn import_txt(
     path: &Path,
     conn: &mut Connection,
+    media_dir: &Path,
     progress: ProgressFn<'_>,
     mapping: Option<&FieldMapping>,
+    media_folder: Option<&str>,
 ) -> Result<ImportSummary> {
     let table = parse_txt_table(path)?;
     let deck_name = txt_deck_name(path);
     let map = mapping
         .cloned()
-        .unwrap_or_else(|| suggest_mapping(&table.columns, table.columns.len(), true));
+        .unwrap_or_else(|| suggest_mapping(&table.columns, table.columns.len()));
 
     let mut summary = ImportSummary {
         notes: table.lines.len() as i64,
         deck_name: deck_name.clone(),
         ..Default::default()
     };
+
+    let audio_folder = map.audio.and_then(|_| {
+        let folder = resolve_media_folder(path, media_folder);
+        if folder.is_dir() {
+            Some(folder)
+        } else {
+            push_warning(
+                &mut summary,
+                format!(
+                    "No se encontró la carpeta de medios {}; los audios se omiten.",
+                    folder.display()
+                ),
+            );
+            None
+        }
+    });
+    let mut audio_cache: HashMap<String, Option<String>> = HashMap::new();
 
     let total_lines = table.lines.len() as i64;
     progress("notes", 0, total_lines);
@@ -752,6 +818,34 @@ pub fn import_txt(
             .map(text::clean_display)
             .and_then(non_empty);
         let kanji = non_empty(kanji_text);
+
+        let audio_file = match audio_folder
+            .as_deref()
+            .zip(mapped_value(&values, map.audio).and_then(sound_name))
+        {
+            Some((folder, name)) => {
+                match audio_from_folder(folder, &name, media_dir, &mut audio_cache) {
+                    Ok(Some((filename, is_new))) => {
+                        if is_new {
+                            summary.audio_extracted += 1;
+                        } else {
+                            summary.audio_reused += 1;
+                        }
+                        Some(filename)
+                    }
+                    Ok(None) => None,
+                    Err(error) => {
+                        summary.audio_missing += 1;
+                        push_warning(
+                            &mut summary,
+                            format!("No se pudo usar el audio {name}: {error}"),
+                        );
+                        None
+                    }
+                }
+            }
+            None => None,
+        };
 
         let uid = uid_raw
             .map(|value| value.trim().to_string())
@@ -798,7 +892,7 @@ pub fn import_txt(
             meaning: meaning.as_str(),
             meaning_plain: meaning_plain.as_str(),
             kanji_gloss: gloss.as_deref(),
-            audio_file: None,
+            audio_file: audio_file.as_deref(),
             lesson: lesson.as_str(),
             category: category.as_str(),
             tags: tags.as_str(),
@@ -858,17 +952,18 @@ mod tests {
 
     #[test]
     fn suggests_mapping_from_names_and_positions() {
-        let empty = suggest_mapping(&[], 8, true);
+        let empty = suggest_mapping(&[], 8);
         assert_eq!(empty.reading, Some(0));
         assert_eq!(empty.kanji, Some(1));
         assert_eq!(empty.meaning, Some(3));
         assert_eq!(empty.gloss, Some(4));
+        assert_eq!(empty.audio, Some(5));
         assert_eq!(empty.uid, Some(7));
-        assert_eq!(empty.audio, None);
 
-        let short = suggest_mapping(&[], 3, true);
+        let short = suggest_mapping(&[], 3);
         assert_eq!(short.meaning, Some(2));
         assert_eq!(short.gloss, None);
+        assert_eq!(short.audio, None);
 
         let fields = vec![
             "Kana".to_string(),
@@ -877,7 +972,7 @@ mod tests {
             "Sonido".to_string(),
             "UID".to_string(),
         ];
-        let named = suggest_mapping(&fields, fields.len(), false);
+        let named = suggest_mapping(&fields, fields.len());
         assert_eq!(named.reading, Some(0));
         assert_eq!(named.kanji, Some(1));
         assert_eq!(named.meaning, Some(2));
@@ -913,6 +1008,7 @@ mod tests {
         let mapping = ImportMapping {
             txt: Some(suggested),
             note_types: Vec::new(),
+            media_folder: None,
         };
         import_file(&path, &mut conn, dir.path(), &mut noop, Some(&mapping))
             .expect("import");
@@ -924,6 +1020,150 @@ mod tests {
             .expect("item");
         assert_eq!(item.meaning, "hola");
         assert_eq!(item.kanji.as_deref(), Some("今日は"));
+    }
+
+    fn import_txt_with_audio(
+        path: &Path,
+        media_dir: &Path,
+        mapping: &ImportMapping,
+    ) -> (ImportSummary, Vec<crate::models::Item>) {
+        let mut conn = Connection::open_in_memory().expect("db");
+        db::migrate(&mut conn).expect("migrate");
+        let mut noop = |_: &str, _: i64, _: i64| {};
+        let summary =
+            import_file(path, &mut conn, media_dir, &mut noop, Some(mapping)).expect("import");
+        let items = db::all_items(&conn).expect("items");
+        (summary, items)
+    }
+
+    fn audio_mapping(reading: usize, meaning: usize, audio: usize) -> ImportMapping {
+        ImportMapping {
+            txt: Some(FieldMapping {
+                reading: Some(reading),
+                meaning: Some(meaning),
+                audio: Some(audio),
+                ..Default::default()
+            }),
+            note_types: Vec::new(),
+            media_folder: None,
+        }
+    }
+
+    #[test]
+    fn imports_txt_audio_from_sibling_media_folder() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let media_folder = dir.path().join("deck");
+        std::fs::create_dir(&media_folder).expect("media folder");
+        std::fs::write(media_folder.join("hola.mp3"), b"fake-mp3-bytes").expect("mp3");
+        let media_dir = dir.path().join("store");
+        std::fs::create_dir(&media_dir).expect("media dir");
+
+        let path = dir.path().join("deck.txt");
+        std::fs::write(
+            &path,
+            "#separator:tab\n#columns:lectura\tsignificado\tsonido\nこんにちは\thola\t<div>[sound:hola.mp3]</div>\n",
+        )
+        .expect("txt");
+
+        let (summary, items) = import_txt_with_audio(&path, &media_dir, &audio_mapping(0, 1, 2));
+
+        assert_eq!(summary.audio_extracted, 1);
+        assert_eq!(summary.audio_reused, 0);
+        assert_eq!(summary.audio_missing, 0);
+        assert!(summary.warnings.is_empty(), "{:?}", summary.warnings);
+        assert_eq!(items.len(), 1);
+        assert!(items[0].has_audio);
+        let stored: Vec<_> = std::fs::read_dir(&media_dir)
+            .expect("read media dir")
+            .filter_map(Result::ok)
+            .collect();
+        assert_eq!(stored.len(), 1);
+    }
+
+    #[test]
+    fn warns_about_missing_txt_audio_without_aborting() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        std::fs::create_dir(dir.path().join("deck")).expect("media folder");
+        let media_dir = dir.path().join("store");
+        std::fs::create_dir(&media_dir).expect("media dir");
+
+        let path = dir.path().join("deck.txt");
+        std::fs::write(
+            &path,
+            "#separator:tab\n#columns:lectura\tsignificado\tsonido\nこんにちは\thola\t[sound:missing.mp3]\n",
+        )
+        .expect("txt");
+
+        let (summary, items) = import_txt_with_audio(&path, &media_dir, &audio_mapping(0, 1, 2));
+
+        assert_eq!(summary.audio_missing, 1);
+        assert_eq!(summary.audio_extracted, 0);
+        assert_eq!(items.len(), 1, "la importación sigue adelante");
+        assert!(!items[0].has_audio);
+        assert!(
+            summary
+                .warnings
+                .iter()
+                .any(|warning| warning.contains("missing.mp3")),
+            "{:?}",
+            summary.warnings
+        );
+    }
+
+    #[test]
+    fn deduplicates_repeated_txt_audio_references() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let media_folder = dir.path().join("deck");
+        std::fs::create_dir(&media_folder).expect("media folder");
+        std::fs::write(media_folder.join("hola.mp3"), b"fake-mp3-bytes").expect("mp3");
+        let media_dir = dir.path().join("store");
+        std::fs::create_dir(&media_dir).expect("media dir");
+
+        let path = dir.path().join("deck.txt");
+        std::fs::write(
+            &path,
+            "#separator:tab\n#columns:lectura\tsignificado\tsonido\nこんにちは\thola\t[sound:hola.mp3]\nさようなら\tadiós\t[sound:hola.mp3]\n",
+        )
+        .expect("txt");
+
+        let (summary, items) = import_txt_with_audio(&path, &media_dir, &audio_mapping(0, 1, 2));
+
+        assert_eq!(summary.audio_extracted, 1);
+        assert_eq!(summary.audio_reused, 1);
+        assert_eq!(summary.audio_missing, 0);
+        assert_eq!(items.len(), 2);
+        assert!(items.iter().all(|item| item.has_audio));
+        let stored: Vec<_> = std::fs::read_dir(&media_dir)
+            .expect("read media dir")
+            .filter_map(Result::ok)
+            .collect();
+        assert_eq!(stored.len(), 1, "mismo hash, un solo archivo");
+    }
+
+    #[test]
+    fn uses_media_folder_chosen_in_mapping() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let chosen = dir.path().join("audio_extra");
+        std::fs::create_dir(&chosen).expect("chosen folder");
+        std::fs::write(chosen.join("hola.mp3"), b"chosen-bytes").expect("mp3");
+        let media_dir = dir.path().join("store");
+        std::fs::create_dir(&media_dir).expect("media dir");
+
+        let path = dir.path().join("deck.txt");
+        std::fs::write(
+            &path,
+            "#separator:tab\n#columns:lectura\tsignificado\tsonido\nこんにちは\thola\t[sound:hola.mp3]\n",
+        )
+        .expect("txt");
+
+        let mut mapping = audio_mapping(0, 1, 2);
+        mapping.media_folder = Some(chosen.to_string_lossy().into_owned());
+
+        let (summary, items) = import_txt_with_audio(&path, &media_dir, &mapping);
+
+        assert_eq!(summary.audio_extracted, 1);
+        assert_eq!(summary.audio_missing, 0);
+        assert!(items[0].has_audio);
     }
 
     #[test]

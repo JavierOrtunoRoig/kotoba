@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { open } from "@tauri-apps/plugin-dialog";
 import type {
   FieldMapping,
   ImportInspection,
@@ -22,7 +23,6 @@ type Target = {
   key: keyof FieldMapping;
   label: string;
   required?: boolean;
-  apkgOnly?: boolean;
 };
 
 const TARGETS: Target[] = [
@@ -30,7 +30,7 @@ const TARGETS: Target[] = [
   { key: "kanji", label: "Kanji" },
   { key: "meaning", label: "Significado", required: true },
   { key: "gloss", label: "Glosa de kanji" },
-  { key: "audio", label: "Audio", apkgOnly: true },
+  { key: "audio", label: "Audio" },
   { key: "uid", label: "UID" },
   { key: "tags", label: "Etiquetas" },
   { key: "lesson", label: "Lección" },
@@ -66,7 +66,6 @@ function MappingSection({
   sample,
   mapping,
   onChange,
-  includeAudio,
   t,
 }: {
   title: string;
@@ -75,11 +74,8 @@ function MappingSection({
   sample: string[][];
   mapping: FieldMapping;
   onChange: (mapping: FieldMapping) => void;
-  includeAudio: boolean;
   t: ReturnType<typeof useT>;
 }) {
-  const targets = TARGETS.filter((target) => includeAudio || !target.apkgOnly);
-
   return (
     <section className="mapping-section">
       <div className="mapping-head">
@@ -118,7 +114,7 @@ function MappingSection({
       )}
 
       <div className="mapping-grid">
-        {targets.map((target) => (
+        {TARGETS.map((target) => (
           <label className="mapping-field" key={target.key}>
             <span>
               {t(target.label)}
@@ -170,6 +166,9 @@ export default function MappingDialog({
         ]),
       ),
   );
+  const [mediaFolder, setMediaFolder] = useState(
+    () => inspection.media_folder ?? "",
+  );
 
   const isTxt = inspection.kind === "txt";
   const valid = isTxt
@@ -179,7 +178,11 @@ export default function MappingDialog({
       );
 
   const mapping: ImportMapping = isTxt
-    ? { txt: txtMapping, note_types: [] }
+    ? {
+        txt: txtMapping,
+        note_types: [],
+        media_folder: mediaFolder.trim() || null,
+      }
     : {
         txt: null,
         note_types: inspection.note_types.map(
@@ -188,7 +191,17 @@ export default function MappingDialog({
             mapping: noteMappings[noteType.mid] ?? emptyMapping(),
           }),
         ),
+        media_folder: null,
       };
+
+  async function pickMediaFolder() {
+    try {
+      const selected = await open({ directory: true, multiple: false });
+      if (typeof selected === "string") setMediaFolder(selected);
+    } catch {
+      // Cancelar el diálogo no es un error.
+    }
+  }
 
   return createPortal(
     <div
@@ -220,16 +233,55 @@ export default function MappingDialog({
 
         <div className="mapping-scroll">
           {isTxt ? (
-            <MappingSection
-              title={inspection.deck_name}
-              subtitle={`${inspection.total_notes} ${t("notas")} · ${inspection.columns.length} ${t("columnas")}`}
-              columns={inspection.columns}
-              sample={inspection.sample}
-              mapping={txtMapping}
-              onChange={setTxtMapping}
-              includeAudio={false}
-              t={t}
-            />
+            <>
+              <MappingSection
+                title={inspection.deck_name}
+                subtitle={`${inspection.total_notes} ${t("notas")} · ${inspection.columns.length} ${t("columnas")}`}
+                columns={inspection.columns}
+                sample={inspection.sample}
+                mapping={txtMapping}
+                onChange={setTxtMapping}
+                t={t}
+              />
+
+              <section className="mapping-section mapping-media">
+                <div className="mapping-head">
+                  <div>
+                    <h3>{t("Carpeta de medios")}</h3>
+                    <p className="muted small">
+                      {t(
+                        "Los audios de [sound: …] se copian desde esta carpeta. Si está vacía, se usa la carpeta hermana con el nombre del .txt.",
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="mapping-media-row">
+                  <input
+                    type="text"
+                    readOnly
+                    value={mediaFolder}
+                    aria-label={t("Carpeta de medios")}
+                    placeholder={t("Carpeta hermana con el nombre del .txt")}
+                  />
+                  <button
+                    type="button"
+                    className="ghost"
+                    onClick={() => void pickMediaFolder()}
+                  >
+                    {t("Elegir carpeta…")}
+                  </button>
+                  {mediaFolder && (
+                    <button
+                      type="button"
+                      className="ghost"
+                      onClick={() => setMediaFolder("")}
+                    >
+                      {t("Quitar")}
+                    </button>
+                  )}
+                </div>
+              </section>
+            </>
           ) : (
             inspection.note_types.map((noteType) => (
               <MappingSection
@@ -245,7 +297,6 @@ export default function MappingDialog({
                     [noteType.mid]: next,
                   }))
                 }
-                includeAudio
                 t={t}
               />
             ))
