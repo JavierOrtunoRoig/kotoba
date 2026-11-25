@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: **2026-11-21**.
+Última verificación: **2026-11-25**.
 
 **Repositorio público:** <https://github.com/JavierOrtunoRoig/kotoba> (código bajo MIT).
 
@@ -25,6 +25,9 @@
 - **Backlog en issues (2026-11-25):** el tracker se sembró desde `requirements.md`: #9 mazos de
   terceros, #10 audio en `.txt`, #11 historial en la app, #12 autostart real, #13 pantalla completa
   real y #14 firma de instaladores. AnkiConnect queda para una sesión de `grill-with-docs`.
+- **Historial en la app (2026-11-25):** #11 añade el comando `review_history` paginado con filtros
+  de dirección, resultado y fechas, y una tabla en Progreso con «cargar más» y estado vacío; la
+  exportación CSV no cambia y no hay migración nueva.
 
 ## Fase actual
 
@@ -68,7 +71,7 @@ progreso y ajustes.
 | Plantillas (`is_pattern`) | 66 |
 | Avisos de importación | 0 |
 | RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 83 OK (+4 ignored: importación, normalización, progreso y tipos de nota reales) |
+| Tests unitarios Rust | 90 OK (+4 ignored: importación, normalización, progreso y tipos de nota reales) |
 | Respuestas reales validadas | 2.629 |
 | Copia de seguridad | SQLite + 827 audios |
 | Typecheck / build frontend | OK |
@@ -191,8 +194,8 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 
 1. **Cerrar cabos de Fase 1-2:** #12 autostart real y #13 pantalla completa real (verificación
    manual, sin código).
-2. **Fase 3:** #9 mazos de terceros, #10 audio en `.txt` y #11 historial en la app; después, sesión
-   de grill para AnkiConnect.
+2. **Fase 3:** #9 mazos de terceros y #10 audio en `.txt`; después, sesión de grill para
+   AnkiConnect.
 3. **Distribución:** #14 firma de los instaladores.
 
 ## Cómo actualizar este documento

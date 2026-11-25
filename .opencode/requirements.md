@@ -216,7 +216,7 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 - [x] Progreso por lección (`L00`…`L12`).
 - [x] Palabras difíciles / más falladas.
 - [x] Historial exportable a CSV (RF2-08).
-- [ ] Historial detallado dentro de la app → #11.
+- [x] Historial detallado dentro de la app → #11.
 - [ ] Rachas y objetivos configurables (el objetivo semanal ya es configurable; falta definir qué
   significa «racha»).
 

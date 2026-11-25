@@ -8,7 +8,10 @@ mod shell;
 mod text;
 mod tray;
 
-use models::{AnswerResult, Bootstrap, Challenge, ImportSummary, Settings, Stats};
+use models::{
+    AnswerResult, Bootstrap, Challenge, ImportSummary, ReviewHistoryPage, ReviewHistoryQuery,
+    Settings, Stats,
+};
 use chrono::TimeZone;
 use rusqlite::OptionalExtension;
 use std::path::PathBuf;
@@ -522,6 +525,28 @@ fn csv_escape(value: &str) -> String {
 }
 
 #[tauri::command]
+fn review_history(
+    state: State<AppState>,
+    page: Option<i64>,
+    per_page: Option<i64>,
+    direction: Option<String>,
+    result: Option<bool>,
+    from_ts: Option<i64>,
+    to_ts: Option<i64>,
+) -> Result<ReviewHistoryPage, String> {
+    let query = ReviewHistoryQuery {
+        page: page.unwrap_or(0),
+        per_page: per_page.unwrap_or(25),
+        direction,
+        result,
+        from_ts,
+        to_ts,
+    };
+    let conn = state.db.lock().map_err(to_err)?;
+    db::review_history(&conn, &query).map_err(to_err)
+}
+
+#[tauri::command]
 fn practice_now(app: tauri::AppHandle) -> Result<(), String> {
     let state = app.state::<AppState>();
     let mode = {
@@ -659,6 +684,7 @@ pub fn run() {
             export_backup,
             restore_backup,
             export_history,
+            review_history,
             practice_now,
             close_popup,
             hide_widget,

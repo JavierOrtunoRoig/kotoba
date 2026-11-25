@@ -1631,6 +1631,120 @@ body.popup-window::before {
   white-space: nowrap;
 }
 
+/* ---------- Historial ---------- */
+
+.history-panel {
+  margin-top: 14px;
+}
+
+.history-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.history-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.history-filters select,
+.history-filters input {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.history-scroll {
+  overflow-x: auto;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+
+.history-table th {
+  padding: 0 10px 8px 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.history-table td {
+  padding: 8px 10px 8px 0;
+  border-bottom: 1px solid rgba(222, 213, 198, 0.6);
+  vertical-align: top;
+}
+
+.history-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.history-date,
+.history-number {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.history-meaning {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-result {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.history-result.hit {
+  color: var(--success);
+  border: 1px solid rgba(63, 107, 79, 0.3);
+  background: rgba(63, 107, 79, 0.08);
+}
+
+.history-result.miss {
+  color: var(--error);
+  border: 1px solid rgba(168, 58, 44, 0.3);
+  background: rgba(168, 58, 44, 0.08);
+}
+
+.history-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.history-empty {
+  margin: 6px 0 2px;
+}
+
 /* ---------- Ajustes ---------- */
 
 .settings {
@@ -2154,6 +2268,11 @@ input[type="time"]:disabled {
 
   .achievement-grid {
     grid-template-columns: 1fr;
+  }
+
+  .history-filters {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .field {

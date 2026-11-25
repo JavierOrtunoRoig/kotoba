@@ -383,6 +383,23 @@ const en: Dict = {
   "Alcanza el nivel 5.": "Reach level 5.",
   "Objetivo cumplido": "Goal completed",
   "Completa un objetivo semanal.": "Complete a weekly goal.",
+
+  // Historial
+  Historial: "History",
+  "Tus últimos repasos, del más reciente al más antiguo.":
+    "Your latest reviews, newest first.",
+  Resultado: "Result",
+  Acierto: "Hit",
+  Fallo: "Miss",
+  Fecha: "Date",
+  Latencia: "Latency",
+  Calidad: "Quality",
+  "Cargar más": "Load more",
+  "Aún no hay repasos registrados. Practica para empezar el historial.":
+    "No reviews yet. Practice to start your history.",
+  "No hay repasos con estos filtros.": "No reviews match these filters.",
+  "Limpiar filtros": "Clear filters",
+  "{n} de {m} repasos": "{n} of {m} reviews",
 };
 
 const ja: Dict = {
@@ -745,6 +762,23 @@ const ja: Dict = {
   "Alcanza el nivel 5.": "レベル5に到達する。",
   "Objetivo cumplido": "目標達成",
   "Completa un objetivo semanal.": "週間目標を達成する。",
+
+  // Historial
+  Historial: "履歴",
+  "Tus últimos repasos, del más reciente al más antiguo.":
+    "最近の復習を新しい順に表示します。",
+  Resultado: "結果",
+  Acierto: "正解",
+  Fallo: "不正解",
+  Fecha: "日時",
+  Latencia: "応答時間",
+  Calidad: "品質",
+  "Cargar más": "さらに読み込む",
+  "Aún no hay repasos registrados. Practica para empezar el historial.":
+    "まだ復習の記録がありません。練習すると履歴が始まります。",
+  "No hay repasos con estos filtros.": "この条件に合う復習はありません。",
+  "Limpiar filtros": "フィルターをクリア",
+  "{n} de {m} repasos": "{m}件中{n}件",
 };
 
 function interpolate(text: string, vars?: Vars): string {

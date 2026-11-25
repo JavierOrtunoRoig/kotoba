@@ -224,6 +224,49 @@ pub struct DifficultItem {
     pub lapses: i64,
 }
 
+/// Un repaso del historial, con los datos del ítem al que pertenece.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ReviewLogEntry {
+    /// Marca temporal del repaso (segundos Unix).
+    pub answered_at: i64,
+    /// La misma marca en hora local, `YYYY-MM-DD HH:MM:SS`.
+    pub answered_at_local: String,
+    pub reading: String,
+    pub meaning: String,
+    /// `jp_to_es` o `es_to_jp`.
+    pub direction: String,
+    /// `true` si fue acierto.
+    pub result: bool,
+    pub quality: i64,
+    pub latency_ms: i64,
+}
+
+/// Página del historial de repasos.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ReviewHistoryPage {
+    pub entries: Vec<ReviewLogEntry>,
+    /// Repasos que cumplen los filtros, no solo los de esta página.
+    pub total: i64,
+    pub page: i64,
+    pub per_page: i64,
+    pub has_more: bool,
+}
+
+/// Filtros de una consulta del historial.
+#[derive(Debug, Clone, Default)]
+pub struct ReviewHistoryQuery {
+    pub page: i64,
+    pub per_page: i64,
+    /// `jp_to_es` o `es_to_jp`; cualquier otro valor se ignora.
+    pub direction: Option<String>,
+    /// `Some(true)` aciertos, `Some(false)` fallos.
+    pub result: Option<bool>,
+    /// Desde esta marca (incluida).
+    pub from_ts: Option<i64>,
+    /// Hasta esta marca (excluida); la UI envía la medianoche del día siguiente.
+    pub to_ts: Option<i64>,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Stats {
     pub total_items: i64,
