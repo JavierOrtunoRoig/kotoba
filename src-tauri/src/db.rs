@@ -1,7 +1,10 @@
-use crate::models::{Achievement, Item, Settings, Stats};
+use crate::models::{
+    Achievement, Item, ReviewHistoryPage, ReviewHistoryQuery, ReviewLogEntry, Settings, Stats,
+};
 use anyhow::Result;
 use chrono::{Local, NaiveDate, TimeZone};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::types::Value;
+use rusqlite::{params, params_from_iter, Connection, OptionalExtension};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
@@ -848,6 +851,89 @@ pub fn new_today_count(conn: &Connection) -> Result<i64> {
 
 pub fn reviews_today(conn: &Connection) -> Result<i64> {
     reviews_since(conn, today_start_ts())
+}
+
+/// Página del historial, de la más reciente a la más antigua.
+///
+/// Los filtros de dirección y resultado se ignoran si traen un valor desconocido; el rango de fechas
+/// es `[from_ts, to_ts)`.
+pub fn review_history(
+    conn: &Connection,
+    query: &ReviewHistoryQuery,
+) -> Result<ReviewHistoryPage> {
+    let per_page = query.per_page.clamp(1, 100);
+    let page = query.page.max(0);
+
+    let mut where_sql = String::from(" WHERE r.answered_at IS NOT NULL");
+    let mut values: Vec<Value> = Vec::new();
+
+    if let Some(direction) = query.direction.as_deref() {
+        if matches!(direction, "jp_to_es" | "es_to_jp") {
+            where_sql.push_str(" AND r.direction = ?");
+            values.push(Value::Text(direction.to_string()));
+        }
+    }
+    if let Some(result) = query.result {
+        where_sql.push_str(" AND r.result = ?");
+        values.push(Value::Integer(result as i64));
+    }
+    if let Some(from_ts) = query.from_ts {
+        where_sql.push_str(" AND r.answered_at >= ?");
+        values.push(Value::Integer(from_ts));
+    }
+    if let Some(to_ts) = query.to_ts {
+        where_sql.push_str(" AND r.answered_at < ?");
+        values.push(Value::Integer(to_ts));
+    }
+
+    let total: i64 = conn.query_row(
+        &format!("SELECT COUNT(*) FROM review_log r{where_sql}"),
+        params_from_iter(values.iter()),
+        |row| row.get(0),
+    )?;
+
+    let entries_sql = format!(
+        "SELECT r.answered_at, i.reading, i.meaning, r.direction, r.result, r.quality, r.latency_ms
+         FROM review_log r
+         JOIN items i ON i.id = r.item_id
+         {where_sql}
+         ORDER BY r.answered_at DESC, r.id DESC
+         LIMIT ? OFFSET ?"
+    );
+    let mut entries_values = values;
+    entries_values.push(Value::Integer(per_page));
+    entries_values.push(Value::Integer(page * per_page));
+
+    let mut stmt = conn.prepare(&entries_sql)?;
+    let mut rows = stmt.query(params_from_iter(entries_values.iter()))?;
+    let mut entries = Vec::new();
+    while let Some(row) = rows.next()? {
+        let answered_at: i64 = row.get(0)?;
+        let answered_at_local = Local
+            .timestamp_opt(answered_at, 0)
+            .single()
+            .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+            .unwrap_or_else(|| answered_at.to_string());
+        entries.push(ReviewLogEntry {
+            answered_at,
+            answered_at_local,
+            reading: row.get(1)?,
+            meaning: row.get(2)?,
+            direction: row.get(3)?,
+            result: row.get::<_, i64>(4)? != 0,
+            quality: row.get(5)?,
+            latency_ms: row.get(6)?,
+        });
+    }
+
+    let has_more = page * per_page + (entries.len() as i64) < total;
+    Ok(ReviewHistoryPage {
+        entries,
+        total,
+        page,
+        per_page,
+        has_more,
+    })
 }
 
 pub fn last_direction(conn: &Connection) -> Result<Option<String>> {
@@ -1776,5 +1862,200 @@ mod tests {
 
         assert_eq!(due_count(&conn, false).expect("due"), 1);
         assert_eq!(new_count(&conn, false).expect("new"), 1);
+    }
+
+    fn insert_review(
+        conn: &Connection,
+        item_id: i64,
+        answered_at: i64,
+        result: bool,
+        direction: &str,
+    ) {
+        conn.execute(
+            "INSERT INTO review_log
+             (item_id, shown_at, answered_at, result, quality, latency_ms, direction)
+             VALUES (?1, ?2, ?2, ?3, 4, 900, ?4)",
+            params![item_id, answered_at, result as i32, direction],
+        )
+        .expect("review");
+    }
+
+    #[test]
+    fn review_history_paginates_newest_first() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        let item = insert_order_item(&conn, "u1", "L01", "01 Vocabulario");
+        for offset in 0..5 {
+            insert_review(&conn, item, 1_000 + offset, offset % 2 == 0, "jp_to_es");
+        }
+
+        let first = review_history(
+            &conn,
+            &ReviewHistoryQuery {
+                page: 0,
+                per_page: 2,
+                ..Default::default()
+            },
+        )
+        .expect("first page");
+        assert_eq!(first.total, 5);
+        assert_eq!(first.entries.len(), 2);
+        assert_eq!(
+            first
+                .entries
+                .iter()
+                .map(|entry| entry.answered_at)
+                .collect::<Vec<_>>(),
+            vec![1_004, 1_003]
+        );
+        assert_eq!(first.entries[0].answered_at_local.len(), 19);
+        assert!(first.has_more);
+
+        let last = review_history(
+            &conn,
+            &ReviewHistoryQuery {
+                page: 2,
+                per_page: 2,
+                ..Default::default()
+            },
+        )
+        .expect("last page");
+        assert_eq!(last.entries.len(), 1);
+        assert_eq!(last.entries[0].answered_at, 1_000);
+        assert!(!last.has_more);
+
+        let past_the_end = review_history(
+            &conn,
+            &ReviewHistoryQuery {
+                page: 9,
+                per_page: 2,
+                ..Default::default()
+            },
+        )
+        .expect("past the end");
+        assert!(past_the_end.entries.is_empty());
+        assert_eq!(past_the_end.total, 5);
+        assert!(!past_the_end.has_more);
+
+        let clamped = review_history(
+            &conn,
+            &ReviewHistoryQuery {
+                page: 0,
+                per_page: 0,
+                ..Default::default()
+            },
+        )
+        .expect("clamped");
+        assert_eq!(clamped.entries.len(), 1);
+        assert_eq!(clamped.per_page, 1);
+    }
+
+    #[test]
+    fn review_history_filters_direction_result_and_dates() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        let item = insert_order_item(&conn, "u1", "L01", "01 Vocabulario");
+        insert_review(&conn, item, 100, true, "jp_to_es");
+        insert_review(&conn, item, 200, true, "es_to_jp");
+        insert_review(&conn, item, 300, false, "es_to_jp");
+        insert_review(&conn, item, 400, false, "jp_to_es");
+
+        let by_direction = review_history(
+            &conn,
+            &ReviewHistoryQuery {
+                page: 0,
+                per_page: 10,
+                direction: Some("es_to_jp".to_string()),
+                ..Default::default()
+            },
+        )
+        .expect("direction");
+        assert_eq!(by_direction.total, 2);
+        assert!(by_direction
+            .entries
+            .iter()
+            .all(|entry| entry.direction == "es_to_jp"));
+
+        let by_result = review_history(
+            &conn,
+            &ReviewHistoryQuery {
+                page: 0,
+                per_page: 10,
+                result: Some(true),
+                ..Default::default()
+            },
+        )
+        .expect("result");
+        assert_eq!(by_result.total, 2);
+        assert!(by_result.entries.iter().all(|entry| entry.result));
+
+        let by_date = review_history(
+            &conn,
+            &ReviewHistoryQuery {
+                page: 0,
+                per_page: 10,
+                from_ts: Some(200),
+                to_ts: Some(400),
+                ..Default::default()
+            },
+        )
+        .expect("dates");
+        assert_eq!(by_date.total, 2);
+        assert_eq!(
+            by_date
+                .entries
+                .iter()
+                .map(|entry| entry.answered_at)
+                .collect::<Vec<_>>(),
+            vec![300, 200]
+        );
+
+        let combined = review_history(
+            &conn,
+            &ReviewHistoryQuery {
+                page: 0,
+                per_page: 10,
+                direction: Some("jp_to_es".to_string()),
+                result: Some(false),
+                ..Default::default()
+            },
+        )
+        .expect("combined");
+        assert_eq!(combined.total, 1);
+        assert_eq!(combined.entries[0].answered_at, 400);
+
+        // Una dirección desconocida no filtra nada.
+        let unknown = review_history(
+            &conn,
+            &ReviewHistoryQuery {
+                page: 0,
+                per_page: 10,
+                direction: Some("sideways".to_string()),
+                ..Default::default()
+            },
+        )
+        .expect("unknown");
+        assert_eq!(unknown.total, 4);
+    }
+
+    #[test]
+    fn review_history_is_empty_without_reviews() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        insert_order_item(&conn, "u1", "L01", "01 Vocabulario");
+
+        let page = review_history(
+            &conn,
+            &ReviewHistoryQuery {
+                page: 0,
+                per_page: 25,
+                ..Default::default()
+            },
+        )
+        .expect("empty");
+
+        assert!(page.entries.is_empty());
+        assert_eq!(page.total, 0);
+        assert!(!page.has_more);
     }
 }

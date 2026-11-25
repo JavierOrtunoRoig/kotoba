@@ -107,6 +107,35 @@ export interface DifficultItem {
   lapses: number;
 }
 
+export interface ReviewLogEntry {
+  answered_at: number;
+  /** Hora local, `YYYY-MM-DD HH:MM:SS`. */
+  answered_at_local: string;
+  reading: string;
+  meaning: string;
+  direction: Direction;
+  result: boolean;
+  quality: number;
+  latency_ms: number;
+}
+
+export interface ReviewHistoryPage {
+  entries: ReviewLogEntry[];
+  total: number;
+  page: number;
+  per_page: number;
+  has_more: boolean;
+}
+
+export interface ReviewHistoryParams {
+  page?: number;
+  perPage?: number;
+  direction?: Direction | null;
+  result?: boolean | null;
+  fromTs?: number | null;
+  toTs?: number | null;
+}
+
 export interface Stats {
   total_items: number;
   total_reviews: number;
@@ -240,6 +269,15 @@ export const api = {
     invoke<Settings>("restore_backup", { source }),
   exportHistory: (destination: string) =>
     invoke<string>("export_history", { destination }),
+  reviewHistory: (params: ReviewHistoryParams = {}) =>
+    invoke<ReviewHistoryPage>("review_history", {
+      page: params.page ?? 0,
+      perPage: params.perPage ?? 25,
+      direction: params.direction ?? null,
+      result: params.result ?? null,
+      fromTs: params.fromTs ?? null,
+      toTs: params.toTs ?? null,
+    }),
   practiceNow: () => invoke<void>("practice_now"),
   closePopup: () => invoke<void>("close_popup"),
   hideWidget: () => invoke<void>("hide_widget"),

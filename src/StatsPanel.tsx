@@ -1,5 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
-import { api, type Stats } from "./api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  api,
+  directionLabel,
+  type Direction,
+  type ReviewLogEntry,
+  type Stats,
+} from "./api";
 import { useT, type Language } from "./i18n";
 import { IconArrow, IconFlame, IconSeed, IconTarget } from "./Icons";
 
@@ -347,6 +353,8 @@ export default function StatsPanel({ language, onPractice }: Props) {
         </div>
       </article>
 
+      <ReviewHistory language={language} />
+
       <div className="stats-columns">
         <article className="panel">
           <div className="panel-head">
@@ -440,5 +448,266 @@ export default function StatsPanel({ language, onPractice }: Props) {
         </button>
       </div>
     </section>
+  );
+}
+
+const HISTORY_PAGE_SIZE = 25;
+
+type HistoryFilters = {
+  direction: "" | Direction;
+  result: "" | "hit" | "miss";
+  from: string;
+  to: string;
+};
+
+const EMPTY_FILTERS: HistoryFilters = {
+  direction: "",
+  result: "",
+  from: "",
+  to: "",
+};
+
+function startOfDaySeconds(value: string): number | null {
+  if (!value) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return Math.floor(new Date(year, month - 1, day).getTime() / 1000);
+}
+
+/** Medianoche del día siguiente, para que el rango incluya el día "hasta". */
+function endOfDaySeconds(value: string): number | null {
+  if (!value) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return Math.floor(new Date(year, month - 1, day + 1).getTime() / 1000);
+}
+
+function formatLatency(milliseconds: number): string {
+  return `${(milliseconds / 1000).toFixed(1)} s`;
+}
+
+function ReviewHistory({ language }: { language: Language }) {
+  const t = useT(language);
+  const [filters, setFilters] = useState<HistoryFilters>(EMPTY_FILTERS);
+  const [entries, setEntries] = useState<ReviewLogEntry[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const requestId = useRef(0);
+
+  const load = useCallback(
+    async (nextPage: number, replace: boolean) => {
+      const request = ++requestId.current;
+      if (replace) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      try {
+        const result = await api.reviewHistory({
+          page: nextPage,
+          perPage: HISTORY_PAGE_SIZE,
+          direction: filters.direction || null,
+          result:
+            filters.result === "" ? null : filters.result === "hit",
+          fromTs: startOfDaySeconds(filters.from),
+          toTs: endOfDaySeconds(filters.to),
+        });
+        if (request !== requestId.current) return;
+        setEntries((current) =>
+          replace ? result.entries : [...current, ...result.entries],
+        );
+        setTotal(result.total);
+        setHasMore(result.has_more);
+        setPage(result.page);
+        setError(null);
+      } catch (caught) {
+        if (request !== requestId.current) return;
+        setError(String(caught));
+      } finally {
+        if (request === requestId.current) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
+      }
+    },
+    [filters],
+  );
+
+  useEffect(() => {
+    void load(0, true);
+  }, [load]);
+
+  const filtersActive =
+    filters.direction !== "" ||
+    filters.result !== "" ||
+    filters.from !== "" ||
+    filters.to !== "";
+
+  return (
+    <article className="panel history-panel">
+      <div className="panel-head">
+        <div>
+          <h2>{t("Historial")}</h2>
+          <p className="muted">
+            {t("Tus últimos repasos, del más reciente al más antiguo.")}
+          </p>
+        </div>
+        {filtersActive && (
+          <button
+            type="button"
+            className="ghost small"
+            onClick={() => setFilters(EMPTY_FILTERS)}
+          >
+            {t("Limpiar filtros")}
+          </button>
+        )}
+      </div>
+
+      <div className="history-filters">
+        <label>
+          <span>{t("Dirección")}</span>
+          <select
+            value={filters.direction}
+            onChange={(event) =>
+              setFilters((current) => ({
+                ...current,
+                direction: event.target.value as HistoryFilters["direction"],
+              }))
+            }
+          >
+            <option value="">{t("Todos")}</option>
+            <option value="jp_to_es">{directionLabel("jp_to_es", language)}</option>
+            <option value="es_to_jp">{directionLabel("es_to_jp", language)}</option>
+          </select>
+        </label>
+
+        <label>
+          <span>{t("Resultado")}</span>
+          <select
+            value={filters.result}
+            onChange={(event) =>
+              setFilters((current) => ({
+                ...current,
+                result: event.target.value as HistoryFilters["result"],
+              }))
+            }
+          >
+            <option value="">{t("Todos")}</option>
+            <option value="hit">{t("Acierto")}</option>
+            <option value="miss">{t("Fallo")}</option>
+          </select>
+        </label>
+
+        <label>
+          <span>{t("Desde")}</span>
+          <input
+            type="date"
+            value={filters.from}
+            max={filters.to || undefined}
+            onChange={(event) =>
+              setFilters((current) => ({
+                ...current,
+                from: event.target.value,
+              }))
+            }
+          />
+        </label>
+
+        <label>
+          <span>{t("Hasta")}</span>
+          <input
+            type="date"
+            value={filters.to}
+            min={filters.from || undefined}
+            onChange={(event) =>
+              setFilters((current) => ({
+                ...current,
+                to: event.target.value,
+              }))
+            }
+          />
+        </label>
+      </div>
+
+      {error && <p className="inline-error">{error}</p>}
+
+      {loading ? (
+        <p className="muted small">{t("Cargando")}…</p>
+      ) : entries.length === 0 ? (
+        <p className="muted small history-empty">
+          {filtersActive
+            ? t("No hay repasos con estos filtros.")
+            : t(
+                "Aún no hay repasos registrados. Practica para empezar el historial.",
+              )}
+        </p>
+      ) : (
+        <>
+          <div className="history-scroll">
+            <table className="history-table">
+              <thead>
+                <tr>
+                  <th scope="col">{t("Fecha")}</th>
+                  <th scope="col">{t("Dirección")}</th>
+                  <th scope="col">{t("Lectura")}</th>
+                  <th scope="col">{t("Significado")}</th>
+                  <th scope="col">{t("Resultado")}</th>
+                  <th scope="col">{t("Calidad")}</th>
+                  <th scope="col">{t("Latencia")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry, index) => (
+                  <tr key={`${entry.answered_at}-${index}`}>
+                    <td className="history-date">
+                      {entry.answered_at_local}
+                    </td>
+                    <td>{directionLabel(entry.direction, language)}</td>
+                    <td lang="ja">{entry.reading}</td>
+                    <td className="history-meaning">{entry.meaning}</td>
+                    <td>
+                      <span
+                        className={`history-result ${
+                          entry.result ? "hit" : "miss"
+                        }`}
+                      >
+                        {entry.result ? t("Acierto") : t("Fallo")}
+                      </span>
+                    </td>
+                    <td className="history-number">{entry.quality}</td>
+                    <td className="history-number">
+                      {formatLatency(entry.latency_ms)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="history-foot">
+            <span className="muted small">
+              {t("{n} de {m} repasos", {
+                n: entries.length,
+                m: total,
+              })}
+            </span>
+            {hasMore && (
+              <button
+                type="button"
+                className="ghost small"
+                disabled={loadingMore}
+                onClick={() => void load(page + 1, false)}
+              >
+                {t("Cargar más")}
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </article>
   );
 }
