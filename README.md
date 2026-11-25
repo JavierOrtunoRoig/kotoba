@@ -125,9 +125,9 @@ flowchart LR
 Los instaladores de la última versión están en
 [**Releases**](https://github.com/JavierOrtunoRoig/kotoba/releases):
 
-- `kotoba_0.1.1_x64-setup.exe` — instalador NSIS, sin permisos de administrador. **Recomendado**:
+- `kotoba_0.2.0_x64-setup.exe` — instalador NSIS, sin permisos de administrador. **Recomendado**:
   el updater automático usa este formato.
-- `kotoba_0.1.1_x64_en-US.msi` — instalador clásico de Windows (requiere administrador).
+- `kotoba_0.2.0_x64_en-US.msi` — instalador clásico de Windows (requiere administrador).
 
 > Los binarios todavía no están firmados digitalmente, así que Windows SmartScreen puede pedir
 > confirmación la primera vez. También puedes compilarlo tú mismo con las instrucciones de abajo.
@@ -158,8 +158,8 @@ npm run tauri build
 
 Salen en `src-tauri/target/release/bundle/`:
 
-- `msi/kotoba_0.1.1_x64_en-US.msi`
-- `nsis/kotoba_0.1.1_x64-setup.exe`
+- `msi/kotoba_0.2.0_x64_en-US.msi`
+- `nsis/kotoba_0.2.0_x64-setup.exe`
 
 ## Primer uso
 
@@ -238,8 +238,8 @@ Para publicar una versión:
 2. Crea y empuja la etiqueta:
 
    ```powershell
-   git tag v0.1.1
-   git push origin v0.1.1
+   git tag v0.2.0
+   git push origin v0.2.0
    ```
 
 3. GitHub Actions compila y publica la release con los instaladores adjuntos.
