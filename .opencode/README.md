@@ -16,6 +16,7 @@ La visión de producto sigue estando en [`../docs/plan.md`](../docs/plan.md).
 | [`state.md`](state.md) | Estado actual, métricas verificadas, datos de prueba y deuda técnica |
 | [`skills/dependabot-prs/`](skills/dependabot-prs/SKILL.md) | Skill de OpenCode para gestionar PRs de Dependabot (listar, preparar, verificar y mergear) |
 | [`../docs/agents/`](../docs/agents/) | Configuración de las skills de ingeniería: issue tracker, etiquetas de triage y docs de dominio |
+| [`../.agents/skills/`](../.agents/skills/) | Skills de ingeniería de `mattpocock/skills`, versionadas y fijadas en `skills-lock.json` |
 
 ## Reglas de mantenimiento
 

@@ -310,14 +310,14 @@ futuras y hay que reinstalar una vez. La clave y su contraseña deben guardarse 
 triage → spec → tickets → implementación → review.
 **Decisión:** instalar el núcleo de ingeniería de [`mattpocock/skills`](https://github.com/mattpocock/skills)
 para opencode (17 skills: `triage`, `to-spec`, `to-tickets`, `implement`, `code-review`, `tdd`,
-`diagnosing-bugs`, `domain-modeling`, etc.). Los archivos viven en `.agents/skills/` (ignorado en git,
-como ya estaba) y la fuente queda fijada en `skills-lock.json`, versionado. La configuración por repo
-la genera `setup-matt-pocock-skills` en `docs/agents/`:
+`diagnosing-bugs`, `domain-modeling`, etc.). Los archivos viven en `.agents/skills/` (versionado, como
+el resto de la configuración del repo) y la fuente queda fijada en `skills-lock.json`. La configuración
+por repo la genera `setup-matt-pocock-skills` en `docs/agents/`:
 `issue-tracker.md` (GitHub Issues), `triage-labels.md` (las cinco etiquetas canónicas) y `domain.md`
 (single-context; remite además a `.opencode/`). `AGENTS.md` gana un bloque `## Agent skills` que apunta
 a esos tres archivos.
-**Consecuencias:** las skills se restauran con `npx skills@latest install` a partir del lockfile; no se
-versionan sus copias. El triage usa GitHub Issues y las etiquetas `needs-triage`, `needs-info`,
-`ready-for-agent`, `ready-for-human` y `wontfix`, ya creadas en el repo. Las decisiones del proyecto
-siguen en este archivo (`D-0xx`); `docs/adr/` y `GLOSSARY.md` se crearán solo cuando el modelado de
-dominio lo pida.
+**Consecuencias:** las skills viajan con el repo: cualquier clon las tiene sin instalar nada y las
+actualizaciones se ven como diff en el PR. Para actualizarlas: `npx skills@latest update` y commit. El
+triage usa GitHub Issues y las etiquetas `needs-triage`, `needs-info`, `ready-for-agent`,
+`ready-for-human` y `wontfix`, ya creadas en el repo. Las decisiones del proyecto siguen en este
+archivo (`D-0xx`); `docs/adr/` y `GLOSSARY.md` se crearán solo cuando el modelado de dominio lo pida.

@@ -31,7 +31,8 @@ target/
 # --- Herramientas de IA / agentes ---
 # CodeGraph indexa el repo en local; su base de datos no se versiona.
 .codegraph/
-.agents/
+# `.agents/skills/` sí se versiona: son las skills de ingeniería (mattpocock/skills)
+# fijadas en `skills-lock.json`. Se restauran con `npx skills@latest install`.
 
 # --- Editor / OS ---
 .vscode/*
