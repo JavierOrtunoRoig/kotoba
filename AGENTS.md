@@ -8,3 +8,18 @@ In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the re
 
 If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
 <!-- CODEGRAPH_END -->
+
+## Agent skills
+
+### Issue tracker
+
+Issues y specs viven en GitHub Issues de `JavierOrtunoRoig/kotoba`, vía `gh`. Ver `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Vocabulario canónico: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Ver `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` y `docs/adr/` en la raíz (se crean cuando haga falta). El conocimiento actual está en `.opencode/`. Ver `docs/agents/domain.md`.
+

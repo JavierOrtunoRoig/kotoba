@@ -15,6 +15,7 @@ La visión de producto sigue estando en [`../docs/plan.md`](../docs/plan.md).
 | [`architecture.md`](architecture.md) | Módulos, esquema SQLite, flujo de importación, comandos IPC y UI |
 | [`state.md`](state.md) | Estado actual, métricas verificadas, datos de prueba y deuda técnica |
 | [`skills/dependabot-prs/`](skills/dependabot-prs/SKILL.md) | Skill de OpenCode para gestionar PRs de Dependabot (listar, preparar, verificar y mergear) |
+| [`../docs/agents/`](../docs/agents/) | Configuración de las skills de ingeniería: issue tracker, etiquetas de triage y docs de dominio |
 
 ## Reglas de mantenimiento
 
