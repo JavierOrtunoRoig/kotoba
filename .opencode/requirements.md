@@ -21,7 +21,7 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 - [x] Plugin `tauri-plugin-autostart` integrado.
 - [x] Toggle en Ajustes → Sistema.
-- [~] Falta verificarlo en un arranque real de Windows (registro/entrada de inicio).
+- [~] Falta verificarlo en un arranque real de Windows (registro/entrada de inicio) → #12.
 
 ## RF-03 — Importación `.apkg`
 
@@ -41,7 +41,7 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 - [x] Parseo de cabeceras `#separator`, `#tags column` y `#columns`.
 - [x] Mapeo posicional de Genki (8 columnas) y modo reducido (3 columnas).
-- [x] Sin extracción de audio (el `.txt` solo trae referencias).
+- [~] Sin extracción de audio (el `.txt` solo trae referencias) → #10.
 - [x] Pantalla de mapeo manual de columnas con vista previa de filas y asignación de lectura,
   kanji, significado, glosa, UID, etiquetas, lección y subapartado.
 
@@ -61,7 +61,7 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 - [x] Quita `*` y `〜` para comparar.
 - [x] JP → ES acepta acepciones separadas por `;`.
 - [x] JP → ES acepta la forma sin paréntesis ni `...`.
-- [~] Quedan casos límite (partículas en el significado, variantes de IME, romaji).
+- [x] Casos límite (partículas en el significado, variantes de IME, romaji) cerrados en RF2-04.
 
 ## RF-07 — Feedback inmediato
 
@@ -87,8 +87,9 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 - [x] Posicionada en la esquina inferior derecha del monitor.
 - [x] Arrastrable desde la cabecera.
 - [x] Cerrar con Escape o con la X oculta la ventana sin registrar repaso.
-- [~] No robar foco al aparecer: la ventana se crea con `focused(false)`, pero falta el flag Win32
-  `WS_EX_NOACTIVATE` para garantizarlo.
+- [x] No robar foco al aparecer: se crea con `focused(false)`, se muestra sin activar y se devuelve
+  el foco (verificado con `GetForegroundWindow`). `WS_EX_NOACTIVATE` se descarta: impediría teclear
+  en el popup, que necesita foco de teclado.
 
 ## RF-10 — Scheduler
 
@@ -156,8 +157,8 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 ## RNF-03 — No interrumpir
 
-- [~] No robar foco: parcial (ver RF-09).
-- [ ] Detección de apps a pantalla completa (Fase 2).
+- [x] No robar foco (ver RF-09).
+- [x] Detección de apps a pantalla completa (RF2-02).
 
 ## RNF-04 — Plataforma
 
@@ -165,14 +166,14 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 - [x] Build MSVC.
 - [x] CI con build y tests en Windows.
 - [x] Release automática con MSI y NSIS al empujar una etiqueta `v*`.
-- [ ] Instalador firmado.
+- [ ] Instalador firmado → #14.
 
 ## RNF-05 — Mantenibilidad
 
 - [x] Módulos Rust separados (`db`, `import`, `media`, `text`, `scheduler`, `shell`, `tray`).
 - [x] Tests unitarios de normalización, parser de medios e importador.
-- [ ] Migraciones versionadas (ahora se usa `CREATE TABLE IF NOT EXISTS`).
-- [ ] Logging estructurado y manejo de errores visible al usuario.
+- [x] Migraciones versionadas (RF2-08: `PRAGMA user_version` + `ensure_column`).
+- [x] Logging estructurado a archivo y errores visibles con reintento (RF2-08).
 
 ---
 
@@ -193,7 +194,8 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 - [x] Detección de pantalla completa, presentaciones, juegos y modo silencio con
   `SHQueryUserNotificationState`.
 - [x] El popup/widget se muestran y se devuelve el foco a la ventana anterior.
-- [ ] Pausa automática durante llamadas o pantalla completa (opcional).
+- [ ] Pausa automática durante llamadas (opcional). La supresión durante pantalla completa ya
+  existe; el caso «llamada» no merece ticket todavía.
 
 ## RF2-03 — SRS SM-2 completo
 
@@ -213,8 +215,10 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 - [x] Progreso por lección (`L00`…`L12`).
 - [x] Palabras difíciles / más falladas.
-- [ ] Historial detallado y exportable.
-- [ ] Rachas y objetivos configurables.
+- [x] Historial exportable a CSV (RF2-08).
+- [ ] Historial detallado dentro de la app → #11.
+- [ ] Rachas y objetivos configurables (el objetivo semanal ya es configurable; falta definir qué
+  significa «racha»).
 
 ## RF2-06 - Importación más cómoda
 
@@ -225,9 +229,9 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 - [x] Mapeo manual de columnas en `.txt` (incluye `#columns` cuando existe).
 - [x] Detección automática de campos por nombre con fallback posicional; el usuario puede ajustar.
 - [x] Registro de la colación `unicase` de Anki para leer `fields.name` y `notetypes.name`.
-- [~] Validación con mazos reales adicionales de varios tipos de nota (soportado por diseño).
+- [~] Validación con mazos reales adicionales de varios tipos de nota (soportado por diseño) → #9.
 - [x] Limpieza de audios huérfanos al borrar o reimportar.
-- [ ] Importación de mazos distintos a Genki 1.
+- [ ] Importación de mazos distintos a Genki 1 → #9.
 
 ## RF2-07 - UX y accesibilidad
 
@@ -272,9 +276,11 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 - [ ] Detección de cambios en el mazo.
 - [ ] No pisar el scheduling de Anki.
 
+> Pendiente de una sesión de `grill-with-docs` → spec; no es un ticket suelto todavía.
+
 ## RF3-02 — Más contenido
 
-- [ ] Genki 2 y otros mazos.
+- [ ] Genki 2 y otros mazos → #9.
 - [ ] Gramática y partículas.
 - [ ] Frases y listening.
 
@@ -282,8 +288,8 @@ Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fa
 
 - [x] CI con build y tests en Windows.
 - [x] Release automática con MSI y NSIS al empujar una etiqueta `v*`.
-- [ ] Instalador MSI/NSIS firmado.
-- [ ] Auto-update.
+- [ ] Instalador MSI/NSIS firmado → #14.
+- [x] Auto-update con `tauri-plugin-updater` y `latest.json` (2026-11-22).
 
 ## RF3-04 — Gamificación
 
@@ -329,7 +335,8 @@ pueden incentivar respuestas rápidas/malas que rompan el SM-2.
 - [x] Migración v4 (`profile.streak_savers`, tabla `streak_repairs`) y tests de reparación,
   tope de salvavidas y migración.
 - [ ] Métricas de retención a medio plazo: fuera del MVP local (sin telemetría ni nube); la
-  pantalla de Progreso ya muestra actividad de 14 días y progreso por lección.
+  pantalla de Progreso ya muestra actividad de 14 días y progreso por lección. No es accionable
+  mientras no haya telemetría, así que no genera issue.
 
 ---
 
