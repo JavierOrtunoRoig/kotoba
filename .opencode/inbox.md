@@ -21,7 +21,7 @@ Contexto: una o dos líneas.
 Contexto: Con kotoba ya en la bandeja del sistema, ejecutar otra vez el `.exe` abre una segunda
 instancia y deja dos iconos. Debería activar la instancia existente en lugar de arrancar otra.
 
-## 2026-11-25 — Niveles de maestría por lección
+## 2026-11-25 — Niveles de maestría por lección → [#21](https://github.com/javierortunoroig/kotoba/issues/21)
 
 Área: srs
 Contexto: Hoy la maestría de una lección es un único umbral (intervalo ≥ 7 días). Podría haber
