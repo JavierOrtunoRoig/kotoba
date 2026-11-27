@@ -42,6 +42,7 @@ Last verification: **2026-11-25**.
 - **Windows desktop E2E (#34):** `npm run test:e2e:windows` tests synthetic deck import,
   practice and review history after restarting with an isolated temporary profile. WebdriverIO
   supplies the file path at the picker boundary; the native file picker is outside this test.
+  The test keeps its Tauri window hidden and verifies its visibility in both processes.
 
 ## Current phase
 
