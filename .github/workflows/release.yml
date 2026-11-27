@@ -92,3 +92,8 @@ jobs:
             falta, el instalador puede descargarlo.
           releaseDraft: false
           prerelease: false
+
+      - name: Actualizar la release con el changelog en inglés
+        if: success()
+        shell: pwsh
+        run: pwsh .github/scripts/update-release-body.ps1 -Version "${{ steps.tag.outputs.version }}"
