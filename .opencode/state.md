@@ -1,5 +1,6 @@
 # Project status
 
+- **Word achievements (#25):** progress and new unlocks count words at intervals of 21 days or more; earlier unlocks remain recorded.
 - **Lesson maturity (#24):** Progress shows five maturity counts and lesson dominance;
   patterns follow the review setting, and lesson achievements use the same dominance rule.
   New installations default to an 80% threshold; stored thresholds are retained.
