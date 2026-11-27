@@ -4,6 +4,15 @@ All notable changes to kotoba are documented in this file. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.3.0 - 2026-11-27
+
+### Features
+
+- Import third-party Anki packages, including Basic, reversed and Cloze notes,
+  multiple decks and bundled audio.
+- Track the maximum review interval reached by each word, including across lapses.
+- Show word and lesson maturity, lesson dominance and mature-word achievement progress.
+
 ## 0.2.0 - 2026-11-25
 
 ### Features
