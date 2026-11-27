@@ -181,9 +181,9 @@ text Cloze with a separate meaning field, packages containing several decks, and
 with a dedicated audio field. Map custom fields to reading and meaning in the import dialog.
 
 kotoba imports one item per note, reveals cloze text and drops its hints. It reads the mapped
-fields directly. Anki templates, scheduling, image occlusion, and MathJax rendering are outside
-this import format. Notes with no reading or meaning are skipped with a warning. The importer
-uses the first embedded `[sound:…]` reference in the mapped audio field.
+fields directly. Anki templates, scheduling, image occlusion, and cloze markup mixed with
+MathJax are outside this import format. Notes with no reading or meaning are skipped with a warning.
+The importer uses the first embedded `[sound:…]` reference in the mapped audio field.
 
 Each note takes its lesson and category from its own deck unless the mapping supplies those
 values. For example, `Japanese::Lesson 2::Places::Outdoors` gives lesson `Lesson 2` and category

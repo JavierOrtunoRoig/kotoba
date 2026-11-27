@@ -98,12 +98,7 @@ pub fn import_apkg(
 
     let mut summary = ImportSummary {
         notes: notes.len() as i64,
-        deck_name: notes
-            .iter()
-            .find_map(|note| decks_by_note.get(&note.id))
-            .and_then(|name| name.split('\u{1f}').next())
-            .unwrap_or("Anki")
-            .to_string(),
+        deck_name: apkg_deck_name(&notes, &decks_by_note).to_string(),
         ..Default::default()
     };
 
@@ -343,6 +338,14 @@ fn read_notes(src: &Connection) -> Result<Vec<NoteRow>> {
     Ok(notes)
 }
 
+fn apkg_deck_name<'a>(notes: &[NoteRow], decks_by_note: &'a HashMap<i64, String>) -> &'a str {
+    notes
+        .iter()
+        .find_map(|note| decks_by_note.get(&note.id))
+        .and_then(|name| name.split('\u{1f}').next())
+        .unwrap_or("Anki")
+}
+
 fn read_media_entries(archive: &mut ZipArchive<File>) -> Result<Vec<MediaEntry>> {
     let Ok(mut entry) = archive.by_name("media") else {
         return Ok(Vec::new());
@@ -439,10 +442,12 @@ fn suggest_field_mapping(fields: &[String], width: usize, anki: bool) -> FieldMa
             4.. => Some(3),
             _ => None,
         });
+    let audio = lookup(&["sonido", "audio", "sound"]).or((width > 5).then_some(5));
     let kanji = lookup(&["kanjis", "kanji", "word"])
         .or_else(|| anki_field(&["spelling"]))
         .or_else(|| {
-            (width > 1 && (!anki || (meaning != Some(1) && reading != Some(1)))).then_some(1)
+            let already_mapped = [meaning, reading, audio].contains(&Some(1));
+            (width > 1 && (!anki || !already_mapped)).then_some(1)
         });
     let gloss = lookup(&["significado", "kanji meaning", "gloss"])
         .filter(|index| Some(*index) != meaning)
@@ -451,7 +456,6 @@ fn suggest_field_mapping(fields: &[String], width: usize, anki: bool) -> FieldMa
         } else {
             None
         });
-    let audio = lookup(&["sonido", "audio", "sound"]).or(if width > 5 { Some(5) } else { None });
     let uid = lookup(&["uid", "guid"]).or(if width > 7 { Some(7) } else { None });
 
     FieldMapping {
@@ -625,16 +629,9 @@ fn inspect_apkg(path: &Path) -> Result<ImportInspection> {
         });
     }
 
-    let deck_name = notes
-        .iter()
-        .find_map(|note| decks_by_note.get(&note.id))
-        .and_then(|name| name.split('\u{1f}').next())
-        .unwrap_or("Anki")
-        .to_string();
-
     Ok(ImportInspection {
         kind: "apkg".to_string(),
-        deck_name,
+        deck_name: apkg_deck_name(&notes, &decks_by_note).to_string(),
         total_notes: notes.len() as i64,
         columns: Vec::new(),
         sample: Vec::new(),
@@ -1022,25 +1019,14 @@ mod tests {
         let items = db::all_items(&conn).expect("imported items");
         assert_eq!(items.len() as i64, expected_notes);
 
-        // Source IDs are persisted but are not exposed by the library API.
-        let source_uids = |conn: &Connection| {
-            conn.prepare("SELECT source_uid FROM item_sources ORDER BY source_uid")
-                .unwrap()
-                .query_map([], |row| row.get::<_, String>(0))
-                .unwrap()
-                .collect::<rusqlite::Result<Vec<_>>>()
-                .unwrap()
-        };
-        let original_uids = source_uids(&conn);
-        assert_eq!(original_uids.len() as i64, expected_notes);
-
         let second = import_file(&path, &mut conn, media.path(), &mut noop, None)
             .expect("reimport fixture");
         assert!(second.warnings.is_empty(), "{:?}", second.warnings);
+        assert_eq!(second.sources, expected_notes);
         assert_eq!(second.items_inserted, 0);
+        // A changed source UID with the same content would be counted as a merge.
         assert_eq!(second.items_merged, 0);
         assert_eq!(db::count_items(&conn).unwrap(), expected_notes);
-        assert_eq!(source_uids(&conn), original_uids);
 
         items
     }
@@ -1085,6 +1071,7 @@ mod tests {
         let items = import_apkg_fixture("audio", 1);
         assert_eq!(items[0].reading, "みず");
         assert_eq!(items[0].meaning, "water");
+        assert_eq!(items[0].kanji, None);
         assert!(items[0].has_audio);
     }
 

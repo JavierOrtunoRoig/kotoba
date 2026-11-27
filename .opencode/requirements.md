@@ -231,9 +231,10 @@ Functional requirements use `RF-xx`; non-functional ones, `RNF-xx`. Future-phase
 - [x] Manual column mapping in `.txt` (includes `#columns` when present).
 - [x] Automatic field detection by name with positional fallback; the user can adjust it.
 - [x] Registration of Anki's `unicase` collation to read `fields.name` and `notetypes.name`.
-- [~] Validation with additional real decks of various note types (supported by design) → #9.
+- [x] Validation with Anki-exported fixtures for Basic, reversed, Cloze, multiple decks, and
+  dedicated audio fields → #9.
 - [x] Orphan audio cleanup when deleting or reimporting.
-- [ ] Import of decks other than Genki 1 → #9.
+- [x] Import of third-party decks with supported note types → #9.
 
 ## RF2-07 - UX and accessibility
 
@@ -283,7 +284,7 @@ Functional requirements use `RF-xx`; non-functional ones, `RNF-xx`. Future-phase
 
 ## RF3-02 — More content
 
-- [ ] Genki 2 and other decks → #9.
+- [ ] Genki 2 content.
 - [ ] Grammar and particles.
 - [ ] Phrases and listening.
 
