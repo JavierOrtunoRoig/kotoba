@@ -623,10 +623,10 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
 
         <div className="field">
           <div>
-            <div className="field-label">{t("Maestría por lección")}</div>
+            <div className="field-label">{t("Dominio por lección")}</div>
             <div className="field-desc">
               {t(
-                "Porcentaje de palabras con intervalo de 7 días o más para dar una lección por dominada.",
+                "Porcentaje de palabras maduras necesario para dominar una lección, sin palabras nuevas.",
               )}
             </div>
           </div>
@@ -637,7 +637,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
               max={100}
               step={5}
               value={settings.lesson_mastery_percent}
-              aria-label={t("Maestría por lección")}
+              aria-label={t("Dominio por lección")}
               onChange={(event) =>
                 update(
                   "lesson_mastery_percent",

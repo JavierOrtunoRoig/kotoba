@@ -1,5 +1,9 @@
 # Project status
 
+- **Lesson maturity (#24):** Progress shows five maturity counts and lesson dominance;
+  patterns follow the review setting, and lesson achievements use the same dominance rule.
+  New installations default to an 80% threshold; stored thresholds are retained.
+
 Last verification: **2026-11-25**.
 
 **Public repository:** <https://github.com/JavierOrtunoRoig/kotoba> (code under MIT).
