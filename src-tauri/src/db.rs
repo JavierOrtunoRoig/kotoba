@@ -115,7 +115,7 @@ pub struct ReviewOutcome {
 #[derive(Clone, Copy)]
 enum AchievementMetric {
     Reviews,
-    Mastered,
+    MatureWords,
     Streak,
     LessonsMastered,
     Level,
@@ -170,29 +170,29 @@ const ACHIEVEMENT_CATALOG: [AchievementDef; 16] = [
     AchievementDef {
         key: "mastered_1",
         title: "Primera semilla",
-        description: "Domina una palabra con un intervalo de 7 días o más.",
-        metric: AchievementMetric::Mastered,
+        description: "Consigue una palabra madura con un intervalo de 21 días o más.",
+        metric: AchievementMetric::MatureWords,
         target: 1,
     },
     AchievementDef {
         key: "mastered_10",
         title: "Diez semillas",
-        description: "Domina 10 palabras.",
-        metric: AchievementMetric::Mastered,
+        description: "Consigue 10 palabras maduras.",
+        metric: AchievementMetric::MatureWords,
         target: 10,
     },
     AchievementDef {
         key: "mastered_25",
         title: "Veinticinco semillas",
-        description: "Domina 25 palabras.",
-        metric: AchievementMetric::Mastered,
+        description: "Consigue 25 palabras maduras.",
+        metric: AchievementMetric::MatureWords,
         target: 25,
     },
     AchievementDef {
         key: "mastered_50",
         title: "Cincuenta semillas",
-        description: "Domina 50 palabras.",
-        metric: AchievementMetric::Mastered,
+        description: "Consigue 50 palabras maduras.",
+        metric: AchievementMetric::MatureWords,
         target: 50,
     },
     AchievementDef {
@@ -560,8 +560,8 @@ pub fn achievements(conn: &Connection, mastery_percent: i64) -> Result<Vec<Achie
     let level = level_for_xp(xp_total);
     let total_reviews: i64 =
         conn.query_row("SELECT COUNT(*) FROM review_log", [], |row| row.get(0))?;
-    let mastered: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM srs_state WHERE interval_minutes >= 10080",
+    let mature_words: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM srs_state WHERE interval_minutes >= 30240",
         [],
         |row| row.get(0),
     )?;
@@ -582,7 +582,7 @@ pub fn achievements(conn: &Connection, mastery_percent: i64) -> Result<Vec<Achie
     for def in ACHIEVEMENT_CATALOG.iter() {
         let value = match def.metric {
             AchievementMetric::Reviews => total_reviews,
-            AchievementMetric::Mastered => mastered,
+            AchievementMetric::MatureWords => mature_words,
             AchievementMetric::Streak => streak_best,
             AchievementMetric::LessonsMastered => lessons_mastered,
             AchievementMetric::Level => level,
@@ -1628,6 +1628,51 @@ mod tests {
         assert_eq!(streak_savers(&conn).expect("count"), 0);
         assert_eq!(streak_repairs_count(&conn).expect("repairs"), 1);
         assert!(maintain_streak(&conn, true).expect("repair").is_none());
+    }
+
+    #[test]
+    fn word_achievements_count_mature_words_and_preserve_unlocks() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        conn.execute("INSERT INTO items (source_uid, reading, meaning, meaning_plain, dedup_key, created_at) VALUES ('u1', 'a', 'b', 'b', 'a|b', 0)", []).expect("item");
+        conn.execute(
+            "INSERT INTO srs_state (item_id, interval_minutes) VALUES (1, 10080)",
+            [],
+        )
+        .expect("state");
+        conn.execute(
+            "INSERT INTO achievements (key, unlocked_at) VALUES ('mastered_10', 123)",
+            [],
+        )
+        .expect("existing unlock");
+
+        let catalog = achievements(&conn, 90).expect("catalog");
+        let first = catalog.iter().find(|a| a.key == "mastered_1").unwrap();
+        assert_eq!(first.progress, 0);
+        assert!(!first.unlocked);
+        let previous = catalog.iter().find(|a| a.key == "mastered_10").unwrap();
+        assert_eq!(previous.progress, 0);
+        assert_eq!(previous.unlocked_at, Some(123));
+        assert!(previous.unlocked);
+        assert!(
+            !sync_achievements(&conn, 90)
+                .unwrap()
+                .iter()
+                .any(|a| a.key == "mastered_1")
+        );
+
+        conn.execute(
+            "UPDATE srs_state SET interval_minutes = 30240 WHERE item_id = 1",
+            [],
+        )
+        .unwrap();
+        let newly = sync_achievements(&conn, 90).unwrap();
+        assert!(
+            newly
+                .iter()
+                .any(|a| a.key == "mastered_1" && a.progress == 1)
+        );
+        assert!(!newly.iter().any(|a| a.key == "mastered_10"));
     }
 
     #[test]

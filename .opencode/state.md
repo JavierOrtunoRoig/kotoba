@@ -1,5 +1,7 @@
 # Project status
 
+- **Word achievements (#25):** progress and new unlocks count words at intervals of 21 days or more; earlier unlocks remain recorded.
+
 Last verification: **2026-11-25**.
 
 **Public repository:** <https://github.com/JavierOrtunoRoig/kotoba> (code under MIT).
