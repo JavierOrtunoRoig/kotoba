@@ -662,6 +662,7 @@ pub fn run() {
             tray::setup(app.handle())?;
             scheduler::start(app.handle().clone());
 
+            #[cfg(not(feature = "tauri-plugin-wdio-webdriver"))]
             if !has_items {
                 shell::show_main(app.handle());
             } else if settings.mode == "widget" {
