@@ -14,7 +14,7 @@ use zip::ZipArchive;
 
 const MAX_WARNINGS: usize = 20;
 
-/// Callback de progreso: `(fase, actual, total)`.
+/// Progress callback: `(phase, current, total)`.
 pub type ProgressFn<'a> = &'a mut dyn FnMut(&str, i64, i64);
 
 pub fn import_file(
@@ -45,7 +45,7 @@ pub fn import_file(
     }
 }
 
-/// Inspecciona un mazo sin importarlo para ofrecer el mapeo de campos.
+/// Inspects a deck without importing it to offer field mapping.
 pub fn inspect_file(path: &Path) -> Result<ImportInspection> {
     let extension = path
         .extension()
@@ -291,7 +291,7 @@ fn read_collection(archive: &mut ZipArchive<File>) -> Result<Vec<u8>> {
 
 fn open_source(path: &Path) -> Result<Connection> {
     let conn = Connection::open(path)?;
-    // Anki usa la colación `unicase` en `fields.name` y `notetypes.name`.
+    // Anki uses the `unicase` collation on `fields.name` and `notetypes.name`.
     conn.create_collation("unicase", |left, right| {
         left.to_lowercase().cmp(&right.to_lowercase())
     })?;
@@ -386,7 +386,7 @@ fn ensure_audio(
             Ok(stored)
         }
         Err(error) => {
-            // El hash no coincide o la copia falló: lo dejamos anotado en la caché.
+            // The hash does not match or the copy failed: we record it in the cache.
             cache.insert(entry.name.clone(), None);
             Err(error)
         }
@@ -406,7 +406,7 @@ fn mapped_value<'a>(values: &[&'a str], index: Option<usize>) -> Option<&'a str>
     index.and_then(|index| values.get(index).copied())
 }
 
-/// Sugiere índices a partir de los nombres de campo y del ancho del mazo.
+/// Suggests indices from the field names and the deck width.
 fn suggest_mapping(fields: &[String], width: usize) -> FieldMapping {
     let lower: Vec<String> = fields
         .iter()
@@ -689,7 +689,7 @@ fn txt_deck_name(path: &Path) -> String {
         .to_string()
 }
 
-/// Carpeta de audio hermana del `.txt`, con el mismo nombre que el archivo.
+/// Audio folder next to the `.txt`, with the same name as the file.
 fn sibling_media_folder(path: &Path) -> Option<String> {
     let folder = path.parent()?.join(path.file_stem()?);
     folder
@@ -697,7 +697,7 @@ fn sibling_media_folder(path: &Path) -> Option<String> {
         .then(|| folder.to_string_lossy().into_owned())
 }
 
-/// Carpeta de medios elegida en el diálogo, o la hermana por defecto.
+/// Media folder chosen in the dialog, or the sibling one by default.
 fn resolve_media_folder(path: &Path, chosen: Option<&str>) -> PathBuf {
     if let Some(folder) = chosen.map(str::trim).filter(|value| !value.is_empty()) {
         return PathBuf::from(folder);
@@ -707,7 +707,7 @@ fn resolve_media_folder(path: &Path, chosen: Option<&str>) -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("."))
 }
 
-/// Lee un audio de la carpeta de medios y lo copia con el nombre por SHA-1.
+/// Reads an audio file from the media folder and copies it under its SHA-1 name.
 fn audio_from_folder(
     folder: &Path,
     name: &str,

@@ -1,7 +1,7 @@
 [package]
 name = "kotoba"
 version = "0.2.0"
-description = "Entrenador pasivo de vocabulario japonés para Windows"
+description = "Passive Japanese vocabulary trainer for Windows"
 authors = ["Javier Ortuño Roig"]
 license = "MIT"
 repository = "https://github.com/JavierOrtunoRoig/kotoba"

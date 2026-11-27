@@ -2,146 +2,146 @@
 
 # 言葉 · kotoba
 
-**Aprende vocabulario japonés sin sentarte a estudiar.**
+**Learn Japanese vocabulary without sitting down to study.**
 
-Una app de escritorio para Windows que vive en la bandeja del sistema y, cada cierto tiempo, te
-propone un micro-reto de 5–10 segundos. Sin abrir nada, sin cuentas y sin nube.
+A desktop app for Windows that lives in the system tray and, every so often, offers you a
+5–10 second micro-challenge. No opening anything, no accounts, no cloud.
 
-![Windows 10 y 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
+![Windows 10 and 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
 ![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white)
 ![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Rust](https://img.shields.io/badge/Rust-stable-000000?logo=rust&logoColor=white)
-![Licencia MIT](https://img.shields.io/badge/licencia-MIT-2ea44f)
+![MIT License](https://img.shields.io/badge/licencia-MIT-2ea44f)
 [![CI](https://github.com/JavierOrtunoRoig/kotoba/actions/workflows/ci.yml/badge.svg)](https://github.com/JavierOrtunoRoig/kotoba/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/JavierOrtunoRoig/kotoba?label=release)](https://github.com/JavierOrtunoRoig/kotoba/releases)
 
-[Qué es](#qué-es-kotoba) · [Capturas](#capturas) · [Características](#características) ·
-[Instalación](#instalación) · [Desarrollo](#desarrollo) · [Privacidad](#privacidad) ·
+[What it is](#what-is-kotoba) · [Screenshots](#screenshots) · [Features](#features) ·
+[Installation](#installation) · [Development](#development) · [Privacy](#privacy) ·
 [Roadmap](#roadmap)
 
 </div>
 
-![Pantalla de práctica de kotoba](docs/screenshots/practica.png)
+![kotoba practice screen](docs/screenshots/practica.png)
 
-## Qué es kotoba
+## What is kotoba
 
-*kotoba* (言葉, «palabra») parte de una idea sencilla: **el vocabulario se aprende en los huecos del
-día**, no en sesiones de una hora. En vez de pedirte que abras una app, kotoba te trae el repaso a
-ti: un popup discreto, un widget en una esquina o una notificación nativa. Respondes, recibes
-feedback y sigues con lo que estabas haciendo.
+*kotoba* (言葉, "word") starts from a simple idea: **vocabulary is learned in the gaps of the
+day**, not in hour-long sessions. Instead of asking you to open an app, kotoba brings the review
+to you: a discreet popup, a widget in a corner, or a native notification. You answer, get
+feedback, and carry on with what you were doing.
 
-Detrás hay **repetición espaciada SM-2 invisible**. Cada respuesta ajusta cuándo volverá a aparecer
-la palabra, así que el repaso se concentra justo donde estás a punto de olvidar.
+Behind the scenes there is **invisible SM-2 spaced repetition**. Each answer adjusts when the word
+will come back, so review concentrates exactly where you are about to forget.
 
-El contenido sale de **tu propio export de Anki**, normalmente el mazo *Genki 1*. kotoba no incluye
-ni redistribuye el mazo: tú importas el tuyo y la app mantiene su propio progreso, sin tocar el de
-Anki.
+The content comes from **your own Anki export**, usually the *Genki 1* deck. kotoba does not include
+or redistribute the deck: you import yours and the app keeps its own progress, without touching
+Anki's.
 
-## Capturas
+## Screenshots
 
-| Progreso | Micro-reto |
+| Progress | Micro-challenge |
 |:---:|:---:|
-| <img src="docs/screenshots/progreso.png" alt="Pantalla de progreso" width="520"> | <img src="docs/screenshots/popup.png" alt="Micro-reto en un popup" width="230"> |
+| <img src="docs/screenshots/progreso.png" alt="Progress screen" width="520"> | <img src="docs/screenshots/popup.png" alt="Micro-challenge in a popup" width="230"> |
 
-## Características
+## Features
 
-### Aprendizaje
+### Learning
 
-- **Bidireccional**: japonés → español y español → japonés, con dirección aleatoria o alternada.
-- **Respuestas flexibles**: acepta kanji, kana y romaji, varias acepciones, paréntesis opcionales y
-  variantes de romanización (`ha`/`wa`, vocales largas, `tsu` pequeño).
-- **SM-2 completo**: calidad de respuesta, factor de facilidad, pasos de aprendizaje (10 minutos y
-  1 día) y tope de intervalo de 10 años.
-- **Audio** del mazo: automático en japonés → español y después de responder en español → japonés.
-- **Progreso con sentido**: XP solo por respuestas correctas según su calidad, 12 niveles con
-  títulos, racha flexible con hasta 2 salvavidas, objetivo semanal, 16 logros y maestría por lección.
-- **Nuevas en orden**: las palabras nuevas siguen el orden del mazo (lección → subapartado), con
-  límite diario configurable y prioridad para los repasos vencidos.
+- **Bidirectional**: Japanese → Spanish and Spanish → Japanese, with random or alternating direction.
+- **Flexible answers**: accepts kanji, kana and romaji, several senses, optional parentheses and
+  romanization variants (`ha`/`wa`, long vowels, small `tsu`).
+- **Full SM-2**: answer quality, ease factor, learning steps (10 minutes and
+  1 day) and a 10-year interval cap.
+- **Audio** from the deck: automatic on Japanese → Spanish and after answering on Spanish → Japanese.
+- **Meaningful progress**: XP only for correct answers according to their quality, 12 levels with
+  titles, a flexible streak with up to 2 saves, a weekly goal, 16 achievements and mastery per lesson.
+- **New words in order**: new words follow deck order (lesson → subsection), with a
+  configurable daily limit and priority for overdue reviews.
 
-### Importación
+### Import
 
-- **`.apkg` moderno**: lee `collection.anki21b` (SQLite schema 18), descomprime zstd, interpreta el
-  mapa protobuf de medios y verifica los audios con SHA-1.
-- **`.txt` de Anki**: soporta `#separator`, `#tags column` y `#columns`, además del formato clásico
-  de 8 columnas.
-- **Mapeo manual de campos**: antes de importar, la app inspecciona el mazo y muestra una vista
-  previa. Puedes asignar lectura, kanji, significado, glosa, audio, UID, etiquetas, lección y
-  subapartado, tanto por columnas en `.txt` como por tipo de nota en `.apkg`.
-- **Deduplicación** por lectura y significado normalizados, con unión de notas repetidas entre
-  capítulos.
-- **Patrones y plantillas** (`〜`, `+`, `...`) detectados y excluidos del repaso por defecto.
-- **Progreso en vivo** durante la importación, con avisos de notas omitidas.
+- **Modern `.apkg`**: reads `collection.anki21b` (SQLite schema 18), decompresses zstd, interprets
+  the protobuf media map and verifies audio files with SHA-1.
+- **Anki `.txt`**: supports `#separator`, `#tags column` and `#columns`, plus the classic
+  8-column format.
+- **Manual field mapping**: before importing, the app inspects the deck and shows a preview.
+  You can assign reading, kanji, meaning, gloss, audio, UID, tags, lesson and
+  subsection, both per column in `.txt` and per note type in `.apkg`.
+- **Deduplication** by normalized reading and meaning, merging repeated notes across
+  chapters.
+- **Patterns and templates** (`〜`, `+`, `...`) detected and excluded from review by default.
+- **Live progress** during import, with warnings about skipped notes.
 
-### Discreción
+### Discretion
 
-- **Bandeja del sistema** con menú de practicar, pausar, abrir y salir; arranque con Windows
-  opcional.
-- **Tres modos de aparición**: popup, widget persistente o toast nativo de Windows.
-- **No molestar**: horario configurable, máximo diario, detección de apps a pantalla completa y
-  restauración del foco de la ventana anterior al mostrar el popup.
-- **Notificaciones de hitos** opcionales (objetivo semanal y logros), respetando DND y pantalla
-  completa.
+- **System tray** with a menu to practise, pause, open and quit; optional
+  start with Windows.
+- **Three display modes**: popup, persistent widget or native Windows toast.
+- **Do not disturb**: configurable hours, daily maximum, fullscreen app detection and
+  restoration of the previous window's focus when the popup is shown.
+- **Optional milestone notifications** (weekly goal and achievements), respecting DND and
+  fullscreen.
 
-### Tus datos
+### Your data
 
-- **Todo local**: SQLite en `%APPDATA%\com.kotoba.app`, sin red, sin cuentas y sin telemetría.
-- **Copia de seguridad y restauración** de la base y el audio.
-- **Exportación del historial** de repasos a CSV.
-- **Logs a archivo** con acceso desde Ajustes.
+- **All local**: SQLite in `%APPDATA%\com.kotoba.app`, no network, no accounts and no telemetry.
+- **Backup and restore** of the database and audio.
+- **Review history export** to CSV.
+- **File logs** with access from Settings.
 
-### Accesibilidad y apariencia
+### Accessibility and appearance
 
-- Tema **claro, oscuro o automático** (sigue el tema de Windows en vivo).
-- Interfaz en **español, inglés o japonés**, incluidos bandeja y notificaciones.
-- **Escala de fuente** de 90 % a 125 %, con ventanas flotantes escaladas en proporción.
-- Navegación por teclado, foco visible, `aria-current`/`aria-pressed`, enlace «saltar al contenido»
-  y respeto por `prefers-reduced-motion`.
+- **Light, dark or automatic** theme (follows the Windows theme live).
+- Interface in **Spanish, English or Japanese**, including tray and notifications.
+- **Font scale** from 90% to 125%, with floating windows scaled proportionally.
+- Keyboard navigation, visible focus, `aria-current`/`aria-pressed`, a "skip to content" link
+  and respect for `prefers-reduced-motion`.
 
-## Cómo funciona
+## How it works
 
 ```mermaid
 flowchart LR
-    A[Tú importas<br/>.apkg o .txt] --> B[(SQLite local)]
+    A[You import<br/>.apkg or .txt] --> B[(Local SQLite)]
     B --> C[Scheduler<br/>10–25 min]
-    C --> D{¿Hay algo<br/>que repasar?}
+    C --> D{Anything<br/>to review?}
     D -- No --> C
-    D -- Sí --> E[Micro-reto<br/>5–10 s]
-    E --> F[Respuesta]
-    F --> G[SM-2<br/>nuevo intervalo]
+    D -- Yes --> E[Micro-challenge<br/>5–10 s]
+    E --> F[Answer]
+    F --> G[SM-2<br/>new interval]
     G --> B
 ```
 
-1. Importas el mazo una vez y revisas el mapeo de campos.
-2. El scheduler espera un intervalo aleatorio (10–25 minutos por defecto).
-3. Antes de mostrar nada comprueba pausa, horario de no molestar, máximo diario y pantalla completa.
-4. Aparece un micro-reto; puedes responder, pedir la lectura o descartarlo con «Ahora no».
-5. La respuesta actualiza el SM-2 y, si procede, el XP, la racha y los logros.
+1. You import the deck once and review the field mapping.
+2. The scheduler waits a random interval (10–25 minutes by default).
+3. Before showing anything it checks pause, do-not-disturb hours, daily maximum and fullscreen.
+4. A micro-challenge appears; you can answer, ask for the reading or dismiss it with "Not now".
+5. The answer updates SM-2 and, where applicable, XP, the streak and achievements.
 
-## Instalación
+## Installation
 
-### Descarga
+### Download
 
-Los instaladores de la última versión están en
+Installers for the latest version are on
 [**Releases**](https://github.com/JavierOrtunoRoig/kotoba/releases):
 
-- `kotoba_0.2.0_x64-setup.exe` — instalador NSIS, sin permisos de administrador. **Recomendado**:
-  el updater automático usa este formato.
-- `kotoba_0.2.0_x64_en-US.msi` — instalador clásico de Windows (requiere administrador).
+- `kotoba_0.2.0_x64-setup.exe` — NSIS installer, no administrator permissions. **Recommended**:
+  the automatic updater uses this format.
+- `kotoba_0.2.0_x64_en-US.msi` — classic Windows installer (requires administrator).
 
-> Los binarios todavía no están firmados digitalmente, así que Windows SmartScreen puede pedir
-> confirmación la primera vez. También puedes compilarlo tú mismo con las instrucciones de abajo.
+> The binaries are not digitally signed yet, so Windows SmartScreen may ask for
+> confirmation the first time. You can also build it yourself with the instructions below.
 
-A partir de la versión con updater, kotoba comprueba GitHub Releases al arrancar y ofrece instalarse
-la nueva versión (también a mano en Ajustes → Sistema). Esa primera instalación sigue siendo manual;
-después las actualizaciones se descargan y aplican desde la propia app.
+From the version with the updater onwards, kotoba checks GitHub Releases on startup and offers to
+install the new version (also manually in Settings → System). That first installation is still
+manual; after that, updates are downloaded and applied from within the app.
 
-### Requisitos
+### Requirements
 
-- Windows 10 u 11 con **WebView2** (viene preinstalado en Windows 11 y en la mayoría de Windows 10).
-- Para compilar: Node.js 20+, Rust estable y los Build Tools de Visual Studio con MSVC.
+- Windows 10 or 11 with **WebView2** (preinstalled on Windows 11 and on most Windows 10).
+- To build: Node.js 20+, stable Rust and the Visual Studio Build Tools with MSVC.
 
-### Desde el código
+### From source
 
 ```powershell
 git clone https://github.com/JavierOrtunoRoig/kotoba.git
@@ -150,43 +150,43 @@ npm install
 npm run tauri dev
 ```
 
-Para generar los instaladores:
+To generate the installers:
 
 ```powershell
 npm run tauri build
 ```
 
-Salen en `src-tauri/target/release/bundle/`:
+They end up in `src-tauri/target/release/bundle/`:
 
 - `msi/kotoba_0.2.0_x64_en-US.msi`
 - `nsis/kotoba_0.2.0_x64-setup.exe`
 
-## Primer uso
+## First use
 
-1. En Anki: **Archivo → Exportar → Paquete de mazo de Anki (`.apkg`)** del mazo que quieras usar.
-2. Abre kotoba: si la biblioteca está vacía, te guiará la pantalla de importación.
-3. Revisa el **mapeo de campos** que propone la app y ajústalo si tu mazo usa otros nombres.
-4. Importa y comprueba el resumen (palabras, audios, duplicados y patrones).
-5. Ajusta intervalo, modo, horario de no molestar y límite diario en **Ajustes**.
-6. Deja kotoba en la bandeja. El siguiente reto llegará solo.
+1. In Anki: **File → Export → Anki Deck Package (`.apkg`)** for the deck you want to use.
+2. Open kotoba: if the library is empty, the import screen will guide you.
+3. Review the **field mapping** the app proposes and adjust it if your deck uses other names.
+4. Import and check the summary (words, audio, duplicates and patterns).
+5. Adjust interval, mode, do-not-disturb hours and daily limit in **Settings**.
+6. Leave kotoba in the tray. The next challenge will arrive on its own.
 
-Los datos viven en `%APPDATA%\com.kotoba.app` (base SQLite + `media/`) y los logs en
+Data lives in `%APPDATA%\com.kotoba.app` (SQLite database + `media/`) and logs in
 `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`.
 
-## Desarrollo
+## Development
 
-Comandos habituales, desde la raíz del repositorio:
+Common commands, from the repository root:
 
-| Comando | Qué hace |
+| Command | What it does |
 |---|---|
-| `npm run tauri dev` | Levanta Vite y la app Tauri con recarga en caliente |
-| `npm run tauri build` | Build de producción e instaladores |
-| `npm run typecheck` | Comprueba TypeScript |
-| `npm run build` | TypeScript + build de Vite |
-| `cd src-tauri; cargo check` | Comprueba Rust sin enlazar |
-| `cd src-tauri; cargo test --lib` | Tests unitarios del backend |
+| `npm run tauri dev` | Starts Vite and the Tauri app with hot reload |
+| `npm run tauri build` | Production build and installers |
+| `npm run typecheck` | Checks TypeScript |
+| `npm run build` | TypeScript + Vite build |
+| `cd src-tauri; cargo check` | Checks Rust without linking |
+| `cd src-tauri; cargo test --lib` | Backend unit tests |
 
-Algunos tests de integración dependen del mazo real y están marcados como `ignored`:
+Some integration tests depend on the real deck and are marked `ignored`:
 
 ```powershell
 cd src-tauri
@@ -194,104 +194,104 @@ cargo test --lib imports_real_genki_deck -- --ignored --nocapture
 cargo test --lib normalizes_real_deck_answers -- --ignored --nocapture
 ```
 
-El segundo valida **2.629 respuestas** generadas desde el mazo real: kanji, lecturas, romaji,
-significados y basura que debe rechazarse.
+The second one validates **2,629 answers** generated from the real deck: kanji, readings, romaji,
+meanings and garbage that must be rejected.
 
-### Estructura
+### Structure
 
 ```
-src/                     Frontend React
-  MainApp.tsx            Navegación, tema y estado global
-  PracticePanel.tsx      Micro-reto y feedback
-  StatsPanel.tsx         Progreso, nivel, racha y logros
-  SettingsPanel.tsx      Ajustes, datos e importación
-  ImportPanel.tsx        Primer arranque e importación
-  MappingDialog.tsx      Asistente de mapeo de campos
-  i18n.ts                Textos en español, inglés y japonés
-  styles.css             Paleta clara/oscura y layout
+src/                     React frontend
+  MainApp.tsx            Navigation, theme and global state
+  PracticePanel.tsx      Micro-challenge and feedback
+  StatsPanel.tsx         Progress, level, streak and achievements
+  SettingsPanel.tsx      Settings, data and import
+  ImportPanel.tsx        First run and import
+  MappingDialog.tsx      Field mapping wizard
+  i18n.ts                Texts in Spanish, English and Japanese
+  styles.css             Light/dark palette and layout
 
-src-tauri/src/           Backend Rust
-  db.rs                  Esquema SQLite, migraciones, SM-2, XP y estadísticas
-  import.rs              Importador .apkg / .txt y mapeo de campos
-  media.rs               Mapa de medios de Anki (protobuf + zstd)
-  text.rs                Limpieza de HTML, normalización y validación
-  scheduler.rs           Planificador pasivo
-  shell.rs               Ventanas, foco y notificaciones
-  tray.rs                Icono y menú de la bandeja
-  i18n.rs                Traducciones de bandeja y notificaciones
+src-tauri/src/           Rust backend
+  db.rs                  SQLite schema, migrations, SM-2, XP and stats
+  import.rs              .apkg / .txt importer and field mapping
+  media.rs               Anki media map (protobuf + zstd)
+  text.rs                HTML cleanup, normalization and validation
+  scheduler.rs           Passive scheduler
+  shell.rs               Windows, focus and notifications
+  tray.rs                Tray icon and menu
+  i18n.rs                Tray and notification translations
 ```
 
-La base de conocimiento del proyecto vive en [`.opencode/`](.opencode/README.md): decisiones de
-arquitectura, requisitos, comandos y estado.
+The project's knowledge base lives in [`.opencode/`](.opencode/README.md): architecture
+decisions, requirements, commands and status.
 
-### CI y releases
+### CI and releases
 
-- **CI** ([`ci.yml`](.github/workflows/ci.yml)): en cada push a `main` y en cada pull request se
-  ejecutan `npm run typecheck`, `npm run build`, `cargo check` y `cargo test --lib` sobre Windows.
-- **Release** ([`release.yml`](.github/workflows/release.yml)): al empujar una etiqueta `v*` (o al
-  lanzarlo a mano desde Actions) se compila la app y se publica una release con el MSI y el NSIS.
-  El workflow comprueba antes que la etiqueta coincida con la versión de `tauri.conf.json`.
+- **CI** ([`ci.yml`](.github/workflows/ci.yml)): on every push to `main` and on every pull request
+  it runs `npm run typecheck`, `npm run build`, `cargo check` and `cargo test --lib` on Windows.
+- **Release** ([`release.yml`](.github/workflows/release.yml)): pushing a `v*` tag (or triggering it
+  manually from Actions) builds the app and publishes a release with the MSI and the NSIS.
+  The workflow first checks that the tag matches the version in `tauri.conf.json`.
 
-Para publicar una versión:
+To publish a version:
 
-1. Sube la versión en `package.json`, `src-tauri/Cargo.toml` y `src-tauri/tauri.conf.json`.
-2. Crea y empuja la etiqueta:
+1. Bump the version in `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`.
+2. Create and push the tag:
 
    ```powershell
    git tag v0.2.0
    git push origin v0.2.0
    ```
 
-3. GitHub Actions compila y publica la release con los instaladores adjuntos.
+3. GitHub Actions builds and publishes the release with the installers attached.
 
-## Privacidad
+## Privacy
 
-- **Sin red**: la app no hace peticiones HTTP. No hay cuentas, sincronización ni telemetría.
-- **Sin contenido de terceros**: no se descarga ni se incluye el mazo; solo se importa tu archivo.
-- **Todo borrable**: desde Ajustes puedes reiniciar el progreso, borrar la biblioteca o restaurar una
-  copia. También puedes eliminar `%APPDATA%\com.kotoba.app` a mano.
+- **No network**: the app makes no HTTP requests. There are no accounts, sync or telemetry.
+- **No third-party content**: the deck is neither downloaded nor included; only your file is imported.
+- **Everything erasable**: from Settings you can reset progress, delete the library or restore a
+  backup. You can also delete `%APPDATA%\com.kotoba.app` by hand.
 
 ## Roadmap
 
-- [x] MVP técnico: bandeja, scheduler, importación `.txt`/`.apkg`, ejercicio bidireccional y SQLite.
-- [x] Pulido: tres modos, DND, pantalla completa, SM-2, estadísticas, copias de seguridad y logs.
-- [x] Gamificación: XP por calidad, niveles, racha con salvavidas, objetivo semanal y 16 logros.
-- [x] Apariencia y accesibilidad: temas, tres idiomas y escala de fuente.
-- [x] Nuevas en orden de mazo, repasos primero y límite diario.
-- [x] Mapeo manual de campos al importar.
-- [x] Pipeline de CI y releases automáticas con MSI y NSIS.
-- [ ] Sincronización opcional con AnkiConnect.
-- [ ] Más mazos (Genki 2) y contenido de gramática/partículas.
-- [ ] Firma de código del instalador.
-- [ ] Verificación real de pantalla completa en juegos y presentaciones.
+- [x] Technical MVP: tray, scheduler, `.txt`/`.apkg` import, bidirectional exercise and SQLite.
+- [x] Polish: three modes, DND, fullscreen, SM-2, stats, backups and logs.
+- [x] Gamification: XP by quality, levels, streak with saves, weekly goal and 16 achievements.
+- [x] Appearance and accessibility: themes, three languages and font scale.
+- [x] New words in deck order, reviews first and daily limit.
+- [x] Manual field mapping on import.
+- [x] CI pipeline and automatic releases with MSI and NSIS.
+- [ ] Optional AnkiConnect sync.
+- [ ] More decks (Genki 2) and grammar/particle content.
+- [ ] Installer code signing.
+- [ ] Real fullscreen detection in games and presentations.
 
-## Contribuir
+## Contributing
 
-Las issues y los pull requests son bienvenidos. Antes de enviar cambios:
+Issues and pull requests are welcome. Before submitting changes:
 
-1. Ejecuta `npm run typecheck` y `cargo test --lib`.
-2. Mantén el estilo del código que ya existe (Rust con `rustfmt`, React con TypeScript estricto).
-3. Usa [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `docs:`,
+1. Run `npm run typecheck` and `cargo test --lib`.
+2. Keep the existing code style (Rust with `rustfmt`, React with strict TypeScript).
+3. Use [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `docs:`,
    `refactor:`, `test:`, `chore:`.
 
-Si encuentras un fallo, incluye los pasos para reproducirlo, la versión de Windows y, si puedes, el
-final de `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`.
+If you find a bug, include the steps to reproduce it, your Windows version and, if you can, the
+tail of `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`.
 
-## Licencia
+## License
 
-El código de kotoba se publica bajo la licencia **MIT**. Consulta [`LICENSE`](LICENSE).
+kotoba's code is published under the **MIT** license. See [`LICENSE`](LICENSE).
 
-El contenido de los mazos **no** forma parte del repositorio ni se redistribuye. *Genki* es una obra
-de The Japan Times; usa tu propia copia y tu propio export de Anki. *Anki* es un proyecto
-independiente y kotoba solo lee sus archivos de exportación.
+Deck content is **not** part of the repository and is not redistributed. *Genki* is a work
+by The Japan Times; use your own copy and your own Anki export. *Anki* is an independent
+project and kotoba only reads its export files.
 
-## Agradecimientos
+## Acknowledgements
 
-- [Anki](https://apps.ankiweb.net/) por el formato de exportación y por hacer posible el repaso
-  espaciado.
-- [Genki](https://genki.japantimes.co.jp/) por el vocabulario que inspira el proyecto.
-- [Tauri](https://tauri.app/), [React](https://react.dev/), [Vite](https://vite.dev/) y
-  [rusqlite](https://github.com/rusqlite/rusqlite), que sostienen la app.
+- [Anki](https://apps.ankiweb.net/) for the export format and for making spaced repetition
+  possible.
+- [Genki](https://genki.japantimes.co.jp/) for the vocabulary that inspires the project.
+- [Tauri](https://tauri.app/), [React](https://react.dev/), [Vite](https://vite.dev/) and
+  [rusqlite](https://github.com/rusqlite/rusqlite), which power the app.
 
 ---
 

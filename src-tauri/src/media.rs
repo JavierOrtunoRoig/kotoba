@@ -14,10 +14,10 @@ pub fn is_zstd(bytes: &[u8]) -> bool {
     bytes.starts_with(&[0x28, 0xb5, 0x2f, 0xfd])
 }
 
-/// Lee el mapa de medios de un `.apkg`.
+/// Reads the media map of an `.apkg`.
 ///
-/// - Formato nuevo (Anki 2.1.50+): zstd + protobuf.
-/// - Formato antiguo: JSON plano `{ "0": "nombre.mp3", ... }`.
+/// - New format (Anki 2.1.50+): zstd + protobuf.
+/// - Old format: plain JSON `{ "0": "name.mp3", ... }`.
 pub fn parse_media_map(bytes: &[u8]) -> Result<Vec<MediaEntry>> {
     let decoded = if is_zstd(bytes) {
         zstd::stream::decode_all(bytes)?
@@ -34,10 +34,10 @@ pub fn parse_media_map(bytes: &[u8]) -> Result<Vec<MediaEntry>> {
     parse_legacy_json(&decoded)
 }
 
-/// Copia un audio a la carpeta de medios con nombre por hash.
+/// Copies an audio file to the media folder under a hash-based name.
 ///
-/// Devuelve el nombre de archivo y si se ha escrito ahora (`true`) o ya existía (`false`).
-/// Cuando hay un SHA-1 esperado (mapa de medios de un `.apkg`) se verifica antes de escribir.
+/// Returns the file name and whether it was written now (`true`) or already existed (`false`).
+/// When there is an expected SHA-1 (media map of an `.apkg`) it is verified before writing.
 pub fn store_bytes(
     bytes: &[u8],
     name: &str,

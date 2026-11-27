@@ -13,40 +13,39 @@ If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is 
 
 ### Issue tracker
 
-Issues y specs viven en GitHub Issues de `JavierOrtunoRoig/kotoba`, vía `gh`. Ver `docs/agents/issue-tracker.md`.
+Issues and specs live in the GitHub Issues of `JavierOrtunoRoig/kotoba`, via `gh`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-Vocabulario canónico: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Ver `docs/agents/triage-labels.md`.
+Canonical vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context: `GLOSSARY.md` y `docs/adr/` en la raíz (se crean cuando haga falta). El conocimiento actual está en `.opencode/`. Ver `docs/agents/domain.md`.
+Single-context: `GLOSSARY.md` and `docs/adr/` at the root (created when needed). Current knowledge lives in `.opencode/`. See `docs/agents/domain.md`.
 
-## Cómo trabajar aquí
+## How to work here
 
-Playbook completo en `.opencode/workflows.md`. Estas reglas mandan sobre el criterio de las skills:
+Full playbook in `.opencode/workflows.md`. These rules take precedence over the skills' judgement:
 
-- **Cambia comportamiento → issue primero** (`gh issue create`, cuerpo en inglés). Docs, versión o CI →
-  PR directo sin issue. Los issues propios no se triajan.
-- **Nunca commit directo a `main`**: rama + PR, una rama por issue.
-- **Autonomía técnica**: decide e implementa sin preguntar. Consulta solo producto, UX y alcance.
-- **Artefactos en inglés** (código, commits, issues, PRs, specs). Docs del repo y conversación en español.
-- **Terminado** = checks locales verdes + CI verde + test del cambio + `.opencode/state.md` actualizado.
-- **Release** solo al cerrar un feature, no en cada PR.
-- **Ideas sueltas** → `.opencode/inbox.md`.
+- **Behaviour change → issue first** (`gh issue create`, body in English). Docs, version or CI →
+  direct PR without an issue. Our own issues are not triaged.
+- **Never commit directly to `main`**: branch + PR, one branch per issue.
+- **Technical autonomy**: decide and implement without asking. Consult only on product, UX and scope.
+- **English artifacts** (code, commits, issues, PRs, specs). Repository docs are English; conversation stays Spanish.
+- **Done** = local checks green + CI green + test for the change + `.opencode/state.md` updated.
+- **Release** only when closing a feature, not on every PR.
+- **Loose ideas** → `.opencode/inbox.md`.
 
-### Enrutado
+### Routing
 
-| Si piden… | Hacer |
+| If they ask for… | Do |
 |---|---|
-| «apunta esta idea» | añadirla a `.opencode/inbox.md` |
-| «arregla X» / un bug | issue + rama `fix/N-slug`; `diagnosing-bugs` si la causa no es obvia |
-| «implementa #N» | sesión limpia, rama `feat/N-slug`, skill `implement` |
-| «quiero X» (feature) | `grill-with-docs`; si no cabe en una sesión, `to-spec` → `to-tickets` |
-| «revisa esto» | `code-review` |
-| «publica release» | flujo 6 de `workflows.md` |
-| «actualiza dependencias» | skill `dependabot-prs` |
-| «esto está mal diseñado» | `improve-codebase-architecture` |
-| «investiga X» | `research` |
-
+| "note this idea" | add it to `.opencode/inbox.md` |
+| "fix X" / a bug | issue + `fix/N-slug` branch; `diagnosing-bugs` if the cause isn't obvious |
+| "implement #N" | clean session, `feat/N-slug` branch, `implement` skill |
+| "I want X" (feature) | `grill-with-docs`; if it doesn't fit in one session, `to-spec` → `to-tickets` |
+| "review this" | `code-review` |
+| "publish release" | flow 6 of `workflows.md` |
+| "update dependencies" | `dependabot-prs` skill |
+| "this is badly designed" | `improve-codebase-architecture` |
+| "research X" | `research` |

@@ -1,72 +1,72 @@
 ---
 name: dependabot-prs
-description: Gestiona los PR de Dependabot de kotoba — listar bumps, traer la rama, resolver conflictos de Cargo, ejecutar tests y mergear solo con CI verde. Usar cuando el usuario pida arreglar, revisar o aprobar PRs de Dependabot o bumps de dependencias.
+description: Manages kotoba's Dependabot PRs — list bumps, bring the branch, resolve Cargo conflicts, run tests and merge only with green CI. Use when the user asks to fix, review or approve Dependabot PRs or dependency bumps.
 ---
 
-# PRs de Dependabot
+# Dependabot PRs
 
-Automatización con IA en el bucle. Los scripts hacen lo determinista (API de GitHub, git, conflictos
-de manifiesto, tests); la IA decide los cambios de código y valida antes de mergear.
+AI automation in the loop. The scripts do the deterministic part (GitHub API, git, manifest
+conflicts, tests); the AI decides the code changes and validates before merging.
 
-## Cuándo usar
+## When to use
 
-- "Arregla los PRs de Dependabot", "mergea los bumps", "revisa dependencias desactualizadas".
-- No usar para PRs humanos ni para bumps que cambien APIs: esos requieren criterio, pero el flujo
-  de verificación sigue sirviendo.
+- "Fix the Dependabot PRs", "merge the bumps", "review outdated dependencies".
+- Do not use for human PRs or for bumps that change APIs: those require judgment, but the
+  verification flow still applies.
 
-## Flujo
+## Flow
 
-Todos los scripts se ejecutan desde cualquier directorio del repo con
+All scripts run from any directory in the repo with
 `powershell -NoProfile -File .opencode/skills/dependabot-prs/scripts/<script>.ps1 ...`.
-Sacan el token con `git credential fill`; no hace falta `gh auth login`.
+They get the token with `git credential fill`; `gh auth login` is not needed.
 
-1. **Listar.** `list-prs.ps1 [-All]` → JSON con número, título, rama, sha, `ci` y `mergeable`.
-   Por defecto solo devuelve PRs de bots con título `bump X from Y to Z`. `-All` incluye el resto.
-   - `ci: success` → candidato a merge directo.
-   - `ci: pending` → esperar con `checks.ps1 -Pr N -Wait`.
-   - `ci: failure` → seguir al paso 2.
+1. **List.** `list-prs.ps1 [-All]` → JSON with number, title, branch, sha, `ci` and `mergeable`.
+   By default it only returns bot PRs with the title `bump X from Y to Z`. `-All` includes the rest.
+   - `ci: success` → candidate for direct merge.
+   - `ci: pending` → wait with `checks.ps1 -Pr N -Wait`.
+   - `ci: failure` → continue to step 2.
 
-2. **Preparar rama.** `prepare.ps1 -Pr N`:
-   - `fetch` de `main` y de la rama del PR, `checkout -B <rama> origin/<rama>` (exige árbol limpio).
-   - merge de `origin/main`.
-   - `Cargo.lock`: toma la versión de `main` y la regenera con `cargo check` (ya que el manifiesto
-     del PR pide otra versión).
-   - `Cargo.toml`: si hay conflicto, conserva la versión del PR en las claves que el PR cambió y la
-     de `main` en las demás (funciona con `x = "v"` y con `x = { version = "v", ... }`).
-   - Cierra el merge con un commit. Imprime JSON con `conflictsFixed`, `lockRegenerated` y el
-     resultado de `cargo check`. **No hace push.**
+2. **Prepare branch.** `prepare.ps1 -Pr N`:
+   - `fetch` of `main` and the PR branch, `checkout -B <branch> origin/<branch>` (requires a clean tree).
+   - merge of `origin/main`.
+   - `Cargo.lock`: takes the version from `main` and regenerates it with `cargo check` (since the PR
+     manifest asks for another version).
+   - `Cargo.toml`: if there is a conflict, keeps the PR version for the keys the PR changed and the
+     `main` one for the others (works with `x = "v"` and with `x = { version = "v", ... }`).
+   - Closes the merge with a commit. Prints JSON with `conflictsFixed`, `lockRegenerated` and the
+     result of `cargo check`. **Does not push.**
 
-3. **Arreglar código.** Si `cargoCheck.ok` es `false`, leer `cargoCheck.tail`: son errores de API
-   (ej. rand 0.10: `thread_rng` → `rng`, `gen_range` → `random_range`, rasgo `RngExt`). Editar,
-   commitear y volver a `cargo check` hasta que pase. Si `prepare.ps1` lanzó error por conflictos
-   ajenos a Cargo, resolverlos a mano antes de seguir.
+3. **Fix code.** If `cargoCheck.ok` is `false`, read `cargoCheck.tail`: they are API errors
+   (e.g. rand 0.10: `thread_rng` → `rng`, `gen_range` → `random_range`, `RngExt` trait). Edit,
+   commit and re-run `cargo check` until it passes. If `prepare.ps1` threw an error for conflicts
+   unrelated to Cargo, resolve them by hand before continuing.
 
-4. **Verificar.** `verify.ps1 -Pr N` ejecuta `cargo check`, `cargo test --lib` y
-   `npm run typecheck`. Guarda `$env:TEMP\kotoba-dependabot\N.verify.json` con `passed`, `headSha`
-   y la salida de cada paso. Leer el JSON: si algún `ok` es `false`, arreglar y repetir. Añade el
-   directorio de Node de Scoop al PATH si `node` no está visible.
+4. **Verify.** `verify.ps1 -Pr N` runs `cargo check`, `cargo test --lib` and
+   `npm run typecheck`. It saves `$env:TEMP\kotoba-dependabot\N.verify.json` with `passed`, `headSha`
+   and the output of each step. Read the JSON: if any `ok` is `false`, fix and repeat. Adds the
+   Scoop Node directory to PATH if `node` is not visible.
 
-5. **Mergear.** `merge.ps1 -Pr N [-Approve]`:
-   - exige verificación verde para el HEAD local actual, árbol limpio y PR mergeable;
-   - hace push de la rama;
-   - espera a que la CI del nuevo sha esté en verde (timeout 15 min, sondeo cada 20 s);
-   - opcionalmente envía review `APPROVE`, y hace squash merge con la API.
-   - `checks.ps1 -Pr N [-Wait] [-TimeoutSeconds S]` permite inspeccionar la CI por separado.
+5. **Merge.** `merge.ps1 -Pr N [-Approve]`:
+   - requires green verification for the current local HEAD, a clean tree and a mergeable PR;
+   - pushes the branch;
+   - waits for the CI of the new sha to be green (timeout 15 min, poll every 20 s);
+   - optionally sends an `APPROVE` review, and does a squash merge with the API.
+   - `checks.ps1 -Pr N [-Wait] [-TimeoutSeconds S]` lets you inspect the CI separately.
 
-## Reglas
+## Rules
 
-- Nunca hacer push a `main`, ni force-push a ramas de Dependabot.
-- Nunca mergear con CI roja, con verificación local fallida o con conflictos abiertos.
-- Si la rama del PR viene de un fork, `prepare.ps1` se niega: tratar manualmente.
-- Un cambio de versión mayor puede romper la API. Confiar en el compilador, no asumir que el bump
-  es solo de manifiesto.
-- Si `verify.ps1` pasa pero la CI falla, no reintentar el merge: leer el check y volver al paso 3.
-- Tras mergear varios bumps seguidos, las demás ramas se quedan desactualizadas; ejecutar
-  `prepare.ps1` de nuevo si aparece "Pull Request has merge conflicts".
+- Never push to `main`, nor force-push to Dependabot branches.
+- Never merge with red CI, a failed local verification or open conflicts.
+- If the PR branch comes from a fork, `prepare.ps1` refuses: handle it manually.
+- A major version change can break the API. Trust the compiler, do not assume the bump
+  is manifest-only.
+- If `verify.ps1` passes but the CI fails, do not retry the merge: read the check and go back to step 3.
+- After merging several bumps in a row, the other branches become outdated; run
+  `prepare.ps1` again if "Pull Request has merge conflicts" appears.
 
-## Notas
+## Notes
 
-- Versiones a sincronizar para una release: `package.json`, `src-tauri/Cargo.toml`,
-  `src-tauri/tauri.conf.json` (esta última manda en el workflow `release.yml`).
-- El estado actual del repo y los comandos de build están en `.opencode/state.md` y
+- Versions to sync for a release: `package.json`, `src-tauri/Cargo.toml`,
+  `src-tauri/tauri.conf.json` (the latter rules in the `release.yml` workflow).
+- The current repo status and build commands are in `.opencode/state.md` and
   `.opencode/commands.md`.

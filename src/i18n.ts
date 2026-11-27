@@ -12,7 +12,7 @@ export const LANGUAGES: { id: Language; label: string }[] = [
 ];
 
 const en: Dict = {
-  // Navegación y estado
+  // Navigation and status
   Practicar: "Practice",
   Progreso: "Progress",
   Ajustes: "Settings",
@@ -86,7 +86,7 @@ const en: Dict = {
   "días": "days",
   "hoy": "today",
 
-  // Importación
+  // Import
   "Bienvenido": "Welcome",
   "Trae tu mazo": "Bring your deck",
   "kotoba repasa por ti el vocabulario de tu mazo {deck}. Importa el archivo {format} exportado de Anki y la app extraerá las palabras y el audio.":
@@ -144,7 +144,7 @@ const en: Dict = {
   "Los audios de [sound: …] se copian desde esta carpeta. Si está vacía, se usa la carpeta hermana con el nombre del .txt.":
     "Audio from [sound: …] is copied from this folder. If empty, the sibling folder named like the .txt is used.",
 
-  // Progreso
+  // Progress
   "Tu progreso": "Your progress",
   "Sin colas ni deberes: solo lo que has ido reteniendo sin darte cuenta.":
     "No queues or homework: just what you have retained without noticing.",
@@ -203,7 +203,7 @@ const en: Dict = {
     "A 10-second micro-challenge beats a session you never start.",
   "Practicar ahora": "Practice now",
 
-  // Niveles
+  // Levels
   Semilla: "Seed",
   Brote: "Sprout",
   Raíz: "Root",
@@ -211,7 +211,7 @@ const en: Dict = {
   Árbol: "Tree",
   Bosque: "Forest",
 
-  // Ajustes
+  // Settings
   "Tu ritmo": "Your pace",
   "Un equilibrio entre no olvidar y no molestar. Los cambios se aplican al guardar.":
     "A balance between not forgetting and not interrupting. Changes apply on save.",
@@ -337,7 +337,7 @@ const en: Dict = {
   "Hay cambios sin guardar. ¿Descartarlos?":
     "You have unsaved changes. Discard them?",
 
-  // Apariencia
+  // Appearance
   Apariencia: "Appearance",
   "Tema, idioma y tamaño de la interfaz.":
     "Theme, language and interface size.",
@@ -355,7 +355,7 @@ const en: Dict = {
   "Escala el texto y los controles de la interfaz.":
     "Scales interface text and controls.",
 
-  // Logros
+  // Achievements
   "Primer paso": "First step",
   "Completa tu primer repaso.": "Complete your first review.",
   Calentando: "Warming up",
@@ -392,7 +392,7 @@ const en: Dict = {
   "Objetivo cumplido": "Goal completed",
   "Completa un objetivo semanal.": "Complete a weekly goal.",
 
-  // Historial
+  // History
   Historial: "History",
   "Tus últimos repasos, del más reciente al más antiguo.":
     "Your latest reviews, newest first.",
@@ -779,7 +779,7 @@ const ja: Dict = {
   "Objetivo cumplido": "目標達成",
   "Completa un objetivo semanal.": "週間目標を達成する。",
 
-  // Historial
+  // History
   Historial: "履歴",
   "Tus últimos repasos, del más reciente al más antiguo.":
     "最近の復習を新しい順に表示します。",

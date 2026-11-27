@@ -199,7 +199,7 @@ export default function MappingDialog({
       const selected = await open({ directory: true, multiple: false });
       if (typeof selected === "string") setMediaFolder(selected);
     } catch {
-      // Cancelar el diálogo no es un error.
+      // Canceling the dialog is not an error.
     }
   }
 
