@@ -98,9 +98,9 @@ pub fn import_apkg(
 
     let mut summary = ImportSummary {
         notes: notes.len() as i64,
-        deck_name: decks_by_note
-            .values()
-            .next()
+        deck_name: notes
+            .iter()
+            .find_map(|note| decks_by_note.get(&note.id))
             .and_then(|name| name.split('\u{1f}').next())
             .unwrap_or("Anki")
             .to_string(),
@@ -127,7 +127,7 @@ pub fn import_apkg(
                     .find(|note_type| note_type.mid == note.mid)
             })
             .map(|note_type| note_type.mapping.clone())
-            .unwrap_or_else(|| suggest_mapping(&field_names, values.len()));
+            .unwrap_or_else(|| suggest_apkg_mapping(&field_names, values.len()));
 
         let reading_raw = mapped_value(&values, map.reading).unwrap_or_default();
         let kanji_raw = mapped_value(&values, map.kanji).unwrap_or_default();
@@ -136,9 +136,9 @@ pub fn import_apkg(
         let audio_raw = mapped_value(&values, map.audio);
         let uid_raw = mapped_value(&values, map.uid).unwrap_or_default();
 
-        let reading = text::clean_display(reading_raw);
-        let kanji_text = text::clean_display(kanji_raw);
-        let meaning = text::clean_display(meaning_raw);
+        let reading = text::clean_display(&reveal_cloze(reading_raw));
+        let kanji_text = text::clean_display(&reveal_cloze(kanji_raw));
+        let meaning = text::clean_display(&reveal_cloze(meaning_raw));
 
         let Some(meaning) = non_empty(meaning) else {
             push_warning(
@@ -160,7 +160,7 @@ pub fn import_apkg(
             continue;
         }
 
-        let gloss = non_empty(text::clean_display(gloss_raw));
+        let gloss = non_empty(text::clean_display(&reveal_cloze(gloss_raw)));
         let gloss = if gloss.as_deref() == Some(meaning.as_str()) {
             None
         } else {
@@ -313,7 +313,7 @@ fn read_fields(src: &Connection) -> Result<HashMap<i64, Vec<String>>> {
 
 fn read_note_decks(src: &Connection) -> Result<HashMap<i64, String>> {
     let mut stmt = src.prepare(
-        "SELECT c.nid, d.name FROM cards c JOIN decks d ON d.id = c.did",
+        "SELECT c.nid, d.name FROM cards c JOIN decks d ON d.id = c.did ORDER BY c.id",
     )?;
     let rows = stmt.query_map([], |row| {
         Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
@@ -408,6 +408,14 @@ fn mapped_value<'a>(values: &[&'a str], index: Option<usize>) -> Option<&'a str>
 
 /// Suggests indices from the field names and the deck width.
 fn suggest_mapping(fields: &[String], width: usize) -> FieldMapping {
+    suggest_field_mapping(fields, width, false)
+}
+
+fn suggest_apkg_mapping(fields: &[String], width: usize) -> FieldMapping {
+    suggest_field_mapping(fields, width, true)
+}
+
+fn suggest_field_mapping(fields: &[String], width: usize, anki: bool) -> FieldMapping {
     let lower: Vec<String> = fields
         .iter()
         .map(|field| field.trim().to_lowercase())
@@ -417,18 +425,24 @@ fn suggest_mapping(fields: &[String], width: usize) -> FieldMapping {
             .iter()
             .position(|field| names.iter().any(|name| field == name))
     };
+    let anki_field = |names: &[&str]| if anki { lookup(names) } else { None };
 
-    let reading =
-        lookup(&["kana", "reading", "lectura"]).or(if width > 0 { Some(0) } else { None });
-    let kanji =
-        lookup(&["kanjis", "kanji", "word"]).or(if width > 1 { Some(1) } else { None });
+    let reading = lookup(&["kana", "reading", "lectura"])
+        .or_else(|| anki_field(&["front", "japanese", "text"]))
+        .or((width > 0).then_some(0));
     let meaning = lookup(&["español", "espanol", "meaning", "significado", "definition"])
-        .or(if width > 3 {
-            Some(3)
-        } else if width > 2 {
-            Some(2)
-        } else {
-            None
+        .or_else(|| anki_field(&["back", "translation"]))
+        .or_else(|| anki_field(&["text"]).and_then(|_| lookup(&["back extra", "extra"])))
+        .or(match width {
+            2 if anki => Some(if reading == Some(1) { 0 } else { 1 }),
+            3 => Some(2),
+            4.. => Some(3),
+            _ => None,
+        });
+    let kanji = lookup(&["kanjis", "kanji", "word"])
+        .or_else(|| anki_field(&["spelling"]))
+        .or_else(|| {
+            (width > 1 && (!anki || (meaning != Some(1) && reading != Some(1)))).then_some(1)
         });
     let gloss = lookup(&["significado", "kanji meaning", "gloss"])
         .filter(|index| Some(*index) != meaning)
@@ -460,6 +474,59 @@ fn preview(value: &str) -> String {
         out.push('…');
     }
     out
+}
+
+/// Reveals Anki's text deletions, including nested deletions, and discards hints.
+fn reveal_cloze(input: &str) -> std::borrow::Cow<'_, str> {
+    let Some(first) = input.find("{{c") else {
+        return input.into();
+    };
+    let mut output = String::with_capacity(input.len());
+    output.push_str(&input[..first]);
+    let mut rest = &input[first..];
+    let mut hints = Vec::new();
+    let mut unclosed = (0, 0);
+
+    while !rest.is_empty() {
+        if let Some(after_c) = rest.strip_prefix("{{c") {
+            let length = after_c
+                .find(|c: char| !c.is_ascii_digit() && c != ',')
+                .unwrap_or(after_c.len());
+            let ordinals = &after_c[..length];
+            if ordinals.bytes().any(|b| b.is_ascii_digit()) {
+                if let Some(after_open) = after_c[length..].strip_prefix("::") {
+                    if hints.is_empty() {
+                        unclosed = (input.len() - rest.len(), output.len());
+                    }
+                    hints.push(hints.last().copied().unwrap_or(false));
+                    rest = after_open;
+                    continue;
+                }
+            }
+        }
+        if let Some(in_hint) = hints.last_mut() {
+            if let Some(after_close) = rest.strip_prefix("}}") {
+                hints.pop();
+                rest = after_close;
+                continue;
+            }
+            if let Some(after_separator) = rest.strip_prefix("::") {
+                *in_hint = true;
+                rest = after_separator;
+                continue;
+            }
+        }
+        let character = rest.chars().next().expect("non-empty cloze input");
+        if !hints.last().copied().unwrap_or(false) {
+            output.push(character);
+        }
+        rest = &rest[character.len_utf8()..];
+    }
+    if !hints.is_empty() {
+        output.truncate(unclosed.1);
+        output.push_str(&input[unclosed.0..]);
+    }
+    output.into()
 }
 
 fn read_note_type_names(src: &Connection) -> Result<HashMap<i64, String>> {
@@ -531,7 +598,12 @@ fn inspect_apkg(path: &Path) -> Result<ImportInspection> {
         *counts.entry(note.mid).or_insert(0) += 1;
         let sample = samples.entry(note.mid).or_default();
         if sample.len() < 2 {
-            sample.push(values.iter().map(|value| preview(value)).collect());
+            sample.push(
+                values
+                    .iter()
+                    .map(|value| preview(&reveal_cloze(value)))
+                    .collect(),
+            );
         }
     }
 
@@ -549,7 +621,7 @@ fn inspect_apkg(path: &Path) -> Result<ImportInspection> {
             fields: fields.clone(),
             count: counts.get(&mid).copied().unwrap_or(0),
             sample,
-            suggested: suggest_mapping(&fields, fields.len()),
+            suggested: suggest_apkg_mapping(&fields, fields.len()),
         });
     }
 
@@ -920,6 +992,101 @@ pub fn import_txt(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn import_apkg_fixture(name: &str, expected_notes: i64) -> Vec<crate::models::Item> {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/apkg")
+            .join(format!("{name}.apkg"));
+        let inspection = inspect_file(&path).expect("inspect fixture");
+        assert_eq!(inspection.total_notes, expected_notes);
+        let mapping = ImportMapping {
+            note_types: inspection
+                .note_types
+                .into_iter()
+                .map(|note_type| crate::models::NoteTypeMapping {
+                    mid: note_type.mid,
+                    mapping: note_type.suggested,
+                })
+                .collect(),
+            ..Default::default()
+        };
+        let mut conn = Connection::open_in_memory().expect("db");
+        db::migrate(&mut conn).expect("migrate");
+        let media = tempfile::tempdir().expect("media directory");
+        let mut noop = |_: &str, _: i64, _: i64| {};
+
+        let first = import_file(&path, &mut conn, media.path(), &mut noop, Some(&mapping))
+            .expect("import fixture");
+        assert!(first.warnings.is_empty(), "{:?}", first.warnings);
+        assert_eq!(first.items_inserted, expected_notes);
+        let items = db::all_items(&conn).expect("imported items");
+        assert_eq!(items.len() as i64, expected_notes);
+
+        // Source IDs are persisted but are not exposed by the library API.
+        let source_uids = |conn: &Connection| {
+            conn.prepare("SELECT source_uid FROM item_sources ORDER BY source_uid")
+                .unwrap()
+                .query_map([], |row| row.get::<_, String>(0))
+                .unwrap()
+                .collect::<rusqlite::Result<Vec<_>>>()
+                .unwrap()
+        };
+        let original_uids = source_uids(&conn);
+        assert_eq!(original_uids.len() as i64, expected_notes);
+
+        let second = import_file(&path, &mut conn, media.path(), &mut noop, None)
+            .expect("reimport fixture");
+        assert!(second.warnings.is_empty(), "{:?}", second.warnings);
+        assert_eq!(second.items_inserted, 0);
+        assert_eq!(second.items_merged, 0);
+        assert_eq!(db::count_items(&conn).unwrap(), expected_notes);
+        assert_eq!(source_uids(&conn), original_uids);
+
+        items
+    }
+
+    #[test]
+    fn imports_cloze_as_one_item_with_revealed_text() {
+        let items = import_apkg_fixture("cloze", 1);
+        assert_eq!(items[0].reading, "あおい そら");
+        assert_eq!(items[0].meaning, "blue sky");
+        assert_eq!(items[0].kanji, None);
+    }
+
+    #[test]
+    fn imports_basic_front_and_back() {
+        let items = import_apkg_fixture("basic", 1);
+        assert_eq!(items[0].reading, "ねこ");
+        assert_eq!(items[0].meaning, "cat");
+        assert_eq!(items[0].kanji, None);
+    }
+
+    #[test]
+    fn imports_reversed_cards_as_one_item_with_optional_spelling() {
+        let items = import_apkg_fixture("reversed", 1);
+        assert_eq!(items[0].reading, "いぬ");
+        assert_eq!(items[0].meaning, "dog");
+        assert_eq!(items[0].kanji.as_deref(), Some("犬"));
+    }
+
+    #[test]
+    fn imports_each_note_with_its_own_deck_metadata() {
+        let items = import_apkg_fixture("multi-deck", 2);
+        let apple = items.iter().find(|item| item.meaning == "apple").unwrap();
+        assert_eq!(apple.lesson, "Lesson 1");
+        assert_eq!(apple.category, "Food");
+        let mountain = items.iter().find(|item| item.meaning == "mountain").unwrap();
+        assert_eq!(mountain.lesson, "Lesson 2");
+        assert_eq!(mountain.category, "Places / Outdoors");
+    }
+
+    #[test]
+    fn imports_custom_fields_with_dedicated_audio() {
+        let items = import_apkg_fixture("audio", 1);
+        assert_eq!(items[0].reading, "みず");
+        assert_eq!(items[0].meaning, "water");
+        assert!(items[0].has_audio);
+    }
 
     #[test]
     fn parses_deck_paths() {

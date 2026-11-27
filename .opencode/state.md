@@ -25,6 +25,9 @@ Last verification: **2026-11-25**.
 - **Backlog in issues (2026-11-25):** the tracker was seeded from `requirements.md`: #9 third-party
   decks, #10 audio in `.txt`, #11 history in the app, #12 real autostart, #13 real full screen
   and #14 installer signing. AnkiConnect is left for a `grill-with-docs` session.
+- **Third-party Anki decks (#9):** modern Anki export fixtures cover Basic, reversed cards,
+  text Cloze, multiple decks and a dedicated audio field. The importer flattens cloze text,
+  accepts empty media maps and preserves per-note deck metadata and source IDs on reimport.
 - **History in the app (2026-11-25):** #11 adds the paginated `review_history` command with direction,
   result and date filters, and a table in Progress with “load more” and an empty state; CSV
   export does not change and there is no new migration.

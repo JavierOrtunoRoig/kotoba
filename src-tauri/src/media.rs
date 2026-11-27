@@ -26,7 +26,7 @@ pub fn parse_media_map(bytes: &[u8]) -> Result<Vec<MediaEntry>> {
     };
 
     if let Ok(entries) = parse_protobuf(&decoded) {
-        if !entries.is_empty() {
+        if decoded.is_empty() || !entries.is_empty() {
             return Ok(entries);
         }
     }

@@ -173,6 +173,23 @@ They end up in `src-tauri/target/release/bundle/`:
 Data lives in `%APPDATA%\com.kotoba.app` (SQLite database + `media/`) and logs in
 `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`.
 
+### Anki deck compatibility
+
+Use a modern Anki export with **Support older Anki versions** turned off and **Include Media**
+enabled if you want audio. The importer covers Basic (Front/Back), Basic with a reversed card,
+text Cloze with a separate meaning field, packages containing several decks, and note types
+with a dedicated audio field. Map custom fields to reading and meaning in the import dialog.
+
+kotoba imports one item per note, reveals cloze text and drops its hints. It reads the mapped
+fields directly. Anki templates, scheduling, image occlusion, and MathJax rendering are outside
+this import format. Notes with no reading or meaning are skipped with a warning. The importer
+uses the first embedded `[sound:…]` reference in the mapped audio field.
+
+Each note takes its lesson and category from its own deck unless the mapping supplies those
+values. For example, `Japanese::Lesson 2::Places::Outdoors` gives lesson `Lesson 2` and category
+`Places / Outdoors`. If cards from one note are in different decks, the card with the lowest ID
+provides the deck. Reimporting the same package with the same mapping reuses its source IDs.
+
 ## Development
 
 Common commands, from the repository root:
