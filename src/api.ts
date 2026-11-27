@@ -80,6 +80,10 @@ export interface LessonStat {
   lesson: string;
   total: number;
   reviewed: number;
+  new: number;
+  learning: number;
+  relearning: number;
+  young: number;
   mastered: number;
   reviews: number;
   correct: number;

@@ -255,7 +255,7 @@ fn submit_answer(
         db::bump_weekly_goals_done(&conn).map_err(to_err)?;
         saver_earned = db::add_streak_saver(&conn).map_err(to_err)?;
     }
-    let unlocked = db::sync_achievements(&conn, settings.lesson_mastery_percent).map_err(to_err)?;
+    let unlocked = db::sync_achievements(&conn, settings.lesson_mastery_percent, settings.include_patterns).map_err(to_err)?;
     drop(conn);
 
     let allow_notifications = settings.milestone_notifications
@@ -638,7 +638,9 @@ pub fn run() {
 
             let db_path = data_dir.join("kotoba.sqlite3");
             let conn = db::open(&db_path)?;
+            #[cfg(not(feature = "tauri-plugin-wdio-webdriver"))]
             let has_items = db::count_items(&conn)? > 0;
+            #[cfg(not(feature = "tauri-plugin-wdio-webdriver"))]
             let settings = db::load_settings(&conn)?;
 
             app.manage(AppState {
@@ -662,6 +664,7 @@ pub fn run() {
             tray::setup(app.handle())?;
             scheduler::start(app.handle().clone());
 
+            #[cfg(not(feature = "tauri-plugin-wdio-webdriver"))]
             if !has_items {
                 shell::show_main(app.handle());
             } else if settings.mode == "widget" {

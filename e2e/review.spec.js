@@ -3,6 +3,13 @@ import path from 'node:path';
 
 describe('desktop review persistence', () => {
   it('imports a deck, records an answer, and restores it after restart', async () => {
+    const assertHidden = async () => {
+      const visible = await browser.executeAsync(async (done) => {
+        done(await window.__TAURI__.window.getCurrentWindow().isVisible());
+      });
+      assert.equal(visible, false, 'The test window must stay hidden');
+    };
+    await assertHidden();
     if (process.env.KOTOBA_E2E_PHASE === 'import') {
       await $('.dropzone').waitForDisplayed({ timeout: 30000 });
       const fixture = path.resolve('e2e/deck.txt');
@@ -45,6 +52,7 @@ describe('desktop review persistence', () => {
       await input.setValue('cat');
       await $('button[type="submit"]').click();
       await $('.feedback.ok').waitForDisplayed({ timeout: 30000 });
+      await assertHidden();
     } else {
       const progress = await $('button*=Progreso');
       await progress.waitForDisplayed({ timeout: 30000 });
@@ -54,6 +62,7 @@ describe('desktop review persistence', () => {
       assert.match(await row.getText(), /ねこ/);
       assert.match(await row.getText(), /cat/);
       assert.match(await row.getText(), /Acierto/);
+      await assertHidden();
     }
   });
 });

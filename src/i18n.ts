@@ -12,6 +12,20 @@ export const LANGUAGES: { id: Language; label: string }[] = [
 ];
 
 const en: Dict = {
+  "Domina una lección sin palabras nuevas y con el porcentaje requerido de palabras maduras.": "Dominate one lesson with no new words and the required percentage of mature words.",
+  "Domina cinco lecciones sin palabras nuevas y con el porcentaje requerido de palabras maduras.": "Dominate five lessons with no new words and the required percentage of mature words.",
+  "Maduras": "Mature",
+  "con intervalo de 21 días o más": "with an interval of 21 days or more",
+  "Nuevas": "New",
+  "Aprendiendo": "Learning",
+  "Reaprendiendo": "Relearning",
+  "Jóvenes": "Young",
+  "Total: {n}": "Total: {n}",
+  "Dominio: {n}%": "Dominance: {n}%",
+  "Dominio por lección": "Lesson dominance",
+  "Una lección se domina sin palabras nuevas y con al menos el {n}% de palabras maduras.": "A lesson is dominated when it has no new words and at least {n}% mature words.",
+  "Porcentaje de palabras maduras necesario para dominar una lección, sin palabras nuevas.": "Percentage of mature words needed to dominate a lesson, with no new words remaining.",
+
   // Navigation and status
   Practicar: "Practice",
   Progreso: "Progress",
@@ -411,6 +425,20 @@ const en: Dict = {
 };
 
 const ja: Dict = {
+  "Domina una lección sin palabras nuevas y con el porcentaje requerido de palabras maduras.": "新規単語がなく、成熟単語が必要な割合に達したレッスンを1つ制覇する。",
+  "Domina cinco lecciones sin palabras nuevas y con el porcentaje requerido de palabras maduras.": "新規単語がなく、成熟単語が必要な割合に達したレッスンを5つ制覇する。",
+  "Maduras": "成熟",
+  "con intervalo de 21 días o más": "間隔が21日以上",
+  "Nuevas": "新規",
+  "Aprendiendo": "学習中",
+  "Reaprendiendo": "再学習中",
+  "Jóvenes": "若い",
+  "Total: {n}": "合計：{n}",
+  "Dominio: {n}%": "制覇率：{n}%",
+  "Dominio por lección": "レッスン制覇",
+  "Una lección se domina sin palabras nuevas y con al menos el {n}% de palabras maduras.": "新規単語がなく、成熟単語が{n}%以上でレッスン制覇です。",
+  "Porcentaje de palabras maduras necesario para dominar una lección, sin palabras nuevas.": "新規単語がない状態でレッスンを制覇するために必要な成熟単語の割合。",
+
   Practicar: "練習",
   Progreso: "進捗",
   Ajustes: "設定",
