@@ -87,7 +87,23 @@ that originated it.
 
 ### `srs_state`
 
-`item_id` PK, `interval_minutes`, `ease` (2.5 for now), `due_at`, `reps`, `lapses`.
+`item_id` PK, `interval_minutes`, `max_interval_minutes`, `ease`, `due_at`, `reps`, `lapses`.
+Migration v5 initializes the maximum from the current interval; subsequent reviews retain the
+highest interval, even after a lapse. Earlier lapses cannot be reconstructed.
+
+### Maturity and lesson statistics
+
+Maturity is derived from SRS state, not an input to scheduling: new has no state; learning is
+below one day without a previous interval of one day; relearning is below one day after reaching
+one day; young is at least one day and below 21 days; mature is at least 21 days. The global
+mature count and word achievements use the same 21-day boundary; existing achievement unlocks
+remain permanent.
+
+Lesson counts include patterns only when `include_patterns` is enabled. Dominance is mature
+items divided by all reviewable lesson items. A nonempty lesson is dominated when it has no new
+items and reaches the configured threshold. The badge and lesson achievements share this rule.
+The threshold ranges from 50% to 100%, defaults to 80% on new installs, and preserves stored
+settings. Lesson statistics retain review counts and accuracy alongside the five maturity counts.
 
 ### `settings`
 
