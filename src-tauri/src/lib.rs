@@ -595,7 +595,12 @@ fn open_logs(app: tauri::AppHandle) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    #[cfg(feature = "tauri-plugin-wdio-webdriver")]
+    let log_target = tauri_plugin_log::TargetKind::Stdout;
+    #[cfg(not(feature = "tauri-plugin-wdio-webdriver"))]
+    let log_target = tauri_plugin_log::TargetKind::LogDir { file_name: Some("kotoba".into()) };
+    let builder = tauri::Builder::default();
+    let builder = builder
         // Must go before the other plugins: on Windows and Linux this is what detects a
         // second instance. The first one receives the notice and brings its main window to the front;
         // the second one passes on the arguments and exits without opening the database or the scheduler.
@@ -609,18 +614,23 @@ pub fn run() {
         .plugin(
             tauri_plugin_log::Builder::new()
                 .target(tauri_plugin_log::Target::new(
-                    tauri_plugin_log::TargetKind::LogDir {
-                        file_name: Some("kotoba".into()),
-                    },
+                    log_target,
                 ))
                 .level(log::LevelFilter::Info)
                 .build(),
-        )
-        .plugin(tauri_plugin_autostart::init(
+        );
+    #[cfg(feature = "tauri-plugin-wdio-webdriver")]
+    let builder = builder.plugin(tauri_plugin_wdio_webdriver::init());
+    #[cfg(feature = "tauri-plugin-wdio")]
+    let builder = builder.plugin(tauri_plugin_wdio::init());
+    builder.plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
         ))
         .setup(|app| {
+            #[cfg(feature = "tauri-plugin-wdio-webdriver")]
+            let data_dir = PathBuf::from(std::env::var("KOTOBA_E2E_PROFILE")?);
+            #[cfg(not(feature = "tauri-plugin-wdio-webdriver"))]
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
             let media_dir = data_dir.join("media");
