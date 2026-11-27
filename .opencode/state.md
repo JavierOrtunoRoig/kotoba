@@ -45,6 +45,10 @@ Last verification: **2026-11-25**.
 
 ## Current phase
 
+**SRS maximum review interval (#23):** migration v5 backfills each existing word's maximum
+interval from its current interval. Reviews persist the highest interval reached, including
+after a lapse, without changing scheduling or the interface.
+
 **Phase 2 — Polish: completed.**
 
 Completed in the phase:

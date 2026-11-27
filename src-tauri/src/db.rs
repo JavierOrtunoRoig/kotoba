@@ -363,6 +363,13 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
         ensure_column(conn, "profile", "streak_savers", "INTEGER NOT NULL DEFAULT 0")?;
         conn.pragma_update(None, "user_version", 4)?;
     }
+    if version < 5 {
+        let tx = conn.transaction()?;
+        ensure_column(&tx, "srs_state", "max_interval_minutes", "INTEGER NOT NULL DEFAULT 0")?;
+        tx.execute("UPDATE srs_state SET max_interval_minutes = interval_minutes", [])?;
+        tx.pragma_update(None, "user_version", 5)?;
+        tx.commit()?;
+    }
 
     Ok(())
 }
@@ -987,10 +994,11 @@ pub fn record_review(
 
     tx.execute(
         r#"
-        INSERT INTO srs_state (item_id, interval_minutes, ease, due_at, reps, lapses)
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+        INSERT INTO srs_state (item_id, interval_minutes, max_interval_minutes, ease, due_at, reps, lapses)
+        VALUES (?1, ?2, ?2, ?3, ?4, ?5, ?6)
         ON CONFLICT(item_id) DO UPDATE SET
             interval_minutes = excluded.interval_minutes,
+            max_interval_minutes = MAX(srs_state.max_interval_minutes, excluded.interval_minutes),
             ease = excluded.ease,
             due_at = excluded.due_at,
             reps = excluded.reps,
@@ -1423,6 +1431,48 @@ mod tests {
     use super::*;
 
     #[test]
+    fn migration_backfills_maximum_review_interval() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        conn.execute_batch(
+            "CREATE TABLE srs_state (
+                item_id INTEGER PRIMARY KEY, interval_minutes INTEGER NOT NULL DEFAULT 10,
+                ease REAL NOT NULL DEFAULT 2.5, due_at INTEGER NOT NULL DEFAULT 0,
+                reps INTEGER NOT NULL DEFAULT 0, lapses INTEGER NOT NULL DEFAULT 0
+             );
+             INSERT INTO srs_state (item_id, interval_minutes) VALUES (1, 1440), (2, 10);
+             PRAGMA user_version = 4;",
+        ).expect("old schema");
+        migrate(&mut conn).expect("migrate");
+        let values: Vec<i64> = conn
+            .prepare("SELECT max_interval_minutes FROM srs_state ORDER BY item_id")
+            .unwrap()
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        assert_eq!(values, [1440, 10]);
+        migrate(&mut conn).expect("migrate again");
+    }
+
+    #[test]
+    fn review_maximum_interval_never_decreases() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("fresh migration");
+        let item = insert_order_item(&conn, "max", "L1", "words");
+        for (quality, expected_interval, expected_max) in
+            [(5, 10, 10), (5, 1440, 1440), (2, 10, 1440), (5, 1440, 1440)]
+        {
+            let outcome = record_review(&mut conn, item, quality, "es_to_jp", 1000).expect("review");
+            assert_eq!(outcome.next_interval_minutes, expected_interval);
+            let maximum: i64 = conn.query_row(
+                "SELECT max_interval_minutes FROM srs_state WHERE item_id = ?1",
+                [item], |row| row.get(0),
+            ).expect("maximum");
+            assert_eq!(maximum, expected_max);
+        }
+    }
+
+    #[test]
     fn sm2_learning_step() {
         let (reps, interval, ease) = sm2_next(5, 0, 0, 2.5);
         assert_eq!(reps, 1);
@@ -1683,7 +1733,7 @@ mod tests {
         let version: i64 = conn
             .pragma_query_value(None, "user_version", |row| row.get(0))
             .expect("version");
-        assert_eq!(version, 4);
+        assert_eq!(version, 5);
     }
 
     #[test]
