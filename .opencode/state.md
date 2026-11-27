@@ -7,7 +7,11 @@
 - **Word achievements (#25):** progress and new unlocks count words at intervals of 21 days or more; earlier unlocks remain recorded.
 - **Lesson maturity (#24):** Progress shows five maturity counts and lesson dominance;
   patterns follow the review setting, and lesson achievements use the same dominance rule.
-  New installations default to an 80% threshold; stored thresholds are retained.
+  New has no SRS state; learning and relearning are below one day, distinguished by whether
+  the word previously reached one day; young is from one day to below 21 days and mature starts
+  at 21 days. Dominance is mature items divided by reviewable items; a nonempty lesson is
+  dominated only with no new items and at or above the threshold. New installations default
+  to 80%; stored thresholds are retained.
 
 Last verification: **2026-11-25**.
 
@@ -149,7 +153,7 @@ progress and settings.
 - **Weekly goal notification:** suppressed with DND active; emitted with DND disabled
   (verified in `kotoba.log`: `objetivo semanal completado: 12 repasos`).
 - **Gamification R3-04b:** catalog of 16 achievements, achievements panel with progress and unlock
-  date, mastery per lesson with configurable threshold and `✦ Achievement` feedback on unlock.
+  date, dominance per lesson with configurable threshold and `✦ Achievement` feedback on unlock.
 - **Migration v3:** `achievements` table and `profile.weekly_goals_done` column; verified on
   an existing v2 database with a dedicated test.
 - **Achievements measured in the app:** `first_step` on the first review and `reviews_25` on reaching 25;
@@ -183,7 +187,7 @@ progress and settings.
 
 The app has the deck imported in `%APPDATA%\com.kotoba.app` and **3 test reviews**, **9 XP**,
 level 1 “Seed”, streak/best 1, **1 achievement** (`first_step`), **946 new available**,
-**3 new today out of 10**, 0 due reviews and 0 savers. Weekly goal 30, mastery per
+**3 new today out of 10**, 0 due reviews and 0 savers. Weekly goal 30, dominance per
 lesson 90 % and milestone notifications disabled. The mode was left at `popup`, DND at
 22:00–08:00 and appearance at `auto`/Spanish/100 %.
 
@@ -217,7 +221,7 @@ $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 |---|---|---|
 | Medium | Real full screen | Implemented, but not tested against a real game/presentation |
 | Low | Accessibility | Focus and keyboard navigation can be improved |
-| Low | Gamification | Achievements/mastery and savers implemented; retention metrics outside the MVP |
+| Low | Gamification | Achievements, dominance and savers implemented; retention metrics outside the MVP |
 | Low | Code signing | The CI pipeline and releases already work; the MSI/NSIS still needs signing |
 
 ## Recommended next steps

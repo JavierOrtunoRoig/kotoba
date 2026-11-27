@@ -126,7 +126,7 @@ Functional requirements use `RF-xx`; non-functional ones, `RNF-xx`. Future-phase
 - [x] Total words, total reviews and reviews today.
 - [x] Today's accuracy.
 - [x] Day streak.
-- [x] Mastered words (interval ≥ 7 days).
+- [x] Mature words (interval ≥ 21 days), also used by word achievements.
 - [x] Pending (respecting `include_patterns`).
 - [x] Activity over the last 14 days.
 
@@ -216,6 +216,11 @@ Functional requirements use `RF-xx`; non-functional ones, `RNF-xx`. Future-phase
 ## RF2-05 — Extended statistics
 
 - [x] Progress per lesson (`L00`…`L12`).
+- [x] Five maturity counts (new, learning, relearning, young, mature), including zero counts;
+  mature starts at 21 days and relearning requires a previous interval of at least one day.
+- [x] Dominance is mature words divided by reviewable lesson items, with patterns controlled by
+  `include_patterns`. A nonempty lesson is dominated only with no new words and at least the
+  configured threshold; the default is 80% for new installs and existing settings are retained.
 - [x] Difficult / most-failed words.
 - [x] History exportable to CSV (RF2-08).
 - [x] Detailed history inside the app → #11.
@@ -316,17 +321,16 @@ cannot incentivize fast/bad answers that break SM-2.
   screen and never warns about a “streak in danger”.
 - [x] Tests for XP, levels, streak, goal and migration.
 
-### R3-04b — Achievements and mastery (implemented)
+### R3-04b — Achievements and dominance (implemented)
 
-- [x] Catalog of 16 achievements: reviews, mastered words, streak, master lessons, level 5 and
+- [x] Catalog of 16 achievements: reviews, mature words, streak, dominated lessons, level 5 and
   weekly goal completed.
 - [x] Progress of each achievement visible and permanent unlock.
-- [x] Mastery per lesson with configurable threshold (default 90 %): percentage of words with
-  interval ≥ 7 days over the lesson total.
+- [x] Lesson achievements use the same dominance predicate as the lesson badge.
 - [x] Achievements screen in Progress and immediate feedback on unlock.
 - [x] Opt-in notifications on unlock, subject to pause/DND/full screen.
 - [x] Migration v3 (`achievements`, `profile.weekly_goals_done`).
-- [x] Tests for single unlock and mastery threshold.
+- [x] Tests for permanent unlocks, maturity boundaries and lesson dominance.
 
 ### R3-04c — Refinement (implemented)
 

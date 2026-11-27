@@ -226,7 +226,8 @@ and the achievement catalogue are left for b/c; XP does not incentivize answerin
 
 ## D-027 — Permanent achievements and per-lesson mastery
 
-The per-lesson mastery definition in this decision is superseded by D-036.
+**Status:** The per-lesson mastery definition is superseded by D-036; permanent achievement
+unlocks remain in effect.
 
 **Context:** R3-04b needs milestones that celebrate consistency and retention without introducing
 daily pressure or social comparisons.
@@ -359,7 +360,7 @@ instance instead of opening another.
 
 **Context:** mastery was binary: a word was mastered on reaching 7 days and a lesson on exceeding a
 threshold of mastered words. The inbox idea asked for Anki-like levels and visibility of
-intermediate progress. The current definition is in D-027.
+intermediate progress. The previous definition was in D-027.
 **Decision:** five states derived from the interval, with Anki's cut-offs: new (never reviewed),
 learning (< 1 day and never reached 1 day), relearning (already reached 1 day and is now below),
 young (1-20 days) and mature (≥ 21 days). `srs_state` gains `max_interval_minutes` to tell
@@ -371,5 +372,5 @@ respects `include_patterns`, and the badge and achievements share the same predi
 **Consequences:** dominating a lesson becomes a months-long goal. Already unlocked achievements are
 kept. The migration fills `max_interval_minutes` with the current interval, so a word that failed
 before this change will show as learning until its next failure. Progress, Settings and the
-statistics queries change; the popup and practice do not show the state. It supersedes D-027's
-per-lesson mastery definition when implemented.
+statistics queries change; the popup and practice do not show the state. This supersedes D-027's
+per-lesson mastery definition.
