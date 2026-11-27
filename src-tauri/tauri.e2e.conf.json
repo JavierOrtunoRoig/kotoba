@@ -1,4 +1,4 @@
 ﻿{
   "identifier": "com.kotoba.e2e",
-  "app": { "withGlobalTauri": true, "security": { "capabilities": ["default", { "identifier": "e2e", "windows": ["main"], "permissions": ["wdio:default", "wdio-webdriver:default"] }] }, "windows": [{ "label": "main", "title": "kotoba E2E", "width": 1120, "height": 780, "minWidth": 820, "minHeight": 600, "visible": true, "center": true }] }
+  "app": { "withGlobalTauri": true, "security": { "capabilities": ["default", { "identifier": "e2e", "windows": ["main"], "permissions": ["wdio:default", "wdio-webdriver:default"] }] }, "windows": [{ "label": "main", "title": "kotoba E2E", "width": 1120, "height": 780, "minWidth": 820, "minHeight": 600, "visible": false, "center": true }] }
 }
