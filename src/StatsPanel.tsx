@@ -129,7 +129,7 @@ export default function StatsPanel({ language, onPractice }: Props) {
           <span className="stat-k">
             <IconSeed size={14} /> {t("Maduras")}
           </span>
-          <span className="stat-v">{stats.mastered}</span>
+          <span className="stat-v">{stats.mature}</span>
           <span className="stat-s">{t("con intervalo de 21 días o más")}</span>
         </article>
 
@@ -371,20 +371,20 @@ export default function StatsPanel({ language, onPractice }: Props) {
           <div className="lesson-list">
             {lessons.map((lesson) => {
               const states = [
-                { key: "new", label: t("Nuevas"), count: lesson.new },
-                { key: "learning", label: t("Aprendiendo"), count: lesson.learning },
-                { key: "relearning", label: t("Reaprendiendo"), count: lesson.relearning },
-                { key: "young", label: t("Jóvenes"), count: lesson.young },
-                { key: "mature", label: t("Maduras"), count: lesson.mastered },
+                { key: "new", label: t("Nuevas"), count: lesson.new_count },
+                { key: "learning", label: t("Aprendiendo"), count: lesson.learning_count },
+                { key: "relearning", label: t("Reaprendiendo"), count: lesson.relearning_count },
+                { key: "young", label: t("Jóvenes"), count: lesson.young_count },
+                { key: "mature", label: t("Maduras"), count: lesson.mature_count },
               ];
               return (
                 <div className="lesson-row" key={lesson.lesson}>
                   <div className="lesson-heading">
                     <span className="lesson-name">{lesson.lesson}</span>
                     <span className="lesson-meta">{t("Total: {n}", { n: lesson.total })}</span>
-                    <span className={`lesson-badge${lesson.is_mastered ? " done" : ""}`}
-                      title={t("Dominio: {n}%", { n: Math.round(lesson.mastery_percent) })}>
-                      {lesson.is_mastered ? t("Dominada") : `${Math.round(lesson.mastery_percent)}%`}
+                    <span className={`lesson-badge${lesson.is_dominated ? " done" : ""}`}
+                      title={t("Dominio: {n}%", { n: Math.round(lesson.dominance_percent) })}>
+                      {lesson.is_dominated ? t("Dominada") : `${Math.round(lesson.dominance_percent)}%`}
                     </span>
                     <span className="lesson-accuracy" title={t("Precisión")}>
                       {lesson.reviews > 0 ? `${Math.round(lesson.accuracy)}%` : "—"}
