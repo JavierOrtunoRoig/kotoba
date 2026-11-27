@@ -202,6 +202,15 @@ Common commands, from the repository root:
 | `npm run build` | TypeScript + Vite build |
 | `cd src-tauri; cargo check` | Checks Rust without linking |
 | `cd src-tauri; cargo test --lib` | Backend unit tests |
+| `npm run test:e2e:windows` | Windows desktop import, practice and persistence E2E |
+
+The desktop E2E command builds a dedicated test binary and uses WebdriverIO's
+embedded Tauri driver. It requires the normal Windows Tauri build prerequisites.
+It starts two separate app processes with an isolated temporary profile and
+removes the profile afterwards. The harness supplies the synthetic deck path at
+the native file picker boundary; the native picker itself is not exercised.
+Import inspection, import, practice, IPC and SQLite persistence are real. The
+same command runs in Windows CI.
 
 Some integration tests depend on the real deck and are marked `ignored`:
 

@@ -39,6 +39,9 @@ Last verification: **2026-11-25**.
   the plugins. The second run delivers its arguments and exits without opening SQLite or the scheduler; the
   first shows and focuses the main window. Verified by launching the exe twice: a single
   process, the second exits in 0.05 s and the window stays in the foreground.
+- **Windows desktop E2E (#34):** `npm run test:e2e:windows` tests synthetic deck import,
+  practice and review history after restarting with an isolated temporary profile. WebdriverIO
+  supplies the file path at the picker boundary; the native file picker is outside this test.
 
 ## Current phase
 

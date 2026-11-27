@@ -14,7 +14,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "test:e2e:windows": "node e2e/run.js"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
@@ -30,6 +31,12 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^6.0.2",
+    "@wdio/cli": "^9.32.0",
+    "@wdio/local-runner": "^9.32.0",
+    "@wdio/mocha-framework": "^9.32.0",
+    "@wdio/spec-reporter": "^9.32.0",
+    "@wdio/tauri-plugin": "^1.5.1",
+    "@wdio/tauri-service": "^1.5.1",
     "typescript": "~7.0.2",
     "vite": "^8.0.16"
   }

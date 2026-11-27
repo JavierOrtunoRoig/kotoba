@@ -38,13 +38,15 @@ export default function ImportPanel({ language, onImported }: Props) {
   async function pick() {
     setError(null);
     try {
-      const selected = await open({
+      const selected = import.meta.env.VITE_KOTOBA_E2E === "1"
+        ? (window as Window & { __KOTOBA_E2E_DECK?: string }).__KOTOBA_E2E_DECK
+        : await open({
         multiple: false,
         filters: [
           { name: t("Mazo de Anki"), extensions: ["apkg", "txt"] },
           { name: t("Todos"), extensions: ["*"] },
         ],
-      });
+        });
       if (!selected || Array.isArray(selected)) return;
 
       setBusy(true);
