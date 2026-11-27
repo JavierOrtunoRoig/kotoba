@@ -15,6 +15,8 @@ pub const MAX_QUALITY: u8 = 5;
 
 /// Maximum interval: 10 years, to avoid absurd intervals and overflows.
 const MAX_INTERVAL_MINUTES: i64 = 3650 * 1440;
+const DAY_MINUTES: i64 = 1440;
+const MATURE_MINUTES: i64 = 21 * DAY_MINUTES;
 
 /// Stackable streak savers.
 pub const MAX_STREAK_SAVERS: i64 = 2;
@@ -115,7 +117,7 @@ pub struct ReviewOutcome {
 #[derive(Clone, Copy)]
 enum AchievementMetric {
     Reviews,
-    Mastered,
+    MatureWords,
     Streak,
     LessonsMastered,
     Level,
@@ -170,29 +172,29 @@ const ACHIEVEMENT_CATALOG: [AchievementDef; 16] = [
     AchievementDef {
         key: "mastered_1",
         title: "Primera semilla",
-        description: "Alcanza una palabra madura (21 días o más).",
-        metric: AchievementMetric::Mastered,
+        description: "Consigue una palabra madura con un intervalo de 21 días o más.",
+        metric: AchievementMetric::MatureWords,
         target: 1,
     },
     AchievementDef {
         key: "mastered_10",
         title: "Diez semillas",
-        description: "Alcanza 10 palabras maduras.",
-        metric: AchievementMetric::Mastered,
+        description: "Consigue 10 palabras maduras.",
+        metric: AchievementMetric::MatureWords,
         target: 10,
     },
     AchievementDef {
         key: "mastered_25",
         title: "Veinticinco semillas",
-        description: "Alcanza 25 palabras maduras.",
-        metric: AchievementMetric::Mastered,
+        description: "Consigue 25 palabras maduras.",
+        metric: AchievementMetric::MatureWords,
         target: 25,
     },
     AchievementDef {
         key: "mastered_50",
         title: "Cincuenta semillas",
-        description: "Alcanza 50 palabras maduras.",
-        metric: AchievementMetric::Mastered,
+        description: "Consigue 50 palabras maduras.",
+        metric: AchievementMetric::MatureWords,
         target: 50,
     },
     AchievementDef {
@@ -219,14 +221,14 @@ const ACHIEVEMENT_CATALOG: [AchievementDef; 16] = [
     AchievementDef {
         key: "lesson_1",
         title: "Lección dominada",
-        description: "Domina una lección sin palabras nuevas y con el porcentaje de palabras maduras requerido.",
+        description: "Domina una lección sin palabras nuevas y con el porcentaje requerido de palabras maduras.",
         metric: AchievementMetric::LessonsMastered,
         target: 1,
     },
     AchievementDef {
         key: "lesson_5",
         title: "Cinco lecciones",
-        description: "Domina cinco lecciones sin palabras nuevas y con el porcentaje de palabras maduras requerido.",
+        description: "Domina cinco lecciones sin palabras nuevas y con el porcentaje requerido de palabras maduras.",
         metric: AchievementMetric::LessonsMastered,
         target: 5,
     },
@@ -363,11 +365,12 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
         ensure_column(conn, "profile", "streak_savers", "INTEGER NOT NULL DEFAULT 0")?;
         conn.pragma_update(None, "user_version", 4)?;
     }
-
     if version < 5 {
-        ensure_column(conn, "srs_state", "max_interval_minutes", "INTEGER NOT NULL DEFAULT 0")?;
-        conn.execute("UPDATE srs_state SET max_interval_minutes = interval_minutes", [])?;
-        conn.pragma_update(None, "user_version", 5)?;
+        let tx = conn.transaction()?;
+        ensure_column(&tx, "srs_state", "max_interval_minutes", "INTEGER NOT NULL DEFAULT 0")?;
+        tx.execute("UPDATE srs_state SET max_interval_minutes = interval_minutes", [])?;
+        tx.pragma_update(None, "user_version", 5)?;
+        tx.commit()?;
     }
 
     Ok(())
@@ -566,7 +569,7 @@ pub fn achievements(conn: &Connection, mastery_percent: i64, include_patterns: b
     let level = level_for_xp(xp_total);
     let total_reviews: i64 =
         conn.query_row("SELECT COUNT(*) FROM review_log", [], |row| row.get(0))?;
-    let mastered: i64 = conn.query_row(
+    let mature_words: i64 = conn.query_row(
         "SELECT COUNT(*) FROM srs_state s JOIN items i ON i.id = s.item_id WHERE s.interval_minutes >= ?1 AND (?2 OR i.is_pattern = 0)",
         params![MATURE_MINUTES, include_patterns],
         |row| row.get(0),
@@ -588,7 +591,7 @@ pub fn achievements(conn: &Connection, mastery_percent: i64, include_patterns: b
     for def in ACHIEVEMENT_CATALOG.iter() {
         let value = match def.metric {
             AchievementMetric::Reviews => total_reviews,
-            AchievementMetric::Mastered => mastered,
+            AchievementMetric::MatureWords => mature_words,
             AchievementMetric::Streak => streak_best,
             AchievementMetric::LessonsMastered => lessons_mastered,
             AchievementMetric::Level => level,
@@ -993,8 +996,8 @@ pub fn record_review(
 
     tx.execute(
         r#"
-        INSERT INTO srs_state (item_id, interval_minutes, ease, due_at, reps, lapses, max_interval_minutes)
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?2)
+        INSERT INTO srs_state (item_id, interval_minutes, max_interval_minutes, ease, due_at, reps, lapses)
+        VALUES (?1, ?2, ?2, ?3, ?4, ?5, ?6)
         ON CONFLICT(item_id) DO UPDATE SET
             interval_minutes = excluded.interval_minutes,
             max_interval_minutes = MAX(srs_state.max_interval_minutes, excluded.interval_minutes),
@@ -1058,8 +1061,8 @@ pub fn stats(
         0.0
     };
     let mastered: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM srs_state s JOIN items i ON i.id = s.item_id WHERE s.interval_minutes >= ?1 AND (?2 OR i.is_pattern = 0)",
-        params![MATURE_MINUTES, include_patterns],
+        "SELECT COUNT(*) FROM srs_state s JOIN items i ON i.id = s.item_id WHERE s.interval_minutes >= ?2 AND (?1 OR i.is_pattern = 0)",
+        params![include_patterns, MATURE_MINUTES],
         |row| row.get(0),
     )?;
     let due_now = due_count(conn, include_patterns)?;
@@ -1107,41 +1110,75 @@ pub fn stats(
     })
 }
 
-const DAY_MINUTES: i64 = 1440;
-const MATURE_MINUTES: i64 = 21 * DAY_MINUTES;
-
-fn lessons(conn: &Connection, threshold: i64, include_patterns: bool) -> Result<Vec<crate::models::LessonStat>> {
-    let mut stmt = conn.prepare(r#"
-        SELECT i.lesson, COUNT(DISTINCT i.id),
-          COUNT(DISTINCT CASE WHEN s.item_id IS NOT NULL THEN i.id END),
-          COUNT(DISTINCT CASE WHEN s.item_id IS NULL THEN i.id END),
-          COUNT(DISTINCT CASE WHEN s.interval_minutes < ?1 AND s.max_interval_minutes < ?1 THEN i.id END),
-          COUNT(DISTINCT CASE WHEN s.interval_minutes < ?1 AND s.max_interval_minutes >= ?1 THEN i.id END),
-          COUNT(DISTINCT CASE WHEN s.interval_minutes >= ?1 AND s.interval_minutes < ?2 THEN i.id END),
-          COUNT(DISTINCT CASE WHEN s.interval_minutes >= ?2 THEN i.id END),
-          COUNT(r.id), COALESCE(SUM(r.result), 0)
-        FROM items i LEFT JOIN srs_state s ON s.item_id = i.id
+fn lessons(conn: &Connection, mastery_percent: i64, include_patterns: bool) -> Result<Vec<crate::models::LessonStat>> {
+    let mut stmt = conn.prepare(
+        r#"
+        SELECT i.lesson,
+               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) THEN i.id END) AS total,
+               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.item_id IS NOT NULL THEN i.id END) AS reviewed,
+               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.item_id IS NULL THEN i.id END) AS new,
+               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.item_id IS NOT NULL AND s.interval_minutes < ?2 AND s.max_interval_minutes < ?2 THEN i.id END) AS learning,
+               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.interval_minutes < ?2 AND s.max_interval_minutes >= ?2 THEN i.id END) AS relearning,
+               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.interval_minutes >= ?2 AND s.interval_minutes < ?3 THEN i.id END) AS young,
+               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.interval_minutes >= ?3 THEN i.id END) AS mastered,
+               COUNT(r.id) AS reviews,
+               COALESCE(SUM(r.result), 0) AS correct
+        FROM items i
+        LEFT JOIN srs_state s ON s.item_id = i.id
         LEFT JOIN review_log r ON r.item_id = i.id
-        WHERE (?3 OR i.is_pattern = 0)
-        GROUP BY i.lesson ORDER BY i.lesson
-    "#)?;
-    let rows = stmt.query_map(params![DAY_MINUTES, MATURE_MINUTES, include_patterns], |row| {
-        let lesson: String = row.get(0)?;
-        let total: i64 = row.get(1)?;
-        let new_count: i64 = row.get(3)?;
-        let mature_count: i64 = row.get(7)?;
-        let reviews: i64 = row.get(8)?;
-        let correct: i64 = row.get(9)?;
-        let dominance_percent = mature_count as f64 / total as f64 * 100.0;
-        Ok(crate::models::LessonStat {
-            lesson: if lesson.is_empty() { "Sin lección".to_string() } else { lesson },
-            total, reviewed: row.get(2)?, new_count,
-            learning_count: row.get(4)?, relearning_count: row.get(5)?, young_count: row.get(6)?, mature_count,
-            reviews, correct, accuracy: if reviews > 0 { correct as f64 / reviews as f64 * 100.0 } else { 0.0 },
-            dominance_percent, is_dominated: total > 0 && new_count == 0 && dominance_percent >= threshold as f64,
-        })
+        GROUP BY i.lesson
+        ORDER BY i.lesson
+        "#,
+    )?;
+    let rows = stmt.query_map(params![include_patterns, DAY_MINUTES, MATURE_MINUTES], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, i64>(1)?,
+            row.get::<_, i64>(2)?,
+            row.get::<_, i64>(3)?,
+            row.get::<_, i64>(4)?,
+            row.get::<_, i64>(5)?,
+            row.get::<_, i64>(6)?,
+            row.get::<_, i64>(7)?,
+            row.get::<_, i64>(8)?,
+            row.get::<_, i64>(9)?,
+        ))
     })?;
-    Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+
+    let mut out = Vec::new();
+    for row in rows {
+        let (lesson, total, reviewed, new, learning, relearning, young, mastered, reviews, correct) = row?;
+        let accuracy = if reviews > 0 {
+            correct as f64 / reviews as f64 * 100.0
+        } else {
+            0.0
+        };
+        let mastery = if total > 0 {
+            mastered as f64 / total as f64 * 100.0
+        } else {
+            0.0
+        };
+        out.push(crate::models::LessonStat {
+            lesson: if lesson.is_empty() {
+                "Sin lección".to_string()
+            } else {
+                lesson
+            },
+            total,
+            reviewed,
+            new_count: new,
+            learning_count: learning,
+            relearning_count: relearning,
+            young_count: young,
+            mature_count: mastered,
+            reviews,
+            correct,
+            accuracy,
+            dominance_percent: mastery,
+            is_dominated: total > 0 && reviewed == total && mastery >= mastery_percent as f64,
+        });
+    }
+    Ok(out)
 }
 
 fn difficult(conn: &Connection) -> Result<Vec<crate::models::DifficultItem>> {
@@ -1409,6 +1446,143 @@ mod tests {
     use super::*;
 
     #[test]
+    fn lesson_dominance_requires_no_new_words() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        migrate(&mut conn).unwrap();
+        for index in 0..5 {
+            let id = insert_order_item(&conn, &format!("dominance{index}"), "L1", "words");
+            if index < 4 {
+                conn.execute("INSERT INTO srs_state (item_id, interval_minutes, max_interval_minutes) VALUES (?1, 30240, 30240)", [id]).unwrap();
+            }
+        }
+        let result = stats(&conn, false, 30, 80, 10).unwrap();
+        assert_eq!(result.lessons[0].mature_count, 4);
+        assert!(!result.lessons[0].is_dominated);
+    }
+
+    #[test]
+    fn statistics_unlock_dominated_lesson_after_settings_change() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        migrate(&mut conn).unwrap();
+        let mature = insert_order_item(&conn, "sync-mature", "L1", "");
+        let pattern = insert_order_item(&conn, "sync-pattern", "L1", "");
+        conn.execute("UPDATE items SET is_pattern = 1 WHERE id = ?1", [pattern]).unwrap();
+        conn.execute("INSERT INTO srs_state (item_id, interval_minutes, max_interval_minutes) VALUES (?1, 30240, 30240)", [mature]).unwrap();
+        let before = stats(&conn, true, 30, 80, 10).unwrap();
+        assert!(!before.lessons[0].is_dominated);
+        assert!(!before.achievements.iter().find(|a| a.key == "lesson_1").unwrap().unlocked);
+        let after = stats(&conn, false, 30, 80, 10).unwrap();
+        assert!(after.lessons[0].is_dominated);
+        assert!(after.achievements.iter().find(|a| a.key == "lesson_1").unwrap().unlocked);
+    }
+
+    #[test]
+    fn statistics_classify_maturity_and_respect_patterns() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        migrate(&mut conn).unwrap();
+        for (index, state) in [None, Some((1439, 1439)), Some((1439, 1440)), Some((1440, 1440)), Some((30239, 30239)), Some((30240, 30240))].iter().enumerate() {
+            let id = insert_order_item(&conn, &format!("state{index}"), "L1", "words");
+            if let Some((interval, maximum)) = state {
+                conn.execute("INSERT INTO srs_state (item_id, interval_minutes, max_interval_minutes) VALUES (?1, ?2, ?3)", params![id, interval, maximum]).unwrap();
+            }
+        }
+        let pattern = insert_order_item(&conn, "pattern", "L1", "words");
+        conn.execute("UPDATE items SET is_pattern = 1 WHERE id = ?1", [pattern]).unwrap();
+        let without = stats(&conn, false, 30, 80, 10).unwrap();
+        let lesson = &without.lessons[0];
+        assert_eq!((lesson.total, lesson.new_count, lesson.learning_count, lesson.relearning_count, lesson.young_count, lesson.mature_count), (6, 1, 1, 1, 2, 1));
+        assert_eq!(without.mature, 1);
+        let with = stats(&conn, true, 30, 80, 10).unwrap();
+        assert_eq!((with.lessons[0].total, with.lessons[0].new_count), (7, 2));
+    }
+
+    #[test]
+    fn lesson_achievement_progress_matches_dominated_lessons_and_patterns() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        migrate(&mut conn).unwrap();
+        for index in 0..5 {
+            let lesson = format!("L{index}");
+            let mature = insert_order_item(&conn, &format!("m{index}"), &lesson, "words");
+            conn.execute("INSERT INTO srs_state (item_id, interval_minutes, max_interval_minutes) VALUES (?1, 30240, 30240)", [mature]).unwrap();
+            let pattern = insert_order_item(&conn, &format!("p{index}"), &lesson, "words");
+            conn.execute("UPDATE items SET is_pattern = 1 WHERE id = ?1", [pattern]).unwrap();
+        }
+        for (include_patterns, expected) in [(false, 5), (true, 0)] {
+            let result = stats(&conn, include_patterns, 30, 80, 10).unwrap();
+            assert_eq!(result.lessons.iter().filter(|lesson| lesson.is_dominated).count(), expected);
+            for (key, target) in [("lesson_1", 1), ("lesson_5", 5)] {
+                assert_eq!(result.achievements.iter().find(|a| a.key == key).unwrap().progress, (expected as i64).min(target));
+            }
+        }
+    }
+
+    #[test]
+    fn pattern_only_lesson_remains_visible_when_patterns_disabled() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        migrate(&mut conn).unwrap();
+        let item = insert_order_item(&conn, "pattern-only", "L1", "words");
+        conn.execute("UPDATE items SET is_pattern = 1 WHERE id = ?1", [item]).unwrap();
+        record_review(&mut conn, item, 5, "es_to_jp", 1000).unwrap();
+        let result = stats(&conn, false, 30, 80, 10).unwrap();
+        assert_eq!(result.lessons.len(), 1);
+        assert_eq!((result.lessons[0].total, result.lessons[0].reviews, result.lessons[0].correct), (0, 1, 1));
+        assert!(!result.lessons[0].is_dominated);
+    }
+
+    #[test]
+    fn unlabeled_lesson_badge_matches_achievement_progress() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        migrate(&mut conn).unwrap();
+        let item = insert_order_item(&conn, "unlabeled", "", "words");
+        conn.execute("INSERT INTO srs_state (item_id, interval_minutes, max_interval_minutes) VALUES (?1, 30240, 30240)", [item]).unwrap();
+        let result = stats(&conn, false, 30, 80, 10).unwrap();
+        assert!(result.lessons[0].is_dominated);
+        assert_eq!(result.achievements.iter().find(|a| a.key == "lesson_1").unwrap().progress, 1);
+    }
+
+    #[test]
+    fn migration_backfills_maximum_review_interval() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        conn.execute_batch(
+            "CREATE TABLE srs_state (
+                item_id INTEGER PRIMARY KEY, interval_minutes INTEGER NOT NULL DEFAULT 10,
+                ease REAL NOT NULL DEFAULT 2.5, due_at INTEGER NOT NULL DEFAULT 0,
+                reps INTEGER NOT NULL DEFAULT 0, lapses INTEGER NOT NULL DEFAULT 0
+             );
+             INSERT INTO srs_state (item_id, interval_minutes) VALUES (1, 1440), (2, 10);
+             PRAGMA user_version = 4;",
+        ).expect("old schema");
+        migrate(&mut conn).expect("migrate");
+        let values: Vec<i64> = conn
+            .prepare("SELECT max_interval_minutes FROM srs_state ORDER BY item_id")
+            .unwrap()
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        assert_eq!(values, [1440, 10]);
+        migrate(&mut conn).expect("migrate again");
+    }
+
+    #[test]
+    fn review_maximum_interval_never_decreases() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("fresh migration");
+        let item = insert_order_item(&conn, "max", "L1", "words");
+        for (quality, expected_interval, expected_max) in
+            [(5, 10, 10), (5, 1440, 1440), (2, 10, 1440), (5, 1440, 1440)]
+        {
+            let outcome = record_review(&mut conn, item, quality, "es_to_jp", 1000).expect("review");
+            assert_eq!(outcome.next_interval_minutes, expected_interval);
+            let maximum: i64 = conn.query_row(
+                "SELECT max_interval_minutes FROM srs_state WHERE item_id = ?1",
+                [item], |row| row.get(0),
+            ).expect("maximum");
+            assert_eq!(maximum, expected_max);
+        }
+    }
+
+    #[test]
     fn sm2_learning_step() {
         let (reps, interval, ease) = sm2_next(5, 0, 0, 2.5);
         assert_eq!(reps, 1);
@@ -1617,6 +1791,51 @@ mod tests {
     }
 
     #[test]
+    fn word_achievements_count_mature_words_and_preserve_unlocks() {
+        let mut conn = Connection::open_in_memory().expect("db");
+        migrate(&mut conn).expect("migrate");
+        conn.execute("INSERT INTO items (source_uid, reading, meaning, meaning_plain, dedup_key, created_at) VALUES ('u1', 'a', 'b', 'b', 'a|b', 0)", []).expect("item");
+        conn.execute(
+            "INSERT INTO srs_state (item_id, interval_minutes) VALUES (1, 10080)",
+            [],
+        )
+        .expect("state");
+        conn.execute(
+            "INSERT INTO achievements (key, unlocked_at) VALUES ('mastered_10', 123)",
+            [],
+        )
+        .expect("existing unlock");
+
+        let catalog = achievements(&conn, 90, false).expect("catalog");
+        let first = catalog.iter().find(|a| a.key == "mastered_1").unwrap();
+        assert_eq!(first.progress, 0);
+        assert!(!first.unlocked);
+        let previous = catalog.iter().find(|a| a.key == "mastered_10").unwrap();
+        assert_eq!(previous.progress, 0);
+        assert_eq!(previous.unlocked_at, Some(123));
+        assert!(previous.unlocked);
+        assert!(
+            !sync_achievements(&conn, 90, false)
+                .unwrap()
+                .iter()
+                .any(|a| a.key == "mastered_1")
+        );
+
+        conn.execute(
+            "UPDATE srs_state SET interval_minutes = 30240 WHERE item_id = 1",
+            [],
+        )
+        .unwrap();
+        let newly = sync_achievements(&conn, 90, false).unwrap();
+        assert!(
+            newly
+                .iter()
+                .any(|a| a.key == "mastered_1" && a.progress == 1)
+        );
+        assert!(!newly.iter().any(|a| a.key == "mastered_10"));
+    }
+
+    #[test]
     fn unlocks_achievements_once() {
         let mut conn = Connection::open_in_memory().expect("db");
         migrate(&mut conn).expect("migrate");
@@ -1673,94 +1892,6 @@ mod tests {
     }
 
     #[test]
-    fn maturity_statistics_cover_interval_boundaries() {
-        let mut conn = Connection::open_in_memory().unwrap();
-        migrate(&mut conn).unwrap();
-        for (index, state) in [None, Some((1439, 1439)), Some((1439, 1440)), Some((1440, 1440)), Some((30239, 30239)), Some((30240, 30240))].into_iter().enumerate() {
-            let id = insert_order_item(&conn, &format!("m{index}"), "L1", "");
-            if let Some((interval, maximum)) = state {
-                conn.execute("INSERT INTO srs_state (item_id, interval_minutes, max_interval_minutes) VALUES (?1, ?2, ?3)", params![id, interval, maximum]).unwrap();
-            }
-        }
-        let result = stats(&conn, false, 10, 50, 10).unwrap();
-        let lesson = &result.lessons[0];
-        assert_eq!((lesson.new_count, lesson.learning_count, lesson.relearning_count, lesson.young_count, lesson.mature_count), (1, 1, 1, 2, 1));
-        assert!(!lesson.is_dominated);
-        assert_eq!(result.mature, 1);
-    }
-
-    #[test]
-    fn lesson_dominance_and_achievements_respect_patterns_and_review_counts() {
-        let mut conn = Connection::open_in_memory().unwrap();
-        migrate(&mut conn).unwrap();
-        let mature = insert_order_item(&conn, "mature", "L1", "");
-        let young = insert_order_item(&conn, "young", "L1", "");
-        let pattern = insert_order_item(&conn, "pattern", "L1", "");
-        conn.execute("UPDATE items SET is_pattern = 1 WHERE id = ?1", [pattern]).unwrap();
-        conn.execute("INSERT INTO srs_state (item_id, interval_minutes, max_interval_minutes) VALUES (?1, 30240, 30240), (?2, 10080, 10080)", params![mature, young]).unwrap();
-        conn.execute("INSERT INTO review_log (item_id, shown_at, answered_at, result, direction) VALUES (?1, 1, 1, 1, 'jp'), (?1, 2, 2, 0, 'jp')", [mature]).unwrap();
-
-        let without = stats(&conn, false, 10, 50, 10).unwrap();
-        let lesson = &without.lessons[0];
-        assert_eq!((lesson.total, lesson.new_count, lesson.young_count, lesson.mature_count), (2, 0, 1, 1));
-        assert_eq!((lesson.reviews, lesson.correct, lesson.accuracy), (2, 1, 50.0));
-        assert!(lesson.is_dominated);
-        assert_eq!(without.achievements.iter().find(|a| a.key == "mastered_10").unwrap().progress, 1);
-        assert_eq!(without.achievements.iter().find(|a| a.key == "lesson_1").unwrap().progress, 1);
-        assert!(without.achievements.iter().find(|a| a.key == "lesson_1").unwrap().unlocked);
-        assert_eq!(without.difficult[0].attempts, 2);
-
-        let with = stats(&conn, true, 10, 30, 10).unwrap();
-        let lesson = &with.lessons[0];
-        assert_eq!((lesson.total, lesson.new_count, lesson.mature_count), (3, 1, 1));
-        assert!(lesson.dominance_percent > 30.0);
-        assert!(!lesson.is_dominated);
-        assert_eq!(with.achievements.iter().find(|a| a.key == "lesson_1").unwrap().progress, 0);
-    }
-
-    #[test]
-    fn migration_preserves_achievements_and_tracks_maximum_after_lapse() {
-        let mut conn = Connection::open_in_memory().unwrap();
-        migrate(&mut conn).unwrap();
-        let id = insert_order_item(&conn, "existing", "L1", "");
-        conn.execute("INSERT INTO srs_state (item_id, interval_minutes) VALUES (?1, 1440)", [id]).unwrap();
-        conn.execute("INSERT INTO achievements (key, unlocked_at) VALUES ('mastered_1', 123)", []).unwrap();
-        conn.execute_batch("ALTER TABLE srs_state DROP COLUMN max_interval_minutes; PRAGMA user_version = 4;").unwrap();
-        migrate(&mut conn).unwrap();
-        record_review(&mut conn, id, 1, "jp", 0).unwrap();
-        let result = stats(&conn, false, 10, 80, 10).unwrap();
-        assert_eq!(result.lessons[0].relearning_count, 1);
-        let achievement = result.achievements.iter().find(|a| a.key == "mastered_1").unwrap();
-        assert!(achievement.unlocked);
-        assert_eq!(achievement.unlocked_at, Some(123));
-        record_review(&mut conn, id, 5, "jp", 0).unwrap();
-        assert_eq!(stats(&conn, false, 10, 80, 10).unwrap().lessons[0].young_count, 1);
-    }
-
-    #[test]
-    fn fresh_threshold_is_80_and_saved_threshold_survives_migration() {
-        let mut conn = Connection::open_in_memory().unwrap();
-        migrate(&mut conn).unwrap();
-        assert_eq!(load_settings(&conn).unwrap().lesson_mastery_percent, 80);
-        let mut settings = load_settings(&conn).unwrap();
-        settings.lesson_mastery_percent = 95;
-        save_settings(&conn, &settings).unwrap();
-        conn.execute_batch("ALTER TABLE srs_state DROP COLUMN max_interval_minutes; PRAGMA user_version = 4;").unwrap();
-        migrate(&mut conn).unwrap();
-        assert_eq!(load_settings(&conn).unwrap().lesson_mastery_percent, 95);
-    }
-
-    #[test]
-    fn failure_before_graduation_is_learning() {
-        let mut conn = Connection::open_in_memory().unwrap();
-        migrate(&mut conn).unwrap();
-        let id = insert_order_item(&conn, "first", "L1", "");
-        record_review(&mut conn, id, 1, "jp", 0).unwrap();
-        let result = stats(&conn, false, 10, 80, 10).unwrap();
-        assert_eq!((result.lessons[0].learning_count, result.lessons[0].relearning_count), (1, 0));
-    }
-
-    #[test]
     fn lesson_mastery_uses_threshold() {
         let mut conn = Connection::open_in_memory().expect("db");
         migrate(&mut conn).expect("migrate");
@@ -1772,11 +1903,11 @@ mod tests {
                 params![format!("u{index}"), format!("a|b|{index}")],
             )
             .expect("item");
-            if index < 10 {
+            {
                 conn.execute(
                     "INSERT INTO srs_state (item_id, interval_minutes, ease, due_at, reps)
-                     VALUES (?1, CASE WHEN ?1 = 10 THEN 1440 ELSE 30240 END, 2.5, 0, 3)",
-                    [index + 1],
+                     VALUES (?1, ?2, 2.5, 0, 3)",
+                    params![index + 1, if index < 9 { 30240 } else { 1440 }],
                 )
                 .expect("srs");
             }

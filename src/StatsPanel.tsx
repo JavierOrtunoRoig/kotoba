@@ -362,7 +362,7 @@ export default function StatsPanel({ language, onPractice }: Props) {
               <h2>{t("Por lección")}</h2>
               <p className="muted">
                 {t(
-                  "Progreso y precisión de cada capítulo. Una lección se domina sin palabras nuevas y con al menos el {n}% de palabras maduras.",
+                  "Una lección se domina sin palabras nuevas y con al menos el {n}% de palabras maduras.",
                   { n: stats.lesson_mastery_percent },
                 )}
               </p>
@@ -377,33 +377,25 @@ export default function StatsPanel({ language, onPractice }: Props) {
                 { key: "young", label: t("Jóvenes"), count: lesson.young_count },
                 { key: "mature", label: t("Maduras"), count: lesson.mature_count },
               ];
-              const dominance = t("Dominio: {n}%", { n: Math.round(lesson.dominance_percent) });
               return (
                 <div className="lesson-row" key={lesson.lesson}>
-                  <span className="lesson-name">{lesson.lesson}</span>
-                  <div className="lesson-breakdown">
-                    <div className="lesson-bar" aria-hidden="true">
-                      {states.map((state) => (
-                        <div key={state.key} className={`lesson-segment lesson-segment-${state.key}`}
-                          style={{ width: `${lesson.total ? state.count / lesson.total * 100 : 0}%` }} />
-                      ))}
-                    </div>
-                    <div className="lesson-legend">
-                      {states.map((state) => (
-                        <span key={state.key}>
-                          <i aria-hidden="true" className={`lesson-swatch lesson-segment-${state.key}`} />
-                          {state.label}: {state.count}
-                        </span>
-                      ))}
-                    </div>
+                  <div className="lesson-heading">
+                    <span className="lesson-name">{lesson.lesson}</span>
+                    <span className="lesson-meta">{t("Total: {n}", { n: lesson.total })}</span>
+                    <span className={`lesson-badge${lesson.is_dominated ? " done" : ""}`}
+                      title={t("Dominio: {n}%", { n: Math.round(lesson.dominance_percent) })}>
+                      {lesson.is_dominated ? t("Dominada") : `${Math.round(lesson.dominance_percent)}%`}
+                    </span>
+                    <span className="lesson-accuracy" title={t("Precisión")}>
+                      {lesson.reviews > 0 ? `${Math.round(lesson.accuracy)}%` : "—"}
+                    </span>
                   </div>
-                  <span className={`lesson-badge${lesson.is_dominated ? " done" : ""}`}
-                    aria-label={lesson.is_dominated ? `${t("Dominada")}, ${dominance}` : dominance} title={dominance}>
-                    {lesson.is_dominated ? t("Dominada") : `${Math.round(lesson.dominance_percent)}%`}
-                  </span>
-                  <span className="lesson-accuracy" title={t("Precisión")} aria-label={`${t("Precisión")}: ${lesson.reviews > 0 ? Math.round(lesson.accuracy) + "%" : "—"}`}>
-                    {lesson.reviews > 0 ? `${Math.round(lesson.accuracy)}%` : "—"}
-                  </span>
+                  <div className="lesson-bar" aria-hidden="true">
+                    {states.map((state) => <span key={state.key} className={`maturity-${state.key}`} style={{ width: `${lesson.total ? state.count / lesson.total * 100 : 0}%` }} />)}
+                  </div>
+                  <div className="lesson-legend">
+                    {states.map((state) => <span key={state.key}><i className={`maturity-${state.key}`} aria-hidden="true" />{state.label}: {state.count}</span>)}
+                  </div>
                 </div>
               );
             })}

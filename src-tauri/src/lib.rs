@@ -638,7 +638,9 @@ pub fn run() {
 
             let db_path = data_dir.join("kotoba.sqlite3");
             let conn = db::open(&db_path)?;
+            #[cfg(not(feature = "tauri-plugin-wdio-webdriver"))]
             let has_items = db::count_items(&conn)? > 0;
+            #[cfg(not(feature = "tauri-plugin-wdio-webdriver"))]
             let settings = db::load_settings(&conn)?;
 
             app.manage(AppState {
@@ -662,6 +664,7 @@ pub fn run() {
             tray::setup(app.handle())?;
             scheduler::start(app.handle().clone());
 
+            #[cfg(not(feature = "tauri-plugin-wdio-webdriver"))]
             if !has_items {
                 shell::show_main(app.handle());
             } else if settings.mode == "widget" {

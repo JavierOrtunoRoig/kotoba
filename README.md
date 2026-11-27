@@ -207,7 +207,8 @@ Common commands, from the repository root:
 The desktop E2E command builds a dedicated test binary and uses WebdriverIO's
 embedded Tauri driver. It requires the normal Windows Tauri build prerequisites.
 It starts two separate app processes with an isolated temporary profile and
-removes the profile afterwards. The harness supplies the synthetic deck path at
+removes the profile afterwards. The test window stays hidden while the real
+WebView2 and Tauri backend run. The harness supplies the synthetic deck path at
 the native file picker boundary; the native picker itself is not exercised.
 Import inspection, import, practice, IPC and SQLite persistence are real. The
 same command runs in Windows CI.

@@ -414,6 +414,13 @@ mod tests {
     use super::*;
 
     #[test]
+    fn lesson_dominance_default_preserves_stored_threshold() {
+        assert_eq!(Settings::default().lesson_mastery_percent, 80);
+        let stored: Settings = serde_json::from_str(r#"{"lesson_mastery_percent":90}"#).unwrap();
+        assert_eq!(stored.lesson_mastery_percent, 90);
+    }
+
+    #[test]
     fn sanitizes_invalid_mode_and_intervals() {
         let settings = Settings {
             mode: "nope".to_string(),

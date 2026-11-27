@@ -1,9 +1,13 @@
 # Project status
 
-- **Word maturity and lesson dominance (#21):** lesson statistics show five derived maturity
-  states and use a 21-day mature boundary. Dominance requires no new words and the configured
-  mature share; pattern inclusion follows settings. Migration 5 preserves the highest interval
-  from the current state onward and retains existing settings and unlocked achievements.
+- **Word maturity and lesson dominance (#21):** lesson statistics expose five maturity states.
+  Dominance requires no new words and the configured mature share; pattern inclusion follows
+  settings. Migration 5 preserves the maximum interval and existing settings and achievements.
+
+- **Word achievements (#25):** progress and new unlocks count words at intervals of 21 days or more; earlier unlocks remain recorded.
+- **Lesson maturity (#24):** Progress shows five maturity counts and lesson dominance;
+  patterns follow the review setting, and lesson achievements use the same dominance rule.
+  New installations default to an 80% threshold; stored thresholds are retained.
 
 Last verification: **2026-11-25**.
 
@@ -47,8 +51,13 @@ Last verification: **2026-11-25**.
 - **Windows desktop E2E (#34):** `npm run test:e2e:windows` tests synthetic deck import,
   practice and review history after restarting with an isolated temporary profile. WebdriverIO
   supplies the file path at the picker boundary; the native file picker is outside this test.
+  The test keeps its Tauri window hidden and verifies its visibility in both processes.
 
 ## Current phase
+
+**SRS maximum review interval (#23):** migration v5 backfills each existing word's maximum
+interval from its current interval. Reviews persist the highest interval reached, including
+after a lapse, without changing scheduling or the interface.
 
 **Phase 2 — Polish: completed.**
 

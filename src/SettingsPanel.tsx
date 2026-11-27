@@ -626,7 +626,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
             <div className="field-label">{t("Dominio por lección")}</div>
             <div className="field-desc">
               {t(
-                "Una lección se domina sin palabras nuevas y con este porcentaje de palabras maduras (21 días o más).",
+                "Porcentaje de palabras maduras necesario para dominar una lección, sin palabras nuevas.",
               )}
             </div>
           </div>
