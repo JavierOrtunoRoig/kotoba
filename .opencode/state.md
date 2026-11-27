@@ -1,5 +1,9 @@
 # Project status
 
+- **Word maturity and lesson dominance (#21):** lesson statistics expose five maturity states.
+  Dominance requires no new words and the configured mature share; pattern inclusion follows
+  settings. Migration 5 preserves the maximum interval and existing settings and achievements.
+
 - **Word achievements (#25):** progress and new unlocks count words at intervals of 21 days or more; earlier unlocks remain recorded.
 - **Lesson maturity (#24):** Progress shows five maturity counts and lesson dominance;
   patterns follow the review setting, and lesson achievements use the same dominance rule.

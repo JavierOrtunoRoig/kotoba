@@ -15,6 +15,8 @@ pub const MAX_QUALITY: u8 = 5;
 
 /// Maximum interval: 10 years, to avoid absurd intervals and overflows.
 const MAX_INTERVAL_MINUTES: i64 = 3650 * 1440;
+const DAY_MINUTES: i64 = 1440;
+const MATURE_MINUTES: i64 = 21 * DAY_MINUTES;
 
 /// Stackable streak savers.
 pub const MAX_STREAK_SAVERS: i64 = 2;
@@ -568,14 +570,14 @@ pub fn achievements(conn: &Connection, mastery_percent: i64, include_patterns: b
     let total_reviews: i64 =
         conn.query_row("SELECT COUNT(*) FROM review_log", [], |row| row.get(0))?;
     let mature_words: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM srs_state WHERE interval_minutes >= 30240",
-        [],
+        "SELECT COUNT(*) FROM srs_state s JOIN items i ON i.id = s.item_id WHERE s.interval_minutes >= ?1 AND (?2 OR i.is_pattern = 0)",
+        params![MATURE_MINUTES, include_patterns],
         |row| row.get(0),
     )?;
     let streak_best = stored_best.max(streak_days(conn)?);
     let lessons_mastered = lessons(conn, mastery_percent, include_patterns)?
         .iter()
-        .filter(|lesson| lesson.is_mastered)
+        .filter(|lesson| lesson.is_dominated)
         .count() as i64;
     let weekly_goals = weekly_goals_done(conn)?;
 
@@ -1043,6 +1045,7 @@ pub fn stats(
     lesson_mastery_percent: i64,
     new_per_day: i64,
 ) -> Result<Stats> {
+    sync_achievements(conn, lesson_mastery_percent, include_patterns)?;
     let total_items = count_items(conn)?;
     let total_reviews: i64 =
         conn.query_row("SELECT COUNT(*) FROM review_log", [], |row| row.get(0))?;
@@ -1058,8 +1061,8 @@ pub fn stats(
         0.0
     };
     let mastered: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM srs_state s JOIN items i ON i.id = s.item_id WHERE s.interval_minutes >= 30240 AND (?1 OR i.is_pattern = 0)",
-        [include_patterns],
+        "SELECT COUNT(*) FROM srs_state s JOIN items i ON i.id = s.item_id WHERE s.interval_minutes >= ?2 AND (?1 OR i.is_pattern = 0)",
+        params![include_patterns, MATURE_MINUTES],
         |row| row.get(0),
     )?;
     let due_now = due_count(conn, include_patterns)?;
@@ -1082,7 +1085,7 @@ pub fn stats(
         correct_today,
         accuracy_today,
         streak_days: current_streak,
-        mastered,
+        mature: mastered,
         due_now,
         new_available,
         new_today,
@@ -1114,10 +1117,10 @@ fn lessons(conn: &Connection, mastery_percent: i64, include_patterns: bool) -> R
                COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) THEN i.id END) AS total,
                COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.item_id IS NOT NULL THEN i.id END) AS reviewed,
                COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.item_id IS NULL THEN i.id END) AS new,
-               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.item_id IS NOT NULL AND s.interval_minutes < 1440 AND s.max_interval_minutes < 1440 THEN i.id END) AS learning,
-               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.interval_minutes < 1440 AND s.max_interval_minutes >= 1440 THEN i.id END) AS relearning,
-               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.interval_minutes >= 1440 AND s.interval_minutes < 30240 THEN i.id END) AS young,
-               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.interval_minutes >= 30240 THEN i.id END) AS mastered,
+               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.item_id IS NOT NULL AND s.interval_minutes < ?2 AND s.max_interval_minutes < ?2 THEN i.id END) AS learning,
+               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.interval_minutes < ?2 AND s.max_interval_minutes >= ?2 THEN i.id END) AS relearning,
+               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.interval_minutes >= ?2 AND s.interval_minutes < ?3 THEN i.id END) AS young,
+               COUNT(DISTINCT CASE WHEN (?1 OR i.is_pattern = 0) AND s.interval_minutes >= ?3 THEN i.id END) AS mastered,
                COUNT(r.id) AS reviews,
                COALESCE(SUM(r.result), 0) AS correct
         FROM items i
@@ -1127,7 +1130,7 @@ fn lessons(conn: &Connection, mastery_percent: i64, include_patterns: bool) -> R
         ORDER BY i.lesson
         "#,
     )?;
-    let rows = stmt.query_map([include_patterns], |row| {
+    let rows = stmt.query_map(params![include_patterns, DAY_MINUTES, MATURE_MINUTES], |row| {
         Ok((
             row.get::<_, String>(0)?,
             row.get::<_, i64>(1)?,
@@ -1163,16 +1166,16 @@ fn lessons(conn: &Connection, mastery_percent: i64, include_patterns: bool) -> R
             },
             total,
             reviewed,
-            new,
-            learning,
-            relearning,
-            young,
-            mastered,
+            new_count: new,
+            learning_count: learning,
+            relearning_count: relearning,
+            young_count: young,
+            mature_count: mastered,
             reviews,
             correct,
             accuracy,
-            mastery_percent: mastery,
-            is_mastered: total > 0 && reviewed == total && mastery >= mastery_percent as f64,
+            dominance_percent: mastery,
+            is_dominated: total > 0 && reviewed == total && mastery >= mastery_percent as f64,
         });
     }
     Ok(out)
@@ -1453,8 +1456,24 @@ mod tests {
             }
         }
         let result = stats(&conn, false, 30, 80, 10).unwrap();
-        assert_eq!(result.lessons[0].mastered, 4);
-        assert!(!result.lessons[0].is_mastered);
+        assert_eq!(result.lessons[0].mature_count, 4);
+        assert!(!result.lessons[0].is_dominated);
+    }
+
+    #[test]
+    fn statistics_unlock_dominated_lesson_after_settings_change() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        migrate(&mut conn).unwrap();
+        let mature = insert_order_item(&conn, "sync-mature", "L1", "");
+        let pattern = insert_order_item(&conn, "sync-pattern", "L1", "");
+        conn.execute("UPDATE items SET is_pattern = 1 WHERE id = ?1", [pattern]).unwrap();
+        conn.execute("INSERT INTO srs_state (item_id, interval_minutes, max_interval_minutes) VALUES (?1, 30240, 30240)", [mature]).unwrap();
+        let before = stats(&conn, true, 30, 80, 10).unwrap();
+        assert!(!before.lessons[0].is_dominated);
+        assert!(!before.achievements.iter().find(|a| a.key == "lesson_1").unwrap().unlocked);
+        let after = stats(&conn, false, 30, 80, 10).unwrap();
+        assert!(after.lessons[0].is_dominated);
+        assert!(after.achievements.iter().find(|a| a.key == "lesson_1").unwrap().unlocked);
     }
 
     #[test]
@@ -1471,10 +1490,10 @@ mod tests {
         conn.execute("UPDATE items SET is_pattern = 1 WHERE id = ?1", [pattern]).unwrap();
         let without = stats(&conn, false, 30, 80, 10).unwrap();
         let lesson = &without.lessons[0];
-        assert_eq!((lesson.total, lesson.new, lesson.learning, lesson.relearning, lesson.young, lesson.mastered), (6, 1, 1, 1, 2, 1));
-        assert_eq!(without.mastered, 1);
+        assert_eq!((lesson.total, lesson.new_count, lesson.learning_count, lesson.relearning_count, lesson.young_count, lesson.mature_count), (6, 1, 1, 1, 2, 1));
+        assert_eq!(without.mature, 1);
         let with = stats(&conn, true, 30, 80, 10).unwrap();
-        assert_eq!((with.lessons[0].total, with.lessons[0].new), (7, 2));
+        assert_eq!((with.lessons[0].total, with.lessons[0].new_count), (7, 2));
     }
 
     #[test]
@@ -1490,7 +1509,7 @@ mod tests {
         }
         for (include_patterns, expected) in [(false, 5), (true, 0)] {
             let result = stats(&conn, include_patterns, 30, 80, 10).unwrap();
-            assert_eq!(result.lessons.iter().filter(|lesson| lesson.is_mastered).count(), expected);
+            assert_eq!(result.lessons.iter().filter(|lesson| lesson.is_dominated).count(), expected);
             for (key, target) in [("lesson_1", 1), ("lesson_5", 5)] {
                 assert_eq!(result.achievements.iter().find(|a| a.key == key).unwrap().progress, (expected as i64).min(target));
             }
@@ -1507,7 +1526,7 @@ mod tests {
         let result = stats(&conn, false, 30, 80, 10).unwrap();
         assert_eq!(result.lessons.len(), 1);
         assert_eq!((result.lessons[0].total, result.lessons[0].reviews, result.lessons[0].correct), (0, 1, 1));
-        assert!(!result.lessons[0].is_mastered);
+        assert!(!result.lessons[0].is_dominated);
     }
 
     #[test]
@@ -1517,7 +1536,7 @@ mod tests {
         let item = insert_order_item(&conn, "unlabeled", "", "words");
         conn.execute("INSERT INTO srs_state (item_id, interval_minutes, max_interval_minutes) VALUES (?1, 30240, 30240)", [item]).unwrap();
         let result = stats(&conn, false, 30, 80, 10).unwrap();
-        assert!(result.lessons[0].is_mastered);
+        assert!(result.lessons[0].is_dominated);
         assert_eq!(result.achievements.iter().find(|a| a.key == "lesson_1").unwrap().progress, 1);
     }
 
@@ -1896,11 +1915,11 @@ mod tests {
 
         let strict = lessons(&conn, 95, false).expect("lessons");
         assert_eq!(strict.len(), 1);
-        assert!(!strict[0].is_mastered);
-        assert!((strict[0].mastery_percent - 90.0).abs() < 1e-9);
+        assert!(!strict[0].is_dominated);
+        assert!((strict[0].dominance_percent - 90.0).abs() < 1e-9);
 
         let relaxed = lessons(&conn, 90, false).expect("lessons");
-        assert!(relaxed[0].is_mastered);
+        assert!(relaxed[0].is_dominated);
     }
 
     fn insert_order_item(
