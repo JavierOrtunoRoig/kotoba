@@ -80,12 +80,16 @@ export interface LessonStat {
   lesson: string;
   total: number;
   reviewed: number;
-  mastered: number;
+  new_count: number;
+  learning_count: number;
+  relearning_count: number;
+  young_count: number;
+  mature_count: number;
   reviews: number;
   correct: number;
   accuracy: number;
-  mastery_percent: number;
-  is_mastered: boolean;
+  dominance_percent: number;
+  is_dominated: boolean;
 }
 
 export interface Achievement {
@@ -143,7 +147,7 @@ export interface Stats {
   correct_today: number;
   accuracy_today: number;
   streak_days: number;
-  mastered: number;
+  mature: number;
   due_now: number;
   new_available: number;
   new_today: number;

@@ -127,10 +127,10 @@ export default function StatsPanel({ language, onPractice }: Props) {
 
         <article className="stat">
           <span className="stat-k">
-            <IconSeed size={14} /> {t("Dominadas")}
+            <IconSeed size={14} /> {t("Maduras")}
           </span>
-          <span className="stat-v">{stats.mastered}</span>
-          <span className="stat-s">{t("con intervalo de 7 días o más")}</span>
+          <span className="stat-v">{stats.mature}</span>
+          <span className="stat-s">{t("con intervalo de 21 días o más")}</span>
         </article>
 
         <article className="stat">
@@ -362,7 +362,7 @@ export default function StatsPanel({ language, onPractice }: Props) {
               <h2>{t("Por lección")}</h2>
               <p className="muted">
                 {t(
-                  "Progreso y precisión de cada capítulo. Una lección se domina con al menos el {n}% de sus palabras en 7 días o más.",
+                  "Progreso y precisión de cada capítulo. Una lección se domina sin palabras nuevas y con al menos el {n}% de palabras maduras.",
                   { n: stats.lesson_mastery_percent },
                 )}
               </p>
@@ -370,34 +370,39 @@ export default function StatsPanel({ language, onPractice }: Props) {
           </div>
           <div className="lesson-list">
             {lessons.map((lesson) => {
-              const progress =
-                lesson.total > 0 ? (lesson.mastered / lesson.total) * 100 : 0;
+              const states = [
+                { key: "new", label: t("Nuevas"), count: lesson.new_count },
+                { key: "learning", label: t("Aprendiendo"), count: lesson.learning_count },
+                { key: "relearning", label: t("Reaprendiendo"), count: lesson.relearning_count },
+                { key: "young", label: t("Jóvenes"), count: lesson.young_count },
+                { key: "mature", label: t("Maduras"), count: lesson.mature_count },
+              ];
+              const dominance = t("Dominio: {n}%", { n: Math.round(lesson.dominance_percent) });
               return (
                 <div className="lesson-row" key={lesson.lesson}>
                   <span className="lesson-name">{lesson.lesson}</span>
-                  <div className="lesson-bar">
-                    <div
-                      className="lesson-fill"
-                      style={{ width: `${progress}%` }}
-                    />
+                  <div className="lesson-breakdown">
+                    <div className="lesson-bar" aria-hidden="true">
+                      {states.map((state) => (
+                        <div key={state.key} className={`lesson-segment lesson-segment-${state.key}`}
+                          style={{ width: `${lesson.total ? state.count / lesson.total * 100 : 0}%` }} />
+                      ))}
+                    </div>
+                    <div className="lesson-legend">
+                      {states.map((state) => (
+                        <span key={state.key}>
+                          <i aria-hidden="true" className={`lesson-swatch lesson-segment-${state.key}`} />
+                          {state.label}: {state.count}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <span className="lesson-meta">
-                    {lesson.mastered}/{lesson.total}
+                  <span className={`lesson-badge${lesson.is_dominated ? " done" : ""}`}
+                    aria-label={lesson.is_dominated ? `${t("Dominada")}, ${dominance}` : dominance} title={dominance}>
+                    {lesson.is_dominated ? t("Dominada") : `${Math.round(lesson.dominance_percent)}%`}
                   </span>
-                  <span
-                    className={`lesson-badge${lesson.is_mastered ? " done" : ""}`}
-                    title={t("Maestría: {n}%", {
-                      n: Math.round(lesson.mastery_percent),
-                    })}
-                  >
-                    {lesson.is_mastered
-                      ? t("Dominada")
-                      : `${Math.round(lesson.mastery_percent)}%`}
-                  </span>
-                  <span className="lesson-accuracy" title={t("Precisión")}>
-                    {lesson.reviews > 0
-                      ? `${Math.round(lesson.accuracy)}%`
-                      : "—"}
+                  <span className="lesson-accuracy" title={t("Precisión")} aria-label={`${t("Precisión")}: ${lesson.reviews > 0 ? Math.round(lesson.accuracy) + "%" : "—"}`}>
+                    {lesson.reviews > 0 ? `${Math.round(lesson.accuracy)}%` : "—"}
                   </span>
                 </div>
               );

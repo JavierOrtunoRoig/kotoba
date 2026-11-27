@@ -226,6 +226,8 @@ and the achievement catalogue are left for b/c; XP does not incentivize answerin
 
 ## D-027 — Permanent achievements and per-lesson mastery
 
+The per-lesson mastery definition in this decision is superseded by D-036.
+
 **Context:** R3-04b needs milestones that celebrate consistency and retention without introducing
 daily pressure or social comparisons.
 **Decision:** fixed catalogue of 16 achievements computed from real data (reviews, mastered words,

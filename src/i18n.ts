@@ -12,6 +12,22 @@ export const LANGUAGES: { id: Language; label: string }[] = [
 ];
 
 const en: Dict = {
+  "Alcanza una palabra madura (21 días o más).": "Reach one mature word (21 days or more).",
+  "Alcanza 10 palabras maduras.": "Reach 10 mature words.",
+  "Alcanza 25 palabras maduras.": "Reach 25 mature words.",
+  "Alcanza 50 palabras maduras.": "Reach 50 mature words.",
+  "Domina una lección sin palabras nuevas y con el porcentaje de palabras maduras requerido.": "Dominate one lesson with no new words and the required percentage of mature words.",
+  "Domina cinco lecciones sin palabras nuevas y con el porcentaje de palabras maduras requerido.": "Dominate five lessons with no new words and the required percentage of mature words.",
+  "Maduras": "Mature",
+  "con intervalo de 21 días o más": "with an interval of 21 days or more",
+  "Nuevas": "New",
+  "Aprendiendo": "Learning",
+  "Reaprendiendo": "Relearning",
+  "Jóvenes": "Young",
+  "Dominio: {n}%": "Dominance: {n}%",
+  "Dominio por lección": "Lesson dominance",
+  "Progreso y precisión de cada capítulo. Una lección se domina sin palabras nuevas y con al menos el {n}% de palabras maduras.": "Progress and accuracy for each chapter. A lesson is dominated when it has no new words and at least {n}% mature words.",
+  "Una lección se domina sin palabras nuevas y con este porcentaje de palabras maduras (21 días o más).": "A lesson is dominated when it has no new words and this percentage of mature words (21 days or more).",
   // Navigation and status
   Practicar: "Practice",
   Progreso: "Progress",
@@ -411,6 +427,22 @@ const en: Dict = {
 };
 
 const ja: Dict = {
+  "Alcanza una palabra madura (21 días o más).": "成熟単語（21日以上）を1語にする。",
+  "Alcanza 10 palabras maduras.": "成熟単語を10語にする。",
+  "Alcanza 25 palabras maduras.": "成熟単語を25語にする。",
+  "Alcanza 50 palabras maduras.": "成熟単語を50語にする。",
+  "Domina una lección sin palabras nuevas y con el porcentaje de palabras maduras requerido.": "新規単語がなく、成熟単語が必要な割合に達したレッスンを1つ習得する。",
+  "Domina cinco lecciones sin palabras nuevas y con el porcentaje de palabras maduras requerido.": "新規単語がなく、成熟単語が必要な割合に達したレッスンを5つ習得する。",
+  "Maduras": "成熟",
+  "con intervalo de 21 días o más": "間隔が21日以上",
+  "Nuevas": "新規",
+  "Aprendiendo": "学習中",
+  "Reaprendiendo": "再学習中",
+  "Jóvenes": "定着途中",
+  "Dominio: {n}%": "習得率：{n}%",
+  "Dominio por lección": "レッスンの習得",
+  "Progreso y precisión de cada capítulo. Una lección se domina sin palabras nuevas y con al menos el {n}% de palabras maduras.": "新規単語がなく、成熟単語が{n}%以上のレッスンを習得済みとします。",
+  "Una lección se domina sin palabras nuevas y con este porcentaje de palabras maduras (21 días o más).": "新規単語がなく、成熟単語（21日以上）がこの割合に達すると習得済みになります。",
   Practicar: "練習",
   Progreso: "進捗",
   Ajustes: "設定",

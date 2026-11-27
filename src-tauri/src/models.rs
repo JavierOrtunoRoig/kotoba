@@ -26,7 +26,7 @@ pub struct Settings {
     pub weekly_goal: i64,
     /// Notify milestones such as completing the weekly goal or unlocking achievements.
     pub milestone_notifications: bool,
-    /// Percentage of mastered words needed to complete a lesson (50-100).
+    /// Percentage of mature words needed to complete a lesson (50-100).
     pub lesson_mastery_percent: i64,
     /// Automatically repair a missed day if a streak saver is available.
     pub streak_repair: bool,
@@ -60,7 +60,7 @@ impl Default for Settings {
             launch_at_startup: false,
             weekly_goal: 30,
             milestone_notifications: false,
-            lesson_mastery_percent: 90,
+            lesson_mastery_percent: 80,
             streak_repair: true,
             theme: "auto".to_string(),
             font_scale: 100,
@@ -191,14 +191,18 @@ pub struct LessonStat {
     pub lesson: String,
     pub total: i64,
     pub reviewed: i64,
-    pub mastered: i64,
+    pub new_count: i64,
+    pub learning_count: i64,
+    pub relearning_count: i64,
+    pub young_count: i64,
+    pub mature_count: i64,
     pub reviews: i64,
     pub correct: i64,
     pub accuracy: f64,
-    /// Percentage of mastered words over the lesson total.
-    pub mastery_percent: f64,
-    /// Whether the lesson reaches the configured mastery threshold.
-    pub is_mastered: bool,
+    /// Percentage of mature words over the lesson total.
+    pub dominance_percent: f64,
+    /// Whether the lesson reaches the configured dominance threshold.
+    pub is_dominated: bool,
 }
 
 /// Achievement or badge. `progress` is clamped to `target`.
@@ -275,7 +279,7 @@ pub struct Stats {
     pub correct_today: i64,
     pub accuracy_today: f64,
     pub streak_days: i64,
-    pub mastered: i64,
+    pub mature: i64,
     /// Due reviews (not counting new words).
     pub due_now: i64,
     /// New words not yet introduced.

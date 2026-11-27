@@ -1,5 +1,10 @@
 # Project status
 
+- **Word maturity and lesson dominance (#21):** lesson statistics show five derived maturity
+  states and use a 21-day mature boundary. Dominance requires no new words and the configured
+  mature share; pattern inclusion follows settings. Migration 5 preserves the highest interval
+  from the current state onward and retains existing settings and unlocked achievements.
+
 Last verification: **2026-11-25**.
 
 **Public repository:** <https://github.com/JavierOrtunoRoig/kotoba> (code under MIT).
