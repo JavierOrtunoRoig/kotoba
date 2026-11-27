@@ -60,7 +60,7 @@ impl Default for Settings {
             launch_at_startup: false,
             weekly_goal: 30,
             milestone_notifications: false,
-            lesson_mastery_percent: 90,
+            lesson_mastery_percent: 80,
             streak_repair: true,
             theme: "auto".to_string(),
             font_scale: 100,
@@ -191,6 +191,10 @@ pub struct LessonStat {
     pub lesson: String,
     pub total: i64,
     pub reviewed: i64,
+    pub new: i64,
+    pub learning: i64,
+    pub relearning: i64,
+    pub young: i64,
     pub mastered: i64,
     pub reviews: i64,
     pub correct: i64,
@@ -408,6 +412,13 @@ pub struct ImportInspection {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lesson_dominance_default_preserves_stored_threshold() {
+        assert_eq!(Settings::default().lesson_mastery_percent, 80);
+        let stored: Settings = serde_json::from_str(r#"{"lesson_mastery_percent":90}"#).unwrap();
+        assert_eq!(stored.lesson_mastery_percent, 90);
+    }
 
     #[test]
     fn sanitizes_invalid_mode_and_intervals() {
