@@ -48,7 +48,7 @@ export default function PopupApp({ variant }: Props) {
         if (!next) {
           setChallenge(null);
           setStatus("empty");
-          // Nada vencido: decir cuándo toca la próxima palabra en vez de un mensaje genérico.
+          // Nothing due: say when the next word is up instead of a generic message.
           api
             .getStats()
             .then((stats) => setNextDueSeconds(stats.next_due_seconds))
@@ -76,7 +76,7 @@ export default function PopupApp({ variant }: Props) {
 
   useEffect(() => {
     void load();
-    // Solo al montar: el resto de cargas vienen por evento.
+    // Only on mount: the remaining loads come from events.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

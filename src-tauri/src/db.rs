@@ -8,25 +8,25 @@ use rusqlite::{params, params_from_iter, Connection, OptionalExtension};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
-/// Intervalos de aprendizaje antes de entrar en el ciclo SM-2.
+/// Learning intervals before entering the SM-2 cycle.
 const LEARNING_INTERVAL_MINUTES: i64 = 10;
 const FIRST_REVIEW_INTERVAL_MINUTES: i64 = 1440;
 pub const MAX_QUALITY: u8 = 5;
 
-/// Intervalo máximo: 10 años, para evitar intervalos absurdos y desbordamientos.
+/// Maximum interval: 10 years, to avoid absurd intervals and overflows.
 const MAX_INTERVAL_MINUTES: i64 = 3650 * 1440;
 
-/// Salvavidas de racha acumulables.
+/// Stackable streak savers.
 pub const MAX_STREAK_SAVERS: i64 = 2;
 
-/// Calcula el siguiente estado SM-2.
+/// Computes the next SM-2 state.
 ///
-/// `quality`: 0-5 (5 = acierto rápido, 4 = acierto, 2 = fallo, 1 = no lo sé).
-/// Devuelve `(reps, interval_minutes, ease)`.
+/// `quality`: 0-5 (5 = fast correct, 4 = correct, 2 = wrong, 1 = don't know).
+/// Returns `(reps, interval_minutes, ease)`.
 ///
-/// La escalera de aprendizaje tiene dos peldaños: 10 minutos y 1 día. Cada acierto sube como mucho un
-/// peldaño, y solo se multiplica por el `ease` cuando ya hay un intervalo diario real. Practicar una
-/// palabra varias veces seguidas sin que venza no la dispara a días.
+/// The learning ladder has two steps: 10 minutes and 1 day. Each correct answer climbs at most one
+/// step, and the interval is only multiplied by `ease` once there is a real daily interval. Practicing
+/// a word several times in a row before it is due does not push it to days.
 pub fn sm2_next(
     quality: u8,
     reps: i64,
@@ -40,7 +40,7 @@ pub fn sm2_next(
         return (0, LEARNING_INTERVAL_MINUTES, ease);
     }
 
-    // Peldaño de aprendizaje: mientras no haya intervalo diario, solo se avanza al peldaño siguiente.
+    // Learning step: until there is a daily interval, it only advances to the next step.
     if interval_minutes < FIRST_REVIEW_INTERVAL_MINUTES {
         if interval_minutes < LEARNING_INTERVAL_MINUTES {
             return (reps + 1, LEARNING_INTERVAL_MINUTES, ease);
@@ -53,7 +53,7 @@ pub fn sm2_next(
     (reps + 1, interval.min(MAX_INTERVAL_MINUTES), ease)
 }
 
-/// XP por respuesta correcta según la calidad SM-2. Un fallo no da XP.
+/// XP per correct answer based on the SM-2 quality. A wrong answer gives no XP.
 pub fn xp_for_quality(quality: u8) -> i64 {
     match quality {
         5 => 3,
@@ -63,12 +63,12 @@ pub fn xp_for_quality(quality: u8) -> i64 {
     }
 }
 
-/// Umbrales absolutos de XP para cada nivel.
+/// Absolute XP thresholds for each level.
 const LEVEL_THRESHOLDS: [i64; 12] = [
     0, 80, 200, 380, 650, 1000, 1450, 2000, 2700, 3500, 4500, 5800,
 ];
 
-/// Nombre del tramo de nivel. Da contexto sin añadir mecánicas nuevas.
+/// Name of the level tier. Adds context without introducing new mechanics.
 pub fn level_title(level: i64) -> &'static str {
     match level {
         1..=2 => "Semilla",
@@ -88,7 +88,7 @@ pub fn level_for_xp(xp: i64) -> i64 {
         .unwrap_or(1)
 }
 
-/// Devuelve `(nivel, progreso 0-100, xp del siguiente nivel)`.
+/// Returns `(level, progress 0-100, XP for the next level)`.
 pub fn level_progress(xp: i64) -> (i64, f64, Option<i64>) {
     let level = level_for_xp(xp);
     let current = LEVEL_THRESHOLDS[(level - 1) as usize];
@@ -111,7 +111,7 @@ pub struct ReviewOutcome {
     pub leveled_up: bool,
 }
 
-/// Métrica que alimenta cada logro.
+/// Metric that drives each achievement.
 #[derive(Clone, Copy)]
 enum AchievementMetric {
     Reviews,
@@ -130,7 +130,7 @@ struct AchievementDef {
     target: i64,
 }
 
-/// Catálogo de logros. El orden es el orden de presentación.
+/// Achievement catalog. The order is the presentation order.
 const ACHIEVEMENT_CATALOG: [AchievementDef; 16] = [
     AchievementDef {
         key: "first_step",
@@ -336,7 +336,7 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
         "#,
     )?;
 
-    // Migraciones incrementales. `user_version` empieza en 0 en bases nuevas y antiguas.
+    // Incremental migrations. `user_version` starts at 0 in new and old databases.
     let version: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
     if version < 1 {
         ensure_column(conn, "review_log", "quality", "INTEGER NOT NULL DEFAULT 0")?;
@@ -393,7 +393,7 @@ pub fn today_start_ts() -> i64 {
     start.timestamp()
 }
 
-/// Lunes a las 00:00 local.
+/// Monday at 00:00 local time.
 pub fn week_start_ts() -> i64 {
     use chrono::Datelike;
 
@@ -443,7 +443,7 @@ pub fn streak_savers(conn: &Connection) -> Result<i64> {
     )?)
 }
 
-/// Añade un salvavidas si no se ha alcanzado el máximo. Devuelve si se añadió.
+/// Adds a streak saver if the maximum has not been reached. Returns whether it was added.
 pub fn add_streak_saver(conn: &Connection) -> Result<bool> {
     let current = streak_savers(conn)?;
     if current >= MAX_STREAK_SAVERS {
@@ -462,7 +462,7 @@ pub fn streak_repairs_count(conn: &Connection) -> Result<i64> {
     })?)
 }
 
-/// Días con actividad: repasos reales más días reparados con salvavidas.
+/// Days with activity: real reviews plus days repaired with a streak saver.
 fn active_days(conn: &Connection) -> Result<HashSet<NaiveDate>> {
     let mut stmt = conn.prepare(
         "SELECT day FROM (
@@ -486,10 +486,10 @@ fn day_ts(date: NaiveDate) -> Option<i64> {
         .map(|dt| dt.timestamp())
 }
 
-/// Repara como mucho el hueco más reciente de la racha usando un salvavidas.
+/// Repairs at most the most recent gap in the streak using a streak saver.
 ///
-/// Solo actúa si hay un día perdido entre la racha actual y actividad anterior.
-/// Devuelve el día reparado.
+/// Only acts if there is a missed day between the current streak and earlier activity.
+/// Returns the repaired day.
 pub fn maintain_streak(conn: &Connection, enabled: bool) -> Result<Option<String>> {
     if !enabled || streak_savers(conn)? <= 0 {
         return Ok(None);
@@ -545,7 +545,7 @@ pub fn maintain_streak(conn: &Connection, enabled: bool) -> Result<Option<String
     Ok(Some(day))
 }
 
-/// Suma un objetivo semanal completado. Se llama al cruzar el umbral.
+/// Adds one completed weekly goal. Called when the threshold is crossed.
 pub fn bump_weekly_goals_done(conn: &Connection) -> Result<()> {
     conn.execute(
         "UPDATE profile SET weekly_goals_done = weekly_goals_done + 1 WHERE id = 1",
@@ -554,7 +554,7 @@ pub fn bump_weekly_goals_done(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
-/// Catálogo completo con el progreso actual y si ya está desbloqueado.
+/// Full catalog with current progress and whether it is already unlocked.
 pub fn achievements(conn: &Connection, mastery_percent: i64) -> Result<Vec<Achievement>> {
     let (xp_total, _stored_level, stored_best) = profile(conn).unwrap_or((0, 1, 0));
     let level = level_for_xp(xp_total);
@@ -602,7 +602,7 @@ pub fn achievements(conn: &Connection, mastery_percent: i64) -> Result<Vec<Achie
     Ok(out)
 }
 
-/// Desbloquea los logros que ya cumplen su objetivo y devuelve solo los nuevos.
+/// Unlocks achievements that already meet their target and returns only the new ones.
 pub fn sync_achievements(conn: &Connection, mastery_percent: i64) -> Result<Vec<Achievement>> {
     let now = now_ts();
     let mut newly = Vec::new();
@@ -682,15 +682,15 @@ pub fn all_items(conn: &Connection) -> Result<Vec<Item>> {
     Ok(items)
 }
 
-/// Devuelve el siguiente ítem que toca repasar.
+/// Returns the next item that is due for review.
 ///
-/// Prioridad: repasos vencidos antes que palabras nuevas. `new_mix_percent`
-/// permite mezclar nuevas cuando también hay repasos. Las nuevas siguen el
-/// orden del mazo: lección, subapartado y orden de importación.
+/// Priority: due reviews before new words. `new_mix_percent` allows mixing in
+/// new words when there are due reviews as well. New words follow deck order:
+/// lesson, subsection and import order.
 ///
-/// Nunca devuelve una palabra cuyo repaso aún no vence (`due_at` en el futuro):
-/// eso rompería la repetición espaciada y repetiría la misma palabra una y otra
-/// vez. Si no hay nada que practicar, devuelve `None`.
+/// Never returns a word whose review is not due yet (`due_at` in the future):
+/// that would break spaced repetition and repeat the same word over and over.
+/// If there is nothing to practice, returns `None`.
 pub fn next_item(
     conn: &Connection,
     exclude_id: i64,
@@ -729,7 +729,7 @@ pub fn next_item(
     Ok(None)
 }
 
-/// Segundos hasta el próximo repaso programado. `None` si no queda ninguna palabra vista.
+/// Seconds until the next scheduled review. `None` if no seen words remain.
 pub fn next_due_in_seconds(conn: &Connection, include_patterns: bool) -> Result<Option<i64>> {
     let due_at: Option<i64> = conn
         .query_row(
@@ -802,7 +802,7 @@ fn query_due(
         .optional()?)
 }
 
-/// Repasos vencidos, sin contar palabras nuevas.
+/// Due reviews, not counting new words.
 pub fn due_count(conn: &Connection, include_patterns: bool) -> Result<i64> {
     Ok(conn.query_row(
         r#"
@@ -817,7 +817,7 @@ pub fn due_count(conn: &Connection, include_patterns: bool) -> Result<i64> {
     )?)
 }
 
-/// Palabras que aún no se han mostrado nunca.
+/// Words that have never been shown yet.
 pub fn new_count(conn: &Connection, include_patterns: bool) -> Result<i64> {
     Ok(conn.query_row(
         r#"
@@ -832,7 +832,7 @@ pub fn new_count(conn: &Connection, include_patterns: bool) -> Result<i64> {
     )?)
 }
 
-/// Palabras cuya primera respuesta fue hoy.
+/// Words whose first answer was today.
 pub fn new_today_count(conn: &Connection) -> Result<i64> {
     Ok(conn.query_row(
         r#"
@@ -853,10 +853,10 @@ pub fn reviews_today(conn: &Connection) -> Result<i64> {
     reviews_since(conn, today_start_ts())
 }
 
-/// Página del historial, de la más reciente a la más antigua.
+/// Page of the history, from newest to oldest.
 ///
-/// Los filtros de dirección y resultado se ignoran si traen un valor desconocido; el rango de fechas
-/// es `[from_ts, to_ts)`.
+/// Direction and result filters are ignored if they carry an unknown value; the date range
+/// is `[from_ts, to_ts)`.
 pub fn review_history(
     conn: &Connection,
     query: &ReviewHistoryQuery,
@@ -1302,7 +1302,7 @@ pub fn clear_library(conn: &mut Connection) -> Result<()> {
     Ok(())
 }
 
-/// Borra los archivos de `media/` que ya no referencia ningún ítem.
+/// Deletes the files in `media/` that no item references anymore.
 pub fn cleanup_media(conn: &Connection, media_dir: &Path) -> Result<usize> {
     let mut stmt =
         conn.prepare("SELECT audio_file FROM items WHERE audio_file IS NOT NULL AND audio_file <> ''")?;
@@ -1330,7 +1330,7 @@ pub fn cleanup_media(conn: &Connection, media_dir: &Path) -> Result<usize> {
     Ok(removed)
 }
 
-/// Datos para insertar un ítem desde el importador.
+/// Data to insert an item from the importer.
 pub struct NewItem<'a> {
     pub source_uid: &'a str,
     pub kanji: Option<&'a str>,
@@ -1432,7 +1432,7 @@ mod tests {
 
     #[test]
     fn sm2_first_day_and_growth() {
-        // Paso de aprendizaje consumido: ahora sí salta al primer intervalo diario.
+        // Learning step consumed: now it does jump to the first daily interval.
         let (reps, interval, ease) = sm2_next(4, 2, 10, 2.5);
         assert_eq!((reps, interval), (3, 1440));
         assert!((ease - 2.5).abs() < 1e-9);
@@ -1443,13 +1443,13 @@ mod tests {
         assert!((ease - 2.5).abs() < 1e-9);
     }
 
-    /// La escalera de aprendizaje tiene dos peldaños y nunca se salta ninguno.
+    /// The learning ladder has two steps and never skips any.
     #[test]
     fn sm2_learning_ladder_advances_one_step_at_a_time() {
         let (reps, interval, _) = sm2_next(5, 0, 0, 2.6);
         assert_eq!((reps, interval), (1, 10));
 
-        // Todavía en el peldaño de 10 minutos: el siguiente acierto pasa a un día, no a más.
+        // Still on the 10-minute step: the next correct answer moves to one day, no further.
         let (reps, interval, _) = sm2_next(5, reps, interval, 2.6);
         assert_eq!((reps, interval), (2, 1440));
     }
@@ -1461,15 +1461,15 @@ mod tests {
         assert!((ease - 2.18).abs() < 1e-9);
     }
 
-    /// Un acierto sobre una palabra que vencía en 2 días crece desde esos 2 días (2 × 2,6 ≈ 5,2 d),
-    /// no desde el peldaño de aprendizaje.
+    /// A correct answer on a word due in 2 days grows from those 2 days (2 × 2.6 ≈ 5.2 d),
+    /// not from the learning step.
     #[test]
     fn sm2_grows_from_the_real_interval_once_it_is_daily() {
         let (reps, interval, _) = sm2_next(4, 1, 2880, 2.6);
         assert_eq!((reps, interval), (2, 7488));
     }
 
-    /// Regresión: acertar una palabra no puede dejarla programada *antes* de lo que ya estaba.
+    /// Regression: answering a word correctly must not schedule it *earlier* than it already was.
     #[test]
     fn sm2_never_shrinks_interval_on_a_correct_answer() {
         for interval in [1440, 2880, 10080, MAX_INTERVAL_MINUTES] {
@@ -1808,7 +1808,7 @@ mod tests {
             .expect("query")
             .is_none());
 
-        // La palabra vista vuelve cuando vence, no antes.
+        // The seen word comes back when due, not before.
         assert_eq!(
             next_due_in_seconds(&conn, false).expect("next due"),
             Some(3600)
@@ -1826,8 +1826,8 @@ mod tests {
         assert_eq!(next_new.id, new_word);
     }
 
-    /// Regresión: practicar repetidamente repetía la misma palabra, porque se servían palabras
-    /// cuyo repaso no vencía hasta dentro de días (o incluso de minutos).
+    /// Regression: practicing repeatedly repeated the same word, because words were served
+    /// whose review was not due for days (or even minutes).
     #[test]
     fn never_serves_words_before_they_are_due() {
         let mut conn = Connection::open_in_memory().expect("db");
@@ -2024,7 +2024,7 @@ mod tests {
         assert_eq!(combined.total, 1);
         assert_eq!(combined.entries[0].answered_at, 400);
 
-        // Una dirección desconocida no filtra nada.
+        // An unknown direction filters nothing.
         let unknown = review_history(
             &conn,
             &ReviewHistoryQuery {

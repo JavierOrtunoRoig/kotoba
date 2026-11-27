@@ -1,151 +1,151 @@
-# Flujos de trabajo
+# Workflows
 
-Cómo usar las skills de `.agents/skills/` en kotoba: qué flujo toca según la petición y qué se
-exige para cerrar. Este documento manda sobre las skills; ellas traen el cómo, aquí está el cuándo.
+How to use the skills in `.agents/skills/` in kotoba: which flow applies to each request and what is
+required to close. This document rules over the skills; they bring the how, here is the when.
 
-## Perfil acordado (2026-11-25)
+## Agreed profile (2026-11-25)
 
-| Decisión | Valor |
+| Decision | Value |
 |---|---|
-| El trabajo entra por | ideas sueltas, bugs al usar la app, backlog de `requirements.md`, Dependabot |
-| Ritmo | sesiones cortas y frecuentes (30-60 min) |
-| Integración | siempre rama + PR; una rama por issue |
-| Issues | issue para casi todo lo que cambia comportamiento |
-| Specs | solo si el trabajo no cabe en una sesión |
-| Code review | completo solo en PRs grandes |
-| Ideas sueltas | van a `inbox.md`; se convierten en issue al planificar |
-| Idioma | artefactos (código, commits, issues, PRs, specs, ADRs) en inglés; docs y conversación en español |
-| Autonomía | técnica total; producto, UX y alcance se consultan |
-| Terminado | checks locales verdes, CI verde, test del cambio, `.opencode/` actualizado |
-| Release | al cerrar un feature |
+| Work enters through | loose ideas, bugs while using the app, `requirements.md` backlog, Dependabot |
+| Pace | short, frequent sessions (30-60 min) |
+| Integration | always branch + PR; one branch per issue |
+| Issues | an issue for almost everything that changes behavior |
+| Specs | only if the work does not fit in one session |
+| Code review | full only on large PRs |
+| Loose ideas | go to `inbox.md`; they become an issue when planning |
+| Language | artifacts (code, commits, issues, PRs, specs, ADRs) in English; docs and conversation in Spanish |
+| Autonomy | full technical; product, UX and scope are consulted |
+| Done | local checks green, CI green, test for the change, `.opencode/` updated |
+| Release | when closing a feature |
 
-## Regla del issue
+## The issue rule
 
-- **Cambia comportamiento → issue primero.** Incluso un bug de una línea.
-- **No cambia comportamiento → PR directo, sin issue.** Docs, versión, formato, CI.
-- Un issue está listo cuando tiene: qué, por qué, criterio de aceptación y área.
-- Los issues propios nacen con `ready-for-agent` (o `ready-for-human` si requiere decisión humana).
-  No se triajan: `/triage` es solo para lo que llega de fuera.
+- **Changes behavior → issue first.** Even a one-line bug.
+- **Does not change behavior → direct PR, no issue.** Docs, version, formatting, CI.
+- An issue is ready when it has: what, why, acceptance criteria and area.
+- Our own issues are born with `ready-for-agent` (or `ready-for-human` if they require a human decision).
+  They are not triaged: `/triage` is only for what comes from outside.
 
-## Flujo 0 — Capturar una idea
+## Flow 0 — Capture an idea
 
-1. Añadir una entrada a [`inbox.md`](inbox.md) con fecha, área y una línea de contexto.
-2. Nada más. Sin issue, sin rama.
-3. En la sesión de planificación: cada idea se convierte en issue o se descarta. Se marca `→ #N`
-   en el inbox para no volver a procesarla.
+1. Add an entry to [`inbox.md`](inbox.md) with date, area and one line of context.
+2. Nothing else. No issue, no branch.
+3. In the planning session: each idea becomes an issue or is discarded. It is marked `→ #N`
+   in the inbox so it is not processed again.
 
-## Flujo 1 — Bug
+## Flow 1 — Bug
 
-1. Issue con pasos de reproducción, comportamiento esperado y real. Área en el título
+1. Issue with reproduction steps, expected and actual behavior. Area in the title
    (`scheduler:`, `import:`, `ui:`, `updater:`).
-2. Rama `fix/<issue>-slug`.
-3. Si la causa no es evidente, cargar la skill `diagnosing-bugs` **antes** de tocar código: exige
-   un comando que falle en rojo por este bug. Si es evidente, `tdd` directo con el test de regresión.
-4. Commit, PR, CI verde, merge con squash.
-5. Actualizar `state.md` si cambia el comportamiento observable.
+2. Branch `fix/<issue>-slug`.
+3. If the cause is not obvious, load the `diagnosing-bugs` skill **before** touching code: it requires
+   a command that fails red for this bug. If it is obvious, `tdd` directly with the regression test.
+4. Commit, PR, CI green, squash merge.
+5. Update `state.md` if observable behavior changes.
 
-## Flujo 2 — Cambio pequeño (una sesión)
+## Flow 2 — Small change (one session)
 
-Un arreglo o mejora acotada que sí cambia comportamiento pero no necesita spec.
+A scoped fix or improvement that does change behavior but does not need a spec.
 
-1. Issue (criterio de aceptación en una o dos líneas).
-2. Rama `feat/<issue>-slug` o `fix/<issue>-slug`.
-3. Sesión limpia: cargar `implement` con el número de issue. Lleva dentro `tdd` y una revisión.
-4. Checks locales, commit, PR, CI verde, merge.
-5. Actualizar `.opencode/state.md`.
+1. Issue (acceptance criteria in one or two lines).
+2. Branch `feat/<issue>-slug` or `fix/<issue>-slug`.
+3. Clean session: load `implement` with the issue number. It includes `tdd` and a review.
+4. Local checks, commit, PR, CI green, merge.
+5. Update `.opencode/state.md`.
 
-## Flujo 3 — Feature de varias sesiones (flujo principal)
+## Flow 3 — Multi-session feature (main flow)
 
-**Sesión 1 — pensar (una sola ventana, sin compactar):**
+**Session 1 — think (a single window, no compaction):**
 
-1. Cargar `grill-with-docs` sobre la idea. La entrevista afila el alcance y deja en el repo lo que
-   se decida: `GLOSSARY.md` y `docs/adr/` se crean solo si aparecen términos o decisiones que lo
-   merezcan.
-2. Si una duda solo se responde con código (modelo de estado, UI), parar y usar `prototype`. Vive en
-   una rama `prototype/<nombre>` y se referencia desde el issue; no se mergea.
-3. Cargar `to-spec`: publica la spec como issue en inglés con label `ready-for-agent`.
-4. Cargar `to-tickets`: parte la spec en tickets verticales, cada uno de una sesión, con sus
-   dependencias como enlaces nativos de bloqueo de GitHub. Revisar granularidad y bloqueos antes de
-   publicar.
+1. Load `grill-with-docs` on the idea. The interview sharpens the scope and leaves in the repo what
+   is decided: `GLOSSARY.md` and `docs/adr/` are created only if terms or decisions that deserve
+   it appear.
+2. If a question can only be answered with code (state model, UI), stop and use `prototype`. It lives in
+   a `prototype/<name>` branch and is referenced from the issue; it is not merged.
+3. Load `to-spec`: publish the spec as an issue in English with the `ready-for-agent` label.
+4. Load `to-tickets`: split the spec into vertical tickets, each one session long, with their
+   dependencies as native GitHub blocking links. Review granularity and blocks before
+   publishing.
 
-**Sesiones 2..N — construir (una sesión por ticket):**
+**Sessions 2..N — build (one session per ticket):**
 
-5. Elegir un ticket sin bloqueos abiertos. Rama `feat/<issue>-slug` desde `main`.
-6. Sesión limpia: `implement <issue>`. Nada del contexto de la sesión anterior hace falta.
-7. Checks locales, commit, PR. Cuerpo del PR: qué, por qué, cómo se probó, y el ticket que cierra.
-8. CI verde, merge con squash, borrar rama.
-9. Repetir con el siguiente ticket de la frontera.
+5. Pick a ticket with no open blocks. Branch `feat/<issue>-slug` from `main`.
+6. Clean session: `implement <issue>`. Nothing from the previous session's context is needed.
+7. Local checks, commit, PR. PR body: what, why, how it was tested, and the ticket it closes.
+8. CI green, squash merge, delete branch.
+9. Repeat with the next ticket at the frontier.
 
-**Cierre:**
+**Closing:**
 
-10. `retro` sobre la sesión del último ticket o sobre el feature completo: qué del entorno
-    (AGENTS.md, checks, estándares) habría evitado fricción.
-11. Release cuando el feature está completo y probado.
+10. `retro` on the last ticket's session or on the whole feature: what in the environment
+    (AGENTS.md, checks, standards) would have prevented friction.
+11. Release when the feature is complete and tested.
 
-## Flujo 4 — Trivial (docs, versión, formato, CI)
+## Flow 4 — Trivial (docs, version, formatting, CI)
 
-1. Sin issue. Rama `docs/...` o `chore/...`.
-2. Cambio + CI verde. Sin `/code-review`.
+1. No issue. Branch `docs/...` or `chore/...`.
+2. Change + CI green. No `/code-review`.
 
-## Flujo 5 — Dependabot
+## Flow 5 — Dependabot
 
-1. Skill `dependabot-prs`: listar, preparar la rama, resolver conflictos de `Cargo.toml`/lockfiles.
-2. CI verde obligatorio. Merge solo entonces.
-3. Los PRs del bot no pasan por `/triage` ni por `/code-review`.
+1. `dependabot-prs` skill: list, prepare the branch, resolve `Cargo.toml`/lockfile conflicts.
+2. Green CI mandatory. Merge only then.
+3. Bot PRs do not go through `/triage` or `/code-review`.
 
-## Flujo 6 — Release
+## Flow 6 — Release
 
-Solo cuando se cierra un feature (no en cada PR).
+Only when closing a feature (not on every PR).
 
-1. Subir versión en `package.json`, `src-tauri/Cargo.toml` y `src-tauri/tauri.conf.json`.
-2. Actualizar el README si cambian los nombres de los instaladores.
-3. Commit `chore(release): vX.Y.Z` y push a `main`.
+1. Bump the version in `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`.
+2. Update the README if the installer names change.
+3. Commit `chore(release): vX.Y.Z` and push to `main`.
 4. `git tag vX.Y.Z` + `git push origin vX.Y.Z`.
-5. Esperar el workflow de release y comprobar que adjunta MSI, NSIS, sus `.sig` y `latest.json`.
+5. Wait for the release workflow and check that it attaches MSI, NSIS, their `.sig` and `latest.json`.
 
-## Flujo 7 — Deuda técnica
+## Flow 7 — Technical debt
 
-1. `improve-codebase-architecture` para sacar oportunidades de módulos profundos.
-2. La que elijas se convierte en idea → Flujo 3 (o Flujo 2 si es pequeña).
+1. `improve-codebase-architecture` to surface deep-module opportunities.
+2. The one you choose becomes an idea → Flow 3 (or Flow 2 if it is small).
 
-## Cuándo el flujo completo es demasiado
+## When the full flow is too much
 
-| Situación | Qué hacer |
+| Situation | What to do |
 |---|---|
-| Cabe en una sesión | Flujo 2: issue + `implement` |
-| Duda de diseño | `prototype`, nunca spec |
-| Esfuerzo enorme y difuso | `wayfinder`; después `to-spec` |
-| Solo quieres entender el código | `codegraph_explore`, sin flujo |
-| Necesitas datos externos | `research` y volver al flujo con el `.md` |
+| Fits in one session | Flow 2: issue + `implement` |
+| Design question | `prototype`, never a spec |
+| Huge and diffuse effort | `wayfinder`; then `to-spec` |
+| You just want to understand the code | `codegraph_explore`, no flow |
+| You need external data | `research` and return to the flow with the `.md` |
 
-## Code review: cuándo sí
+## Code review: when yes
 
-Revisión completa (`code-review`, dos ejes: Standards + Spec) cuando el PR:
+Full review (`code-review`, two axes: Standards + Spec) when the PR:
 
-- toca **más de un módulo** o supera ~200 líneas de diff;
-- cambia esquema SQLite, migraciones, comandos IPC o el updater;
-- toca `db.rs` (SM-2, SQL), `scheduler.rs` o la firma de releases.
+- touches **more than one module** or exceeds ~200 lines of diff;
+- changes the SQLite schema, migrations, IPC commands or the updater;
+- touches `db.rs` (SM-2, SQL), `scheduler.rs` or release signing.
 
-En el resto basta CI verde y releer el diff. `implement` siempre hace una revisión rápida al final;
-en PRs pequeños, esa es toda la revisión.
+Otherwise green CI and re-reading the diff is enough. `implement` always does a quick review at the end;
+on small PRs, that is the whole review.
 
 ## Definition of done
 
-- [ ] `npm run typecheck` limpio.
-- [ ] `cargo test --manifest-path src-tauri/Cargo.toml --lib` verde.
-- [ ] Tests nuevos o ajustados para el comportamiento que cambia.
-- [ ] CI verde en el PR.
-- [ ] `.opencode/state.md` actualizado; `decisions.md` si hay decisión de arquitectura.
-- [ ] Cambios de UI probados a mano en `npm run tauri dev` (recomendado, no bloqueante).
+- [ ] `npm run typecheck` clean.
+- [ ] `cargo test --manifest-path src-tauri/Cargo.toml --lib` green.
+- [ ] New or adjusted tests for the behavior that changes.
+- [ ] CI green on the PR.
+- [ ] `.opencode/state.md` updated; `decisions.md` if there is an architecture decision.
+- [ ] UI changes tested by hand in `npm run tauri dev` (recommended, not blocking).
 
-## Higiene de contexto
+## Context hygiene
 
-- `grill-with-docs` → `to-spec` → `to-tickets`: **una sola ventana**, sin `/compact` hasta el final.
-- Cada `implement` en sesión limpia. El ticket es autocontenido.
-- Si la ventana se acerca a ~150k tokens antes de `to-tickets`, compactar ahí, no a mitad de fase.
+- `grill-with-docs` → `to-spec` → `to-tickets`: **a single window**, no `/compact` until the end.
+- Each `implement` in a clean session. The ticket is self-contained.
+- If the window approaches ~150k tokens before `to-tickets`, compact there, not mid-phase.
 
-## Nombres
+## Names
 
-- Ramas: `feat/<issue>-slug`, `fix/<issue>-slug`, `docs/slug`, `chore/slug`, `prototype/slug`.
-- Commits: Conventional Commits en inglés (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
-- Issues y PRs: título en inglés, una línea; cuerpo con qué/por qué/criterio.
+- Branches: `feat/<issue>-slug`, `fix/<issue>-slug`, `docs/slug`, `chore/slug`, `prototype/slug`.
+- Commits: Conventional Commits in English (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
+- Issues and PRs: title in English, one line; body with what/why/criteria.

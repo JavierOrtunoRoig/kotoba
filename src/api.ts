@@ -50,7 +50,7 @@ export interface Challenge {
   direction: Direction;
   due_count: number;
   new_count: number;
-  /** Segundos hasta el próximo repaso programado (null si no queda ninguna palabra vista). */
+  /** Seconds until the next scheduled review (null if no seen words remain). */
   next_due_seconds: number | null;
 }
 
@@ -109,7 +109,7 @@ export interface DifficultItem {
 
 export interface ReviewLogEntry {
   answered_at: number;
-  /** Hora local, `YYYY-MM-DD HH:MM:SS`. */
+  /** Local time, `YYYY-MM-DD HH:MM:SS`. */
   answered_at_local: string;
   reading: string;
   meaning: string;
@@ -148,7 +148,7 @@ export interface Stats {
   new_available: number;
   new_today: number;
   new_per_day: number;
-  /** Segundos hasta el próximo repaso programado (null si no queda ninguna palabra vista). */
+  /** Seconds until the next scheduled review (null if no seen words remain). */
   next_due_seconds: number | null;
   activity: DayCount[];
   lessons: LessonStat[];
@@ -214,7 +214,7 @@ export interface NoteTypeMapping {
 export interface ImportMapping {
   txt: FieldMapping | null;
   note_types: NoteTypeMapping[];
-  /** Carpeta de medios del .txt; vacío usa la hermana con el nombre del archivo. */
+  /** Media folder for the .txt; empty uses the sibling folder named after the file. */
   media_folder: string | null;
 }
 
@@ -235,7 +235,7 @@ export interface ImportInspection {
   sample: string[][];
   suggested: FieldMapping | null;
   note_types: NoteTypeInfo[];
-  /** Carpeta de audio hermana detectada para un .txt. */
+  /** Detected sibling audio folder for a .txt. */
   media_folder: string | null;
 }
 

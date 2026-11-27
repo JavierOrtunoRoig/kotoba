@@ -1,4 +1,4 @@
-//! Traducciones del backend para la bandeja y las notificaciones nativas.
+//! Backend translations for the tray and native notifications.
 
 fn lang(language: &str) -> &str {
     match language {
@@ -120,7 +120,7 @@ pub fn achievement_body_many(language: &str, count: usize) -> String {
     }
 }
 
-/// Título localizado de un logro a partir de su clave.
+/// Localized achievement title from its key.
 pub fn achievement_name(language: &str, key: &str) -> String {
     let language = lang(language);
     let name = match (language, key) {
@@ -181,7 +181,7 @@ pub fn achievement_name(language: &str, key: &str) -> String {
 mod tests {
     use super::*;
 
-    /// Claves del catálogo de logros (`db::ACHIEVEMENT_CATALOG`).
+    /// Achievement catalog keys (`db::ACHIEVEMENT_CATALOG`).
     const ACHIEVEMENT_KEYS: [&str; 16] = [
         "first_step",
         "reviews_25",
@@ -386,7 +386,7 @@ mod tests {
         assert_eq!(achievement_name("en", "unknown_key"), "unknown_key");
         assert_eq!(achievement_name("ja", "unknown_key"), "unknown_key");
 
-        // Un idioma no soportado usa las traducciones en español.
+        // An unsupported language uses the Spanish translations.
         for key in ACHIEVEMENT_KEYS {
             assert_eq!(
                 achievement_name("fr", key),

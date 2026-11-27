@@ -1,53 +1,53 @@
-# Base de conocimiento de kotoba
+# kotoba knowledge base
 
-Esta carpeta guarda el contexto importante del proyecto para que no se pierda entre sesiones,
-personas o agentes. **No es configuración de OpenCode**: es documentación versionada del proyecto.
+This folder holds the project's important context so it is not lost between sessions, people or
+agents. **It is not OpenCode configuration**: it is versioned project documentation.
 
-La visión de producto sigue estando en [`../docs/plan.md`](../docs/plan.md).
+The product vision still lives in [`../docs/plan.md`](../docs/plan.md).
 
-## Índice
+## Index
 
-| Documento | Para qué sirve |
+| Document | What it is for |
 |---|---|
-| [`commands.md`](commands.md) | Comandos de desarrollo, build, tests, inspección de datos y diagnóstico |
-| [`workflows.md`](workflows.md) | Qué flujo usar según la petición, definition of done y convenciones de ramas |
-| [`inbox.md`](inbox.md) | Ideas sueltas pendientes de convertirse en issue |
-| [`decisions.md`](decisions.md) | Decisiones de arquitectura y producto, con su motivo y consecuencias |
-| [`requirements.md`](requirements.md) | Requisitos implementados, criterios de aceptación y backlog futuro |
-| [`architecture.md`](architecture.md) | Módulos, esquema SQLite, flujo de importación, comandos IPC y UI |
-| [`state.md`](state.md) | Estado actual, métricas verificadas, datos de prueba y deuda técnica |
-| [`skills/dependabot-prs/`](skills/dependabot-prs/SKILL.md) | Skill de OpenCode para gestionar PRs de Dependabot (listar, preparar, verificar y mergear) |
-| [`../docs/agents/`](../docs/agents/) | Configuración de las skills de ingeniería: issue tracker, etiquetas de triage y docs de dominio |
-| [`../.agents/skills/`](../.agents/skills/) | Skills de ingeniería de `mattpocock/skills`, versionadas y fijadas en `skills-lock.json` |
+| [`commands.md`](commands.md) | Development, build, test, data inspection and diagnostics commands |
+| [`workflows.md`](workflows.md) | Which flow to use depending on the request, definition of done and branch conventions |
+| [`inbox.md`](inbox.md) | Loose ideas waiting to become an issue |
+| [`decisions.md`](decisions.md) | Architecture and product decisions, with their rationale and consequences |
+| [`requirements.md`](requirements.md) | Implemented requirements, acceptance criteria and future backlog |
+| [`architecture.md`](architecture.md) | Modules, SQLite schema, import flow, IPC commands and UI |
+| [`state.md`](state.md) | Current state, verified metrics, test data and technical debt |
+| [`skills/dependabot-prs/`](skills/dependabot-prs/SKILL.md) | OpenCode skill for managing Dependabot PRs (list, prepare, verify and merge) |
+| [`../docs/agents/`](../docs/agents/) | Configuration of the engineering skills: issue tracker, triage labels and domain docs |
+| [`../.agents/skills/`](../.agents/skills/) | Engineering skills from `mattpocock/skills`, versioned and pinned in `skills-lock.json` |
 
-## Reglas de mantenimiento
+## Maintenance rules
 
-1. **Actualizar al cambiar el comportamiento**, no al final del proyecto. Las skills locales viven
-   en `skills/<nombre>/SKILL.md` con sus scripts en `skills/<nombre>/scripts/`.
-2. Las decisiones nuevas se añaden a `decisions.md` con un identificador `D-0xx`.
-3. Los requisitos nuevos se añaden a `requirements.md` con un identificador `RF-xx` / `RF2-xx`.
-4. Los comandos que se usen más de una vez van a `commands.md`.
-5. Los commits siguen [Conventional Commits](https://www.conventionalcommits.org/):
+1. **Update when behaviour changes**, not at the end of the project. Local skills live
+   in `skills/<name>/SKILL.md` with their scripts in `skills/<name>/scripts/`.
+2. New decisions are added to `decisions.md` with a `D-0xx` identifier.
+3. New requirements are added to `requirements.md` with an `RF-xx` / `RF2-xx` identifier.
+4. Commands used more than once go to `commands.md`.
+5. Commits follow [Conventional Commits](https://www.conventionalcommits.org/):
    `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
 
-## Estado resumido
+## Summary status
 
-- **Fase 1 (MVP técnico): implementada y verificada** el 2026-11-18.
-- **Fase 2 (pulido): completada.** Hecho: SM-2 completo, popup/widget/toast, selector de modo,
-  no robar foco, detección de pantalla completa, migraciones versionadas, normalización validada
-  contra 2.629 respuestas reales (incluido romaji), estadísticas por lección/palabras difíciles,
-  copia de seguridad, restauración, historial CSV, progreso de importación, logs a archivo, icono
-  propio, reintento de errores, instaladores MSI/NSIS y limpieza de audios huérfanos.
-- **RF2-07 completada:** tema oscuro automático/claro/oscuro, interfaz en español/inglés/japonés,
-  escala 90-125 %, navegación por teclado y foco visible.
-- **RF2-09 completada:** nuevas por orden de lección/subapartado, repasos primero (con mezcla
-  opcional) y límite diario de nuevas.
-- **RF-04 / RF2-06 completadas:** mapeo manual de columnas y campos por tipo de nota al importar
-  `.txt` y `.apkg`, con inspección y vista previa.
-- **Fase 3 (extras): en curso.** R3-04a/b/c completadas: XP por calidad, niveles con títulos, racha
-  flexible con salvavidas, objetivo semanal, 16 logros y maestría por lección.
-- Importación real del mazo `Genki 1.apkg`: **1.076 notas → 1.012 ítems**, **827 audios**,
-  **66 plantillas**.
-- Windows only, Tauri 2 + React 19 + SQLite, sin red.
-- Pendiente: AnkiConnect, más mazos y firma del instalador.
-- CI y releases en `.github/workflows/`; la etiqueta `v0.1.1` genera MSI y NSIS.
+- **Phase 1 (technical MVP): implemented and verified** on 2026-11-18.
+- **Phase 2 (polish): complete.** Done: full SM-2, popup/widget/toast, mode selector, no focus
+  stealing, fullscreen detection, versioned migrations, normalization validated against 2,629 real
+  answers (including romaji), per-lesson/difficult-word statistics, backup, restore, CSV history,
+  import progress, file logging, custom icon, error retry, MSI/NSIS installers and orphan audio
+  cleanup.
+- **RF2-07 complete:** automatic/light/dark theme, interface in Spanish/English/Japanese,
+  90-125% scale, keyboard navigation and visible focus.
+- **RF2-09 complete:** new words by lesson/subsection order, reviews first (with optional mixing)
+  and a daily limit for new words.
+- **RF-04 / RF2-06 complete:** manual mapping of columns and fields per notetype when importing
+  `.txt` and `.apkg`, with inspection and preview.
+- **Phase 3 (extras): in progress.** R3-04a/b/c complete: XP by quality, levels with titles,
+  flexible streak with lifelines, weekly goal, 16 achievements and per-lesson mastery.
+- Real import of the `Genki 1.apkg` deck: **1,076 notes → 1,012 items**, **827 audio files**,
+  **66 templates**.
+- Windows only, Tauri 2 + React 19 + SQLite, no network.
+- Pending: AnkiConnect, more decks and installer signing.
+- CI and releases in `.github/workflows/`; the `v0.1.1` tag generates MSI and NSIS.

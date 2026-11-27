@@ -1,181 +1,181 @@
-# Estado del proyecto
+# Project status
 
-Última verificación: **2026-11-25**.
+Last verification: **2026-11-25**.
 
-**Repositorio público:** <https://github.com/JavierOrtunoRoig/kotoba> (código bajo MIT).
+**Public repository:** <https://github.com/JavierOrtunoRoig/kotoba> (code under MIT).
 
-- README orientado a release pública, con capturas, privacidad, roadmap y resumen en inglés.
-- Configuración de agentes versionada (`AGENTS.md`, `opencode.jsonc`, `.mcp.json`,
-  `skills-lock.json`); el índice local `.codegraph/` queda ignorado.
-- CI y releases en `.github/workflows/`: `ci.yml` valida TypeScript y Rust en cada push/PR, y
-  `release.yml` publica MSI y NSIS al empujar una etiqueta `v*`. Release `v0.2.0` publicada (MSI + NSIS firmados con `.sig` y `latest.json` en la release).
-- **Dependabot al día (2026-11-21):** los 7 PRs de la primera ronda están mergeados. `rand` 0.10
-  obligó a migrar el scheduler a `rand::rng().random_range()` con el rasgo `RngExt`; `zip` 9,
-  `zstd` 0.14, `sha1` 0.11, `windows-sys` 0.61, TypeScript 7 y las actions actualizadas sin
-  cambios de código. Proceso automatizado como skill local: `skills/dependabot-prs/`.
-- **Actualizaciones automáticas (2026-11-22):** `tauri-plugin-updater` + `tauri-plugin-process`, con
-  `latest.json` en GitHub Releases y artefactos firmados con minisign. Aviso al arrancar y botón
-  manual en Ajustes → Sistema. Clave privada fuera del repo y en secrets de GitHub.
-- **Autostart solo en release (2026-11-22):** el binario debug usa el `devUrl` y abre consola. La UI
-  deshabilita «Arrancar con Windows» cuando `Bootstrap.dev_build` es true para no registrar el exe de
-  `target/debug` en el arranque de Windows.
-- **Flujos de trabajo (2026-11-25):** skills de ingeniería de `mattpocock/skills` versionadas en
-  `.agents/skills/`, con `.opencode/workflows.md` como playbook (issue → rama → PR, spec solo si es
-  multi-sesión, review solo en PRs grandes) y `.opencode/inbox.md` para ideas sueltas.
-- **Backlog en issues (2026-11-25):** el tracker se sembró desde `requirements.md`: #9 mazos de
-  terceros, #10 audio en `.txt`, #11 historial en la app, #12 autostart real, #13 pantalla completa
-  real y #14 firma de instaladores. AnkiConnect queda para una sesión de `grill-with-docs`.
-- **Historial en la app (2026-11-25):** #11 añade el comando `review_history` paginado con filtros
-  de dirección, resultado y fechas, y una tabla en Progreso con «cargar más» y estado vacío; la
-  exportación CSV no cambia y no hay migración nueva.
-- **Audio en `.txt` (2026-11-25):** #10 lee `[sound:…]` (también dentro de HTML) de la columna de
-  audio del mapeo, copia desde una carpeta de medios elegida en el diálogo (por defecto, la hermana
-  con el nombre del `.txt`) y reutiliza `media::store_bytes`: SHA-1, nombre por hash y deduplicación.
-  Un archivo ausente suma `audio_missing` y un aviso, sin abortar la importación.
-- **Instancia única (2026-11-25):** #18 registra `tauri-plugin-single-instance` antes que el resto de
-  plugins. La segunda ejecución entrega sus argumentos y sale sin abrir SQLite ni scheduler; la
-  primera muestra y enfoca la ventana principal. Verificado lanzando el exe dos veces: un solo
-  proceso, la segunda sale en 0,05 s y la ventana queda en primer plano.
+- README oriented to public release, with screenshots, privacy, roadmap and English summary.
+- Versioned agent configuration (`AGENTS.md`, `opencode.jsonc`, `.mcp.json`,
+  `skills-lock.json`); the local `.codegraph/` index stays ignored.
+- CI and releases in `.github/workflows/`: `ci.yml` validates TypeScript and Rust on every push/PR, and
+  `release.yml` publishes MSI and NSIS when pushing a `v*` tag. Release `v0.2.0` published (MSI + NSIS signed with `.sig` and `latest.json` in the release).
+- **Dependabot up to date (2026-11-21):** the 7 PRs from the first round are merged. `rand` 0.10
+  forced migrating the scheduler to `rand::rng().random_range()` with the `RngExt` trait; `zip` 9,
+  `zstd` 0.14, `sha1` 0.11, `windows-sys` 0.61, TypeScript 7 and the updated actions without
+  code changes. Automated process as a local skill: `skills/dependabot-prs/`.
+- **Automatic updates (2026-11-22):** `tauri-plugin-updater` + `tauri-plugin-process`, with
+  `latest.json` in GitHub Releases and artifacts signed with minisign. Notice on startup and manual
+  button in Settings → System. Private key outside the repo and in GitHub secrets.
+- **Autostart only in release (2026-11-22):** the debug binary uses `devUrl` and opens a console. The UI
+  disables “Start with Windows” when `Bootstrap.dev_build` is true so as not to register the
+  `target/debug` exe in the Windows startup.
+- **Workflows (2026-11-25):** engineering skills from `mattpocock/skills` versioned in
+  `.agents/skills/`, with `.opencode/workflows.md` as the playbook (issue → branch → PR, spec only if
+  multi-session, review only on large PRs) and `.opencode/inbox.md` for loose ideas.
+- **Backlog in issues (2026-11-25):** the tracker was seeded from `requirements.md`: #9 third-party
+  decks, #10 audio in `.txt`, #11 history in the app, #12 real autostart, #13 real full screen
+  and #14 installer signing. AnkiConnect is left for a `grill-with-docs` session.
+- **History in the app (2026-11-25):** #11 adds the paginated `review_history` command with direction,
+  result and date filters, and a table in Progress with “load more” and an empty state; CSV
+  export does not change and there is no new migration.
+- **Audio in `.txt` (2026-11-25):** #10 reads `[sound:…]` (also inside HTML) from the audio column
+  of the mapping, copies from a media folder chosen in the dialog (by default, the sibling
+  with the `.txt` name) and reuses `media::store_bytes`: SHA-1, name by hash and deduplication.
+  A missing file adds `audio_missing` and a warning, without aborting the import.
+- **Single instance (2026-11-25):** #18 registers `tauri-plugin-single-instance` before the rest of
+  the plugins. The second run delivers its arguments and exits without opening SQLite or the scheduler; the
+  first shows and focuses the main window. Verified by launching the exe twice: a single
+  process, the second exits in 0.05 s and the window stays in the foreground.
 
-## Fase actual
+## Current phase
 
-**Fase 2 — Pulido: completada.**
+**Phase 2 — Polish: completed.**
 
-Completado en la fase:
+Completed in the phase:
 
-- **SM-2 completo** con calidad 1-5, `ease`, pasos de aprendizaje y tests.
-- **Tres modos de aparición**: popup, widget persistente y toast nativo.
-- **Selector de modo** en Ajustes y submenú “Modo” en la bandeja.
-- **No robar foco**: show + devolución del foco a la ventana anterior.
-- **Detección de pantalla completa/presentación** con `SHQueryUserNotificationState`.
-- **Migraciones versionadas** con `PRAGMA user_version` (añadido `review_log.quality`).
-- **Normalización validada** contra 2.629 respuestas reales del mazo, incluido romaji.
-- **Entrada en romaji** (Hepburn, kunrei, vocales largas y は→wa).
-- **Icono propio** generado con `tauri icon` (sello 言).
-- **Distribución:** instaladores MSI y NSIS generados con `npm run tauri build`.
-- **Reintento** en el estado vacío de práctica y en errores de importación.
-- **Estadísticas ampliadas** con progreso por lección y palabras difíciles.
-- **Gestión de datos**: limpieza de audios huérfanos y copia de seguridad a carpeta.
+- **Full SM-2** with quality 1-5, `ease`, learning steps and tests.
+- **Three appearance modes**: popup, persistent widget and native toast.
+- **Mode selector** in Settings and “Mode” submenu in the tray.
+- **No focus stealing**: show + returning focus to the previous window.
+- **Full-screen/presentation detection** with `SHQueryUserNotificationState`.
+- **Versioned migrations** with `PRAGMA user_version` (added `review_log.quality`).
+- **Normalization validated** against 2,629 real deck answers, including romaji.
+- **Romaji input** (Hepburn, kunrei, long vowels and は→wa).
+- **Own icon** generated with `tauri icon` (言 seal).
+- **Distribution:** MSI and NSIS installers generated with `npm run tauri build`.
+- **Retry** in the practice empty state and on import errors.
+- **Extended statistics** with progress per lesson and difficult words.
+- **Data management**: orphan audio cleanup and backup to folder.
 
-La Fase 1 sigue funcionando: importación, repaso bidireccional, bandeja, scheduler, popup,
-progreso y ajustes.
+Phase 1 still works: import, bidirectional review, tray, scheduler, popup,
+progress and settings.
 
-**Fase 3 — Extras: en curso.** R3-04a (gamificación) completada:
+**Phase 3 — Extras: in progress.** R3-04a (gamification) completed:
 
-- Perfil `profile` con XP, nivel y mejor racha (migración v2).
-- XP solo por aciertos ponderados por `quality`; niveles por umbrales.
-- Racha flexible y objetivo semanal configurable (default 30).
-- Notificación de objetivo semanal opt-in, sujeta a pausa/DND/pantalla completa.
+- `profile` record with XP, level and best streak (migration v2).
+- XP only for correct answers weighted by `quality`; levels by thresholds.
+- Flexible streak and configurable weekly goal (default 30).
+- Opt-in weekly goal notification, subject to pause/DND/full screen.
 
-## Métricas verificadas
+## Verified metrics
 
-| Métrica | Valor |
+| Metric | Value |
 |---|---|
-| Notas en `Genki 1.apkg` | 1.076 |
-| Ítems únicos importados | 1.012 |
-| Notas deduplicadas | 64 |
-| Audios extraídos | 827 |
-| Referencias de audio reutilizadas | 47 |
-| Plantillas (`is_pattern`) | 66 |
-| Avisos de importación | 0 |
-| RAM en reposo | ~33 MB |
-| Tests unitarios Rust | 94 OK (+4 ignored: importación, normalización, progreso y tipos de nota reales) |
-| Respuestas reales validadas | 2.629 |
-| Copia de seguridad | SQLite + 827 audios |
-| Typecheck / build frontend | OK |
+| Notes in `Genki 1.apkg` | 1,076 |
+| Unique items imported | 1,012 |
+| Deduplicated notes | 64 |
+| Audio files extracted | 827 |
+| Reused audio references | 47 |
+| Templates (`is_pattern`) | 66 |
+| Import warnings | 0 |
+| RAM at rest | ~33 MB |
+| Rust unit tests | 94 OK (+4 ignored: import, normalization, progress and real note types) |
+| Real answers validated | 2,629 |
+| Backup | SQLite + 827 audio files |
+| Typecheck / frontend build | OK |
 
-## Verificación funcional realizada
+## Functional verification performed
 
-**Fase 1**
+**Phase 1**
 
-- Importación real desde la app: 1.076 → 1.012 ítems, 827 audios, 0 avisos.
-- Reto ES → JP: `estudiante de tercer año` → `三年生` aceptado, con lectura `さんねんせい`, glosa
-  `Tres - Año - Vida` y audio.
-- Pantalla de progreso y ajustes.
-- Popup lanzado por el scheduler.
-- Cierre de la app y liberación de procesos.
+- Real import from the app: 1,076 → 1,012 items, 827 audio files, 0 warnings.
+- ES → JP challenge: `estudiante de tercer año` → `三年生` accepted, with reading `さんねんせい`, gloss
+  `Tres - Año - Vida` and audio.
+- Progress and settings screen.
+- Popup launched by the scheduler.
+- App shutdown and process release.
 
-**Fase 2**
+**Phase 2**
 
-- SM-2: tests de paso de aprendizaje, crecimiento, fallo y suelo de `ease`.
-- Cambio de modo popup → widget → toast → popup desde Ajustes, aplicado en caliente.
-- Widget persistente renderizado a 340×248 con reto activo y botón “Ocultar”.
-- Popup renderizado a 392×280 con reto activo.
-- `practice_now` respeta el modo seleccionado.
-- Toast lanzado sin error; el plugin registra el click (`tap`) para abrir el popup.
-- **Foco:** `GetForegroundWindow` antes y después de mostrar el popup devuelve el mismo handle;
-  el popup no roba el foco.
-- Migración de la base existente: `user_version = 1` y columna `quality` presente.
-- **Normalización:** test contra el mazo real con **2.629 respuestas** (kanji, lecturas, romaji y
-  significados) sin fallos.
-- **Estadísticas:** progreso por lección y palabras difíciles renderizados con datos reales.
-- **Copia de seguridad:** exportación a carpeta con `kotoba.sqlite3` y 827 audios.
-- **Restauración:** borrado completo de la biblioteca y restauración desde la copia; vuelve a 1.012
-  ítems y 827 audios.
-- **Historial:** exportación CSV de `review_log` con fecha local, lectura, significado, dirección,
-  resultado, calidad y latencia.
-- **Progreso de importación:** evento `import:progress` cada 25 notas y test del callback.
-- **Logs:** `tauri-plugin-log` escribe en `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`.
-- **Icono:** sello 言 generado en todos los tamaños de escritorio con `tauri icon`.
-- **Instalador:** `npm run tauri build` genera MSI (3,74 MiB) y NSIS (2,70 MiB).
-- **Reintento:** botón en el estado vacío de práctica y en errores de importación.
-- **Limpieza de medios:** test unitario que conserva el audio referenciado y borra el huérfano.
+- SM-2: tests for learning step, growth, failure and `ease` floor.
+- Mode switch popup → widget → toast → popup from Settings, applied live.
+- Persistent widget rendered at 340×248 with an active challenge and “Hide” button.
+- Popup rendered at 392×280 with an active challenge.
+- `practice_now` respects the selected mode.
+- Toast launched without error; the plugin records the click (`tap`) to open the popup.
+- **Focus:** `GetForegroundWindow` before and after showing the popup returns the same handle;
+  the popup does not steal focus.
+- Migration of the existing database: `user_version = 1` and `quality` column present.
+- **Normalization:** test against the real deck with **2,629 answers** (kanji, readings, romaji and
+  meanings) with no failures.
+- **Statistics:** progress per lesson and difficult words rendered with real data.
+- **Backup:** export to folder with `kotoba.sqlite3` and 827 audio files.
+- **Restore:** full library wipe and restore from the backup; back to 1,012
+  items and 827 audio files.
+- **History:** CSV export of `review_log` with local date, reading, meaning, direction,
+  result, quality and latency.
+- **Import progress:** `import:progress` event every 25 notes and callback test.
+- **Logs:** `tauri-plugin-log` writes to `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`.
+- **Icon:** 言 seal generated in all desktop sizes with `tauri icon`.
+- **Installer:** `npm run tauri build` generates MSI (3.74 MiB) and NSIS (2.70 MiB).
+- **Retry:** button in the practice empty state and on import errors.
+- **Media cleanup:** unit test that keeps the referenced audio and deletes the orphan.
 
-**Fase 3**
+**Phase 3**
 
-- **Gamificación R3-04a:** perfil, XP por calidad, nivel, racha/mejor racha y objetivo semanal
-  renderizados en Progreso.
-- 3 aciertos consecutivos → **9 XP**; el nivel sigue en 1 (umbral 100).
-- **Notificación de objetivo semanal:** suprimida con DND activo; emitida con DND desactivado
-  (verificado en `kotoba.log`: `objetivo semanal completado: 12 repasos`).
-- **Gamificación R3-04b:** catálogo de 16 logros, panel de logros con progreso y fecha de
-  desbloqueo, maestría por lección con umbral configurable y feedback `✦ Logro` al desbloquear.
-- **Migración v3:** tabla `achievements` y columna `profile.weekly_goals_done`; verificada sobre
-  una base v2 existente con test dedicado.
-- **Logros medidos en la app:** `first_step` al primer repaso y `reviews_25` al llegar a 25;
-  notificación emitida con `milestone_notifications` y anotada en el log.
-- **Gamificación R3-04c:** salvavidas de racha (máx. 2) ganados al cumplir el objetivo semanal,
-  reparación automática de un hueco (desactivable), títulos de nivel y curva de 0 a 5.800 XP.
-- **Migración v4:** `profile.streak_savers` y tabla `streak_repairs`; probada sobre una base v2.
-- **Salvavidas medido en la app:** objetivo 26 → repaso 26, `saver_earned = true`, 1 salvavidas,
-  logros `weekly_goal_1` y aviso `objetivo semanal completado: 26 repasos`.
-- **RF2-07 UX y accesibilidad:** tema oscuro `auto`/claro/oscuro siguiendo Windows, idioma
-  español/inglés/japonés en interfaz, bandeja y notificaciones, y escala de interfaz 90-125 %.
-- **Teclado:** enlace “saltar al contenido”, `aria-current`, `Enter` para comprobar/pasar y `Esc`
-  para cerrar el popup; foco visible y `prefers-reduced-motion` respetado.
-- **Verificado en la app:** tema claro/oscuro en vivo, textos en inglés y japonés, escala 110 % en
-  Progreso y popup, y barra de racha con formato japonés correcto.
-- **RF2-09 nuevas ordenadas:** las nuevas siguen `lesson → category → id`; verificado con el mazo
-  real: `L00 / 01 Saludos` completo y salto a `L00 / 02 Numeros 0 100`.
-- **Límite y prioridad:** `new_per_day = 10` y `new_mix_percent = 0` por defecto; contadores
-  separados de repasos vencidos y nuevas; el scheduler no abre retos si no hay nada disponible.
-- **RF-04 / RF2-06 mapeo manual:** inspección previa de `.txt` y `.apkg`, mapeo por columnas o por
-  tipo de nota (lectura, kanji, significado, glosa, audio, UID, etiquetas, lección y subapartado),
-  vista previa de filas y detección automática ajustable.
-- **Verificado con el mazo real:** tipo `Genki Model ES` con campos `kana`, `kanjis`, `tipo`,
-  `español`, `significado`, `sonido`, `id_orden` y `uid`; reimportación correcta manteniendo 1.012
-  ítems. Se registró la colación `unicase` de Anki para leer los nombres de campo.
-- **Instancia única:** con kotoba ya arrancado, una segunda ejecución del exe sale con código 0 en
-  0,05 s, deja un único proceso `kotoba` y trae la ventana principal al frente
-  (`GetForegroundWindow` = «kotoba»).
+- **Gamification R3-04a:** profile, XP by quality, level, streak/best streak and weekly goal
+  rendered in Progress.
+- 3 consecutive correct answers → **9 XP**; the level stays at 1 (threshold 100).
+- **Weekly goal notification:** suppressed with DND active; emitted with DND disabled
+  (verified in `kotoba.log`: `objetivo semanal completado: 12 repasos`).
+- **Gamification R3-04b:** catalog of 16 achievements, achievements panel with progress and unlock
+  date, mastery per lesson with configurable threshold and `✦ Achievement` feedback on unlock.
+- **Migration v3:** `achievements` table and `profile.weekly_goals_done` column; verified on
+  an existing v2 database with a dedicated test.
+- **Achievements measured in the app:** `first_step` on the first review and `reviews_25` on reaching 25;
+  notification emitted with `milestone_notifications` and recorded in the log.
+- **Gamification R3-04c:** streak savers (max. 2) earned on completing the weekly goal,
+  automatic repair of a gap (can be disabled), level titles and a curve from 0 to 5,800 XP.
+- **Migration v4:** `profile.streak_savers` and `streak_repairs` table; tested on a v2 database.
+- **Saver measured in the app:** goal 26 → review 26, `saver_earned = true`, 1 saver,
+  `weekly_goal_1` achievements and notice `objetivo semanal completado: 26 repasos`.
+- **RF2-07 UX and accessibility:** dark theme `auto`/light/dark following Windows, language
+  Spanish/English/Japanese in interface, tray and notifications, and interface scale 90-125 %.
+- **Keyboard:** “skip to content” link, `aria-current`, `Enter` to check/advance and `Esc`
+  to close the popup; visible focus and `prefers-reduced-motion` respected.
+- **Verified in the app:** live light/dark theme, English and Japanese texts, 110 % scale in
+  Progress and popup, and streak bar with correct Japanese formatting.
+- **RF2-09 new words ordered:** new words follow `lesson → category → id`; verified with the real deck:
+  `L00 / 01 Saludos` complete and jump to `L00 / 02 Numeros 0 100`.
+- **Limit and priority:** `new_per_day = 10` and `new_mix_percent = 0` by default; separate
+  counters for due reviews and new words; the scheduler does not open challenges if nothing is available.
+- **RF-04 / RF2-06 manual mapping:** prior inspection of `.txt` and `.apkg`, mapping by columns or by
+  note type (reading, kanji, meaning, gloss, audio, UID, tags, lesson and subsection),
+  row preview and adjustable automatic detection.
+- **Verified with the real deck:** type `Genki Model ES` with fields `kana`, `kanjis`, `tipo`,
+  `español`, `significado`, `sonido`, `id_orden` and `uid`; reimport correct while keeping 1,012
+  items. Anki's `unicase` collation was registered to read the field names.
+- **Single instance:** with kotoba already running, a second run of the exe exits with code 0 in
+  0.05 s, leaves a single `kotoba` process and brings the main window to the front
+  (`GetForegroundWindow` = “kotoba”).
 
-## Datos de prueba en el equipo
+## Test data on the machine
 
-La app tiene importado el mazo en `%APPDATA%\com.kotoba.app` y **3 repasos de prueba**, **9 XP**,
-nivel 1 «Semilla», racha/mejor 1, **1 logro** (`first_step`), **946 nuevas disponibles**,
-**3 nuevas hoy de 10**, 0 repasos vencidos y 0 salvavidas. Objetivo semanal 30, maestría por
-lección 90 % y notificaciones de hito desactivadas. El modo se dejó en `popup`, el DND en
-22:00–08:00 y la apariencia en `auto`/español/100 %.
+The app has the deck imported in `%APPDATA%\com.kotoba.app` and **3 test reviews**, **9 XP**,
+level 1 “Seed”, streak/best 1, **1 achievement** (`first_step`), **946 new available**,
+**3 new today out of 10**, 0 due reviews and 0 savers. Weekly goal 30, mastery per
+lesson 90 % and milestone notifications disabled. The mode was left at `popup`, DND at
+22:00–08:00 and appearance at `auto`/Spanish/100 %.
 
-Para dejarlo limpio:
+To leave it clean:
 
-- **Ajustes → Reiniciar progreso**: conserva las palabras, borra historial e intervalos.
-- **Ajustes → Borrar biblioteca**: borra también las palabras y obliga a reimportar.
-- Borrado total manual: cerrar la app y eliminar `%APPDATA%\com.kotoba.app`.
+- **Settings → Reset progress**: keeps the words, deletes history and intervals.
+- **Settings → Delete library**: also deletes the words and forces a reimport.
+- Full manual wipe: close the app and delete `%APPDATA%\com.kotoba.app`.
 
-## Entorno de desarrollo observado
+## Observed development environment
 
-| Elemento | Valor |
+| Item | Value |
 |---|---|
 | Windows | 10/11, DPI 250 % |
 | Node.js | 26.13.1 (Scoop) |
@@ -183,33 +183,33 @@ Para dejarlo limpio:
 | Rust | 1.100.0 |
 | Target | `x86_64-pc-windows-msvc` |
 | Visual Studio | 2022 |
-| WebView2 | instalado |
+| WebView2 | installed |
 
-Nota: en sesiones nuevas puede hacer falta añadir Node al `PATH`:
+Note: in new sessions you may need to add Node to `PATH`:
 
 ```powershell
 $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 ```
 
-## Deuda técnica y riesgos
+## Technical debt and risks
 
-| Prioridad | Tema | Detalle |
+| Priority | Topic | Detail |
 |---|---|---|
-| Media | Pantalla completa real | Implementada, pero no probada contra un juego/presentación real |
-| Baja | Accesibilidad | Foco y navegación por teclado mejorables |
-| Baja | Gamificación | Logros/maestría y salvavidas implementados; métricas de retención fuera del MVP |
-| Baja | Firma de código | El pipeline de CI y las releases ya funcionan; falta firmar el MSI/NSIS |
+| Medium | Real full screen | Implemented, but not tested against a real game/presentation |
+| Low | Accessibility | Focus and keyboard navigation can be improved |
+| Low | Gamification | Achievements/mastery and savers implemented; retention metrics outside the MVP |
+| Low | Code signing | The CI pipeline and releases already work; the MSI/NSIS still needs signing |
 
-## Próximos pasos recomendados
+## Recommended next steps
 
-1. **Cerrar cabos de Fase 1-2:** #12 autostart real y #13 pantalla completa real (verificación
-   manual, sin código).
-2. **Fase 3:** #9 mazos de terceros; después, sesión de grill para
+1. **Close Phase 1-2 loose ends:** #12 real autostart and #13 real full screen (manual
+   verification, no code).
+2. **Phase 3:** #9 third-party decks; then a grill session for
    AnkiConnect.
-3. **Distribución:** #14 firma de los instaladores.
+3. **Distribution:** #14 installer signing.
 
-## Cómo actualizar este documento
+## How to update this document
 
-- Al cerrar una fase o un bloque de trabajo, actualizar métricas y deuda técnica.
-- Añadir una fila a “Verificación funcional” solo si se probó de verdad.
-- Mover requisitos completados de `requirements.md` y reflejarlos aquí.
+- When closing a phase or a block of work, update metrics and technical debt.
+- Add a row to “Functional verification” only if it was actually tested.
+- Move completed requirements from `requirements.md` and reflect them here.

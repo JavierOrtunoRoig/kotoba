@@ -1,6 +1,6 @@
 import { api } from "./api";
 
-/** Reproduce el audio de un ítem sin bloquear la UI ni romper si falta. */
+/** Plays an item's audio without blocking the UI or breaking if it is missing. */
 export async function playAudio(itemId: number): Promise<void> {
   try {
     const bytes = await api.getAudio(itemId);
@@ -16,6 +16,6 @@ export async function playAudio(itemId: number): Promise<void> {
 
     await audio.play();
   } catch {
-    // El audio es opcional: si falla, la tarjeta sigue funcionando.
+    // Audio is optional: if it fails, the card keeps working.
   }
 }

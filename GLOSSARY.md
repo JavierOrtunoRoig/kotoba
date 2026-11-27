@@ -1,61 +1,61 @@
 # kotoba
 
-App de escritorio para estudiar japonés con repasos espaciados que aparecen solos, sin exigir sesiones largas. Este glosario fija el vocabulario de repaso, madurez y progreso.
+Desktop app for studying Japanese with spaced repetition that appears on its own, without requiring long sessions. This glossary fixes the vocabulary of review, maturity and progress.
 
-## Repaso
+## Review
 
-**Repaso**:
-Respuesta del usuario a una palabra que ya toca practicar.
-_Avoid_: prueba, test, tarjeta
+**Review**:
+The user's answer to a word that is due for practice.
+_Avoid_: test, quiz, card
 
-**Intervalo de repaso**:
-Tiempo que pasa desde un repaso hasta que esa palabra vuelve a estar disponible.
-_Avoid_: vencimiento, plazo
+**Review interval**:
+Time from one review until that word becomes available again.
+_Avoid_: due date, deadline
 
-**Palabra nueva**:
-Palabra que todavía no se ha repasado nunca.
-_Avoid_: palabra pendiente, palabra sin ver
+**New word**:
+A word that has never been reviewed yet.
+_Avoid_: pending word, unseen word
 
-## Madurez de una palabra
+## Word maturity
 
-**Madurez**:
-Estado de una palabra según su intervalo actual: nueva, aprendiendo, reaprendiendo, joven o madura.
-_Avoid_: maestría, nivel
+**Maturity**:
+State of a word according to its current interval: new, learning, relearning, young or mature.
+_Avoid_: mastery, level
 
-**Palabra aprendiendo**:
-Palabra que ya se ha repasado pero aún no ha alcanzado un intervalo de un día, y que nunca lo había alcanzado antes.
-_Avoid_: palabra en curso, palabra débil
+**Learning word**:
+A word that has been reviewed but has not yet reached a one-day interval, and had never reached it before.
+_Avoid_: in-progress word, weak word
 
-**Palabra reaprendiendo**:
-Palabra que ya había alcanzado al menos un día de intervalo y, tras un fallo, vuelve a estar por debajo de un día.
-_Avoid_: palabra fallada, palabra olvidada
+**Relearning word**:
+A word that had already reached at least a one-day interval and, after a lapse, is below one day again.
+_Avoid_: failed word, forgotten word
 
-**Palabra joven**:
-Palabra cuyo intervalo actual está entre uno y veinte días.
-_Avoid_: palabra intermedia
+**Young word**:
+A word whose current interval is between one and twenty days.
+_Avoid_: intermediate word
 
-**Palabra madura**:
-Palabra cuyo intervalo actual es de veintiún días o más.
-_Avoid_: palabra dominada, palabra consolidada
+**Mature word**:
+A word whose current interval is twenty-one days or more.
+_Avoid_: mastered word, consolidated word
 
-## Dominio de una lección
+## Lesson dominance
 
-**Lección**:
-Agrupación de palabras importada del mazo, como un capítulo o un nivel.
-_Avoid_: mazo, categoría
+**Lesson**:
+A grouping of words imported from the deck, such as a chapter or a level.
+_Avoid_: deck, category
 
-**Patrón**:
-Ítem que representa una estructura gramatical en lugar de una palabra suelta. Solo entra en los repasos si el ajuste de patrones está activo.
-_Avoid_: regla, gramática
+**Pattern**:
+An item that represents a grammatical structure instead of a single word. It only enters reviews if the patterns setting is enabled.
+_Avoid_: rule, grammar
 
-**Dominio**:
-Porcentaje de palabras maduras sobre el total de palabras de la lección que entran en los repasos.
-_Avoid_: maestría, progreso
+**Dominance**:
+Percentage of mature words over the total number of lesson words that enter reviews.
+_Avoid_: mastery, progress
 
-**Umbral de dominio**:
-Porcentaje mínimo de palabras maduras que debe alcanzar una lección para considerarse dominada.
-_Avoid_: umbral de maestría
+**Dominance threshold**:
+Minimum percentage of mature words a lesson must reach to be considered dominated.
+_Avoid_: mastery threshold
 
-**Lección dominada**:
-Lección sin palabras nuevas cuyo dominio alcanza el umbral configurado.
-_Avoid_: lección maestra, lección completada
+**Dominated lesson**:
+A lesson with no new words whose dominance reaches the configured threshold.
+_Avoid_: mastered lesson, completed lesson

@@ -4,7 +4,7 @@ let media: MediaQueryList | null = null;
 let mediaHandler: (() => void) | null = null;
 
 /**
- * Aplica tema y escala tipográfica. En `auto` sigue el tema de Windows en vivo.
+ * Applies theme and font scale. In `auto`, follows the live Windows theme.
  */
 export function applyAppearance(
   theme: Settings["theme"],

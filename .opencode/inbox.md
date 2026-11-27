@@ -1,28 +1,28 @@
-# Inbox de ideas
+# Ideas inbox
 
-Ideas sueltas que aún no son issues. Una entrada por idea, la más reciente arriba.
-Cuando una idea se convierte en issue, se anota `→ #N` y no se vuelve a procesar.
+Loose ideas that are not issues yet. One entry per idea, most recent at the top.
+When an idea becomes an issue, `→ #N` is noted and it is not processed again.
 
-Formato:
+Format:
 
 ```
-## 2026-11-25 — Título corto
-Área: scheduler | import | ui | srs | updater | datos
-Contexto: una o dos líneas.
+## 2026-11-25 — Short title
+Area: scheduler | import | ui | srs | updater | data
+Context: one or two lines.
 ```
 
 ---
 
-<!-- Nuevas entradas debajo de esta línea -->
+<!-- New entries below this line -->
 
-## 2026-11-25 — Segunda instancia de la app → #18
+## 2026-11-25 — Second instance of the app → #18
 
-Área: shell
-Contexto: Con kotoba ya en la bandeja del sistema, ejecutar otra vez el `.exe` abre una segunda
-instancia y deja dos iconos. Debería activar la instancia existente en lugar de arrancar otra.
+Area: shell
+Context: With kotoba already in the system tray, running the `.exe` again opens a second
+instance and leaves two icons. It should activate the existing instance instead of starting another.
 
-## 2026-11-25 — Niveles de maestría por lección → [#21](https://github.com/javierortunoroig/kotoba/issues/21)
+## 2026-11-25 — Mastery levels per lesson → [#21](https://github.com/javierortunoroig/kotoba/issues/21)
 
-Área: srs
-Contexto: Hoy la maestría de una lección es un único umbral (intervalo ≥ 7 días). Podría haber
-varios niveles como en Anki y una visualización mejor del porcentaje de maestría por lección.
+Area: srs
+Context: Today a lesson's mastery is a single threshold (interval ≥ 7 days). There could be
+several levels like in Anki and a better visualization of the mastery percentage per lesson.

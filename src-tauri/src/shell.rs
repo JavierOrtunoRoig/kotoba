@@ -22,7 +22,7 @@ fn widget_size(scale: f64) -> (f64, f64) {
     (WIDGET_WIDTH * scale, WIDGET_HEIGHT * scale)
 }
 
-/// Esquina inferior derecha del monitor, con margen y hueco para la barra de tareas.
+/// Bottom-right corner of the monitor, with margin and space for the taskbar.
 fn bottom_right_position(
     monitor_position: (i32, i32),
     monitor_size: (u32, u32),
@@ -42,7 +42,7 @@ pub fn show_main(app: &AppHandle) {
     }
 }
 
-/// Escala de interfaz configurada (1.0 = 100 %).
+/// Configured UI scale (1.0 = 100%).
 fn ui_scale(app: &AppHandle) -> f64 {
     app.try_state::<AppState>()
         .and_then(|state| {
@@ -86,7 +86,7 @@ pub fn show_widget(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Redimensiona las ventanas flotantes cuando cambia la escala.
+/// Resizes the floating windows when the scale changes.
 pub fn apply_font_scale(app: &AppHandle) {
     let scale = ui_scale(app);
     if let Some(window) = app.get_webview_window("popup") {
@@ -119,7 +119,7 @@ pub fn hide_widget(app: &AppHandle) {
     }
 }
 
-/// Notificación nativa. El click se gestiona en `setup` mediante `on_action`.
+/// Native notification. The click is handled in `setup` through `on_action`.
 pub fn show_toast(app: &AppHandle) {
     let language = app
         .try_state::<AppState>()
@@ -140,7 +140,7 @@ pub fn show_notification(app: &AppHandle, title: &str, body: &str) {
         .show();
 }
 
-/// Aplica un cambio de modo a las ventanas y a la bandeja.
+/// Applies a mode change to the windows and the tray.
 pub fn apply_mode(app: &AppHandle, mode: &str) {
     match mode {
         "widget" => {
@@ -160,7 +160,7 @@ pub fn apply_mode(app: &AppHandle, mode: &str) {
     crate::tray::sync_mode(app, mode);
 }
 
-/// Cambia el modo desde la bandeja y persiste el ajuste.
+/// Changes the mode from the tray and persists the setting.
 pub fn set_mode(app: &AppHandle, mode: &str) -> bool {
     let state = app.state::<AppState>();
     let Ok(conn) = state.db.lock() else {
@@ -194,7 +194,7 @@ pub fn toggle_pause(app: &AppHandle) -> bool {
     settings.paused
 }
 
-/// Detecta pantalla completa, presentaciones, juegos o modo silencio de Windows.
+/// Detects full screen, presentations, games or Windows quiet mode.
 #[cfg(target_os = "windows")]
 pub fn fullscreen_or_busy() -> bool {
     use windows_sys::Win32::UI::Shell::{
@@ -253,10 +253,10 @@ fn position_bottom_right(window: &WebviewWindow) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Muestra la ventana y devuelve el foco a la ventana anterior.
+/// Shows the window and returns focus to the previous window.
 ///
-/// Tauri necesita `show()` para inicializar/navegar el webview; después se
-/// restaura el foco y se fuerza el topmost sin activar.
+/// Tauri needs `show()` to initialize/navigate the webview; afterwards focus is
+/// restored and topmost is forced without activating.
 #[cfg(target_os = "windows")]
 fn show_without_activation(window: &WebviewWindow) -> tauri::Result<()> {
     use windows_sys::Win32::UI::WindowsAndMessaging::{
@@ -339,17 +339,17 @@ mod tests {
 
     #[test]
     fn positions_on_secondary_monitor_use_monitor_offset() {
-        // Monitor a la derecha del principal.
+        // Monitor to the right of the primary one.
         assert_eq!(
             bottom_right_position((1920, 0), FULL_HD, (392, 280)),
             (3424, 724)
         );
-        // Monitor a la izquierda: coordenadas negativas.
+        // Monitor to the left: negative coordinates.
         assert_eq!(
             bottom_right_position((-1920, 0), FULL_HD, (392, 280)),
             (-416, 724)
         );
-        // Monitor encima del principal.
+        // Monitor above the primary one.
         assert_eq!(
             bottom_right_position((0, -1080), FULL_HD, (392, 280)),
             (1504, -356)
@@ -363,7 +363,7 @@ mod tests {
             bottom_right_position((0, 0), (1366, 768), (392, 280)),
             (950, 412)
         );
-        // Monitor 4K: 3840 - 392 - 24 = 3424; 2160 - 280 - 24 - 52 = 1804
+        // 4K monitor: 3840 - 392 - 24 = 3424; 2160 - 280 - 24 - 52 = 1804
         assert_eq!(
             bottom_right_position((0, 0), (3840, 2160), (392, 280)),
             (3424, 1804)
@@ -372,7 +372,7 @@ mod tests {
 
     #[test]
     fn positions_can_be_negative_when_window_is_larger_than_monitor() {
-        // No debe entrar en pánico ni saturar: la resta es con signo.
+        // It must not panic or saturate: the subtraction is signed.
         assert_eq!(
             bottom_right_position((0, 0), (300, 200), (392, 280)),
             (-116, -156)

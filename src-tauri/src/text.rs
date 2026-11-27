@@ -1,7 +1,7 @@
 use crate::models::Item;
 use unicode_normalization::UnicodeNormalization;
 
-/// Elimina etiquetas HTML y decodifica las entidades más comunes.
+/// Removes HTML tags and decodes the most common entities.
 pub fn strip_html(input: &str) -> String {
     let mut out = String::with_capacity(input.len());
     let mut in_tag = false;
@@ -62,7 +62,7 @@ fn strip_diacritics(input: &str) -> String {
         .collect()
 }
 
-/// Texto listo para mostrar: sin HTML, NFKC, espacios colapsados.
+/// Display-ready text: no HTML, NFKC, collapsed spaces.
 pub fn clean_display(input: &str) -> String {
     let stripped = strip_html(input);
     let normalized: String = stripped.nfkc().collect();
@@ -87,7 +87,7 @@ pub fn clean_display(input: &str) -> String {
     out.trim().to_string()
 }
 
-/// Clave para deduplicar ítems (sin espacios ni puntuación).
+/// Key to deduplicate items (no spaces or punctuation).
 pub fn normalize_key(input: &str) -> String {
     let cleaned = clean_display(input);
     let folded = strip_diacritics(&cleaned).to_lowercase();
@@ -102,7 +102,7 @@ const IGNORED_ANSWER_CHARS: &[char] = &[
     '*', '〜', '~', '·', '-',
 ];
 
-/// Normaliza una respuesta para compararla con las variantes aceptadas.
+/// Normalizes an answer to compare it with the accepted variants.
 pub fn normalize_answer(input: &str) -> String {
     let cleaned = clean_display(input);
     let folded = strip_diacritics(&cleaned).to_lowercase();
@@ -190,7 +190,7 @@ fn push_variant(out: &mut Vec<String>, raw: &str) {
     }
 }
 
-/// Todas las formas japonesas aceptables (kanji y lecturas).
+/// All acceptable Japanese forms (kanji and readings).
 pub fn japanese_variants(item: &Item) -> Vec<String> {
     let mut out = Vec::new();
     if let Some(kanji) = item.kanji.as_deref() {
@@ -259,7 +259,7 @@ fn push_meaning(out: &mut Vec<String>, raw: &str) {
     }
 }
 
-/// Significados aceptables en JP → ES.
+/// Acceptable meanings in JP → ES.
 pub fn meaning_variants(item: &Item) -> Vec<String> {
     let mut out = Vec::new();
     let cleaned = clean_display(&item.meaning);
@@ -440,7 +440,7 @@ const DIGRAPHS: &[(&str, &str)] = &[
     ("ゔぉ", "vo"),
 ];
 
-/// Convierte kana a romaji (Hepburn aproximado). Los kanji se dejan intactos.
+/// Converts kana to romaji (approximate Hepburn). Kanji are left untouched.
 pub fn to_romaji(input: &str) -> String {
     let normalized: String = input.nfkc().collect();
     let chars: Vec<char> = normalized.chars().map(kana_to_hiragana).collect();
@@ -511,7 +511,7 @@ pub fn to_romaji(input: &str) -> String {
     out
 }
 
-/// Variantes romaji aceptables: Hepburn, vocales largas colapsadas, kunrei y nasal.
+/// Acceptable romaji variants: Hepburn, collapsed long vowels, kunrei and nasal.
 pub fn romaji_variants(input: &str) -> Vec<String> {
     let base = to_romaji(input);
     if base.is_empty() {
@@ -590,7 +590,7 @@ pub fn check_es_to_jp(answer: &str, item: &Item) -> bool {
         return true;
     }
 
-    // Si no es romaji, no hay nada más que probar.
+    // If it is not romaji, there is nothing else to try.
     if !answer.chars().all(|c| c.is_ascii_alphabetic()) {
         return false;
     }

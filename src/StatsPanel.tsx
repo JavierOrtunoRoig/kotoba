@@ -474,7 +474,7 @@ function startOfDaySeconds(value: string): number | null {
   return Math.floor(new Date(year, month - 1, day).getTime() / 1000);
 }
 
-/** Medianoche del día siguiente, para que el rango incluya el día "hasta". */
+/** Midnight of the following day, so the range includes the "to" day. */
 function endOfDaySeconds(value: string): number | null {
   if (!value) return null;
   const [year, month, day] = value.split("-").map(Number);

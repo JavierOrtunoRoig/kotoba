@@ -7,7 +7,7 @@ use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
 
-/// Arranca el planificador pasivo. Revisa cada 10 s si toca mostrar un reto.
+/// Starts the passive scheduler. Checks every 10 s whether a challenge is due.
 pub fn start(app: AppHandle) {
     std::thread::spawn(move || {
         log::info!("scheduler iniciado");

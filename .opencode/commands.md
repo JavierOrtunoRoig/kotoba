@@ -1,43 +1,42 @@
-# Comandos
+# Commands
 
-Todos los comandos se ejecutan desde la raíz del repositorio y están pensados para **PowerShell**
-en Windows.
+All commands run from the repository root and are intended for **PowerShell** on Windows.
 
-## Entorno
+## Environment
 
-| Herramienta | Versión usada | Nota |
+| Tool | Version used | Note |
 |---|---|---|
-| Node.js | 26.13.1 | Instalado con Scoop; si `node` no está en `PATH`, añadir el directorio |
-| npm | 11.20.0 | Se usa npm (hay `package-lock.json`) |
+| Node.js | 26.13.1 | Installed with Scoop; if `node` is not on `PATH`, add the directory |
+| npm | 11.20.0 | npm is used (there is a `package-lock.json`) |
 | Rust | 1.100.0 | Target `x86_64-pc-windows-msvc` |
-| MSVC | Visual Studio 2022 | Necesario para enlazar Tauri |
+| MSVC | Visual Studio 2022 | Required to link Tauri |
 
-Si `node` no está disponible en la sesión:
+If `node` is not available in the session:
 
 ```powershell
 $env:Path = "C:\Users\Javier\scoop\apps\nodejs-lts\current;$env:Path"
 node --version
 ```
 
-## Instalar dependencias
+## Install dependencies
 
 ```powershell
 npm install
 ```
 
-## Desarrollo
+## Development
 
 ```powershell
 npm run tauri dev
 ```
 
-Esto levanta Vite en `http://localhost:1420` y abre la app Tauri. La ventana principal se muestra
-sola si la biblioteca está vacía; si ya hay ítems, la app vive en la bandeja.
+This starts Vite at `http://localhost:1420` and opens the Tauri app. The main window shows on its
+own if the library is empty; if there are already items, the app lives in the tray.
 
-El binario de desarrollo es de consola y carga el `devUrl`: **no actives «Arrancar con Windows»** en
-esa build. Si se ejecuta sin Vite (por ejemplo, desde el autostart), abre una consola con los logs y
-una página `ERR_CONNECTION_REFUSED`. La opción está deshabilitada en compilaciones debug; para
-autostart, instala el MSI/NSIS de una release y actívala desde esa app.
+The development binary is a console build and loads the `devUrl`: **do not enable “Launch at
+startup”** in that build. If it runs without Vite (for example, from autostart), it opens a console
+with the logs and an `ERR_CONNECTION_REFUSED` page. The option is disabled in debug builds; for
+autostart, install the MSI/NSIS from a release and enable it from that app.
 
 ## Build
 
@@ -45,81 +44,81 @@ autostart, instala el MSI/NSIS de una release y actívala desde esa app.
 npm run tauri build
 ```
 
-Build de producción (más lento, LTO activado). El instalador sale en `src-tauri/target/release/bundle/`.
+Production build (slower, LTO enabled). The installer is output to `src-tauri/target/release/bundle/`.
 
-Con `bundle.createUpdaterArtifacts` activo, el build de release exige la clave de firma:
+With `bundle.createUpdaterArtifacts` enabled, the release build requires the signing key:
 
 ```powershell
 $env:TAURI_SIGNING_PRIVATE_KEY = Get-Content "$env:USERPROFILE\.tauri\kotoba-updater\kotoba.key" -Raw
-$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = "<contraseña de la clave>"
+$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = "<key password>"
 npm run tauri build
 ```
 
-## Actualizaciones automáticas
+## Automatic updates
 
 - Plugin: `tauri-plugin-updater` + `tauri-plugin-process`.
 - Endpoint: `https://github.com/JavierOrtunoRoig/kotoba/releases/latest/download/latest.json`.
-- `latest.json` apunta al NSIS (`updaterJsonPreferNsis: true`): instalación por usuario y sin admin.
-- Clave pública: `plugins.updater.pubkey` en `src-tauri/tauri.conf.json`.
-- Clave privada: `%USERPROFILE%\.tauri\kotoba-updater\kotoba.key` (nunca al repo; `*.key` ignorado).
-- Secrets de GitHub: `TAURI_SIGNING_PRIVATE_KEY` (contenido) y `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
-- Generar un par nuevo (rompe las actualizaciones de instalaciones existentes):
+- `latest.json` points to the NSIS (`updaterJsonPreferNsis: true`): per-user install with no admin.
+- Public key: `plugins.updater.pubkey` in `src-tauri/tauri.conf.json`.
+- Private key: `%USERPROFILE%\.tauri\kotoba-updater\kotoba.key` (never in the repo; `*.key` ignored).
+- GitHub secrets: `TAURI_SIGNING_PRIVATE_KEY` (content) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+- Generate a new pair (breaks updates for existing installs):
 
   ```powershell
   npx tauri signer generate -w "$env:USERPROFILE\.tauri\kotoba-updater\kotoba.key"
   ```
 
-- Comprobar a mano: Ajustes → Sistema → «Buscar actualizaciones».
+- Check manually: Settings → System → “Check for updates”.
 
-## Publicar una release
+## Publishing a release
 
-1. Subir la versión en `package.json`, `src-tauri/Cargo.toml` y `src-tauri/tauri.conf.json`.
-2. Crear y empujar la etiqueta:
+1. Bump the version in `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`.
+2. Create and push the tag:
 
    ```powershell
    git tag v0.1.1
    git push origin v0.1.1
    ```
 
-3. GitHub Actions compila y publica en **Releases** el MSI, el NSIS, sus `.sig` y `latest.json` para
-   el updater. El workflow `release.yml` falla si la etiqueta no coincide con la versión de
-   `tauri.conf.json` o si faltan los secrets de firma. También se puede lanzar a mano desde la
-   pestaña Actions indicando la etiqueta.
+3. GitHub Actions builds and publishes to **Releases** the MSI, the NSIS, their `.sig` files and
+   `latest.json` for the updater. The `release.yml` workflow fails if the tag does not match the
+   version in `tauri.conf.json` or if the signing secrets are missing. It can also be triggered
+   manually from the Actions tab by specifying the tag.
 
-La CI (`ci.yml`) se ejecuta en cada push a `main` y en cada pull request.
+CI (`ci.yml`) runs on every push to `main` and on every pull request.
 
-## Comprobaciones
+## Checks
 
 ```powershell
 npm run typecheck          # TypeScript
 npm run build              # TypeScript + Vite
-cd src-tauri; cargo check  # Rust sin enlazar
+cd src-tauri; cargo check  # Rust without linking
 cd src-tauri; cargo test --lib
 ```
 
-## Test de importación contra el mazo real
+## Import test against the real deck
 
-El test está marcado como `ignored` porque depende de un archivo local:
+The test is marked `ignored` because it depends on a local file:
 
 ```powershell
 cd src-tauri
 cargo test --lib imports_real_genki_deck -- --ignored --nocapture
 ```
 
-Comprueba: 1.076 notas, al menos 1.000 ítems, al menos 700 audios y 1.076 fuentes. Imprime el
-`ImportSummary` completo.
+It checks: 1,076 notes, at least 1,000 items, at least 700 audio files and 1,076 sources. It prints
+the full `ImportSummary`.
 
-### Test de normalización contra el mazo real
+### Normalization test against the real deck
 
 ```powershell
 cd src-tauri
 cargo test --lib normalizes_real_deck_answers -- --ignored --nocapture
 ```
 
-Valida **2.629 respuestas** generadas desde el mazo real (kanji, lecturas, romaji y significados) y
-falla si alguna forma plausible es rechazada o si se acepta basura.
+It validates **2,629 answers** generated from the real deck (kanji, readings, romaji and meanings)
+and fails if any plausible form is rejected or if garbage is accepted.
 
-## Inspeccionar la base de datos local
+## Inspecting the local database
 
 ```powershell
 $db = "$env:APPDATA\com.kotoba.app\kotoba.sqlite3"
@@ -130,74 +129,74 @@ sqlite3 $db "select key, value from settings;"
 sqlite3 $db "select id, reading, meaning, lesson, category from items limit 20;"
 ```
 
-## Copia de seguridad
+## Backup
 
-Desde **Ajustes → Datos → Exportar copia** se elige una carpeta y se crea
-`kotoba-backup-<timestamp>/` con `kotoba.sqlite3` y `media/`. La base se copia tras un
-`PRAGMA wal_checkpoint(TRUNCATE)` para que sea consistente.
+From **Settings → Data → Export backup** you pick a folder and `kotoba-backup-<timestamp>/` is
+created with `kotoba.sqlite3` and `media/`. The database is copied after a
+`PRAGMA wal_checkpoint(TRUNCATE)` so it is consistent.
 
-**Restaurar copia** reemplaza la base y el audio actuales por los de la carpeta elegida.
-**Exportar historial** guarda un CSV de `review_log` con fecha local, lectura, significado,
-dirección, resultado, calidad y latencia.
+**Restore backup** replaces the current database and audio with those from the chosen folder.
+**Export history** saves a CSV of `review_log` with local date, reading, meaning, direction, result,
+quality and latency.
 
-## Borrar datos locales
+## Deleting local data
 
-Primero cerrar la app (menú de bandeja → Salir).
+First close the app (tray menu → Quit).
 
 ```powershell
-# Borrado completo: palabras, audio, progreso y ajustes
+# Full deletion: words, audio, progress and settings
 Remove-Item "$env:APPDATA\com.kotoba.app" -Recurse -Force
 ```
 
-Alternativas desde la app:
+Alternatives from the app:
 
-- **Ajustes → Reiniciar progreso**: borra `review_log` y `srs_state`, conserva las palabras.
-- **Ajustes → Borrar biblioteca**: borra palabras, fuentes y progreso; obliga a reimportar.
+- **Settings → Reset progress**: deletes `review_log` and `srs_state`, keeps the words.
+- **Settings → Delete library**: deletes words, sources and progress; forces a reimport.
 
 ## Logs
 
-Ruta: `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`.
+Path: `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`.
 
-Desde **Ajustes → Sistema → Abrir carpeta** se abre el directorio. El plugin escribe con nivel
-`Info`; las importaciones, copias, restauraciones y el arranque del scheduler dejan traza.
+**Settings → System → Open folder** opens the directory. The plugin writes at `Info` level; imports,
+backups, restores and scheduler startup leave a trace.
 
-## Diagnóstico de la UI con CDP
+## Diagnosing the UI with CDP
 
-Útil para verificar pantallas sin depender de capturas de pantalla del escritorio.
+Useful for verifying screens without relying on desktop screenshots.
 
 ```powershell
 $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=9222"
 npm run tauri dev
 ```
 
-En otra terminal:
+In another terminal:
 
 ```powershell
 Invoke-RestMethod "http://127.0.0.1:9222/json" | Select-Object title, url, webSocketDebuggerUrl
 ```
 
-Desde CDP se puede evaluar JavaScript (`Runtime.evaluate`) y capturar la vista
-(`Page.captureScreenshot`). La ventana `popup` y la ventana `main` aparecen como dos targets
-distintos; se distinguen por `window.innerWidth` y `document.body.classList.contains("popup-window")`.
+From CDP you can evaluate JavaScript (`Runtime.evaluate`) and capture the view
+(`Page.captureScreenshot`). The `popup` window and the `main` window appear as two separate targets;
+they are told apart by `window.innerWidth` and `document.body.classList.contains("popup-window")`.
 
 ## Git
 
 ```powershell
 git status
-git add <archivos>
-git commit -m "tipo(scope): resumen" -m "detalle opcional"
+git add <files>
+git commit -m "type(scope): summary" -m "optional detail"
 git log --oneline -10
 ```
 
-Convención: **Conventional Commits**. Tipos usados: `feat`, `fix`, `docs`, `refactor`, `test`,
+Convention: **Conventional Commits**. Types used: `feat`, `fix`, `docs`, `refactor`, `test`,
 `chore`.
 
-## Problemas típicos
+## Common problems
 
-| Síntoma | Causa / solución |
+| Symptom | Cause / fix |
 |---|---|
-| `cargo` no encuentra `link.exe` | Abrir una Developer PowerShell de VS 2022 o instalar Build Tools con MSVC |
-| `node` no se reconoce | Añadir el directorio de Scoop al `PATH` (ver arriba) |
-| El `.apkg` falla al importar | Debe ser el formato nuevo de Anki (`collection.anki21b`); reexportar con Anki reciente |
-| El popup no aparece | Comprobar que no está activo “Pausar”, el horario de no molestar o el máximo diario |
-| La app no muestra ventana | Si ya hay biblioteca, se inicia en la bandeja: abrir desde el icono o el menú |
+| `cargo` cannot find `link.exe` | Open a VS 2022 Developer PowerShell or install Build Tools with MSVC |
+| `node` is not recognized | Add the Scoop directory to `PATH` (see above) |
+| The `.apkg` fails to import | It must be the new Anki format (`collection.anki21b`); re-export with a recent Anki |
+| The popup does not appear | Check that “Pause”, the do-not-disturb window or the daily maximum is not active |
+| The app shows no window | If there is already a library, it starts in the tray: open it from the icon or the menu |

@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Etiqueta a publicar (por ejemplo, v0.1.0)"
+        description: "Tag to publish (for example, v0.1.0)"
         required: true
         type: string
 
@@ -20,15 +20,15 @@ permissions:
 
 jobs:
   release:
-    name: Compilar y publicar
+    name: Build and publish
     runs-on: windows-latest
     steps:
-      - name: Descargar el repositorio
+      - name: Check out the repository
         uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag || github.ref }}
 
-      - name: Comprobar la etiqueta y la versión
+      - name: Check the tag and the version
         id: tag
         shell: pwsh
         run: |
@@ -41,25 +41,25 @@ jobs:
           "tag=$tag" >> $env:GITHUB_OUTPUT
           "version=$version" >> $env:GITHUB_OUTPUT
 
-      - name: Configurar Node
+      - name: Set up Node
         uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
 
-      - name: Instalar dependencias
+      - name: Install dependencies
         run: npm ci
 
-      - name: Configurar Rust
+      - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Caché de Rust
+      - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
           key: release
 
-      - name: Compilar y publicar
+      - name: Build and publish
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -68,32 +68,32 @@ jobs:
         with:
           tagName: ${{ steps.tag.outputs.tag }}
           uploadUpdaterJson: true
-          # El updater usa el NSIS (instalación por usuario, sin admin). El MSI sigue disponible
-          # como descarga manual.
+          # The updater uses the NSIS build (per-user install, no admin). The MSI remains available
+          # as a manual download.
           updaterJsonPreferNsis: true
           releaseName: "kotoba ${{ steps.tag.outputs.tag }}"
           releaseBody: |
-            Instaladores de kotoba ${{ steps.tag.outputs.tag }} para Windows 10 y 11 (x64).
+            kotoba ${{ steps.tag.outputs.tag }} installers for Windows 10 and 11 (x64).
 
-            - **NSIS (recomendado)**: `kotoba_${{ steps.tag.outputs.version }}_x64-setup.exe`
+            - **NSIS (recommended)**: `kotoba_${{ steps.tag.outputs.version }}_x64-setup.exe`
             - **MSI**: `kotoba_${{ steps.tag.outputs.version }}_x64_en-US.msi`
 
-            El NSIS instala por usuario, sin permisos de administrador, y es el formato que usa el
-            updater automático. El MSI es el instalador clásico de Windows.
+            The NSIS build installs per user, without administrator permissions, and is the format
+            used by the automatic updater. The MSI is the classic Windows installer.
 
-            Después de esta versión, kotoba comprueba actualizaciones al arrancar y desde
-            Ajustes → Sistema.
+            After this version, kotoba checks for updates on startup and from
+            Settings → System.
 
-            Los binarios **no están firmados digitalmente**, así que SmartScreen puede pedir
-            confirmación la primera vez. El código fuente de esta versión está en la etiqueta
-            `${{ steps.tag.outputs.tag }}`.
+            The binaries are **not digitally signed**, so SmartScreen may ask for
+            confirmation the first time. The source code for this version is in the
+            `${{ steps.tag.outputs.tag }}` tag.
 
-            WebView2 viene incluido en Windows 11 y en la mayoría de equipos con Windows 10; si
-            falta, el instalador puede descargarlo.
+            WebView2 ships with Windows 11 and most Windows 10 machines; if it is
+            missing, the installer can download it.
           releaseDraft: false
           prerelease: false
 
-      - name: Actualizar la release con el changelog en inglés
+      - name: Update the release with the English changelog
         if: success()
         shell: pwsh
         run: pwsh .github/scripts/update-release-body.ps1 -Version "${{ steps.tag.outputs.version }}"

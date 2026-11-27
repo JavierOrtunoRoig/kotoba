@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.2.0",
   "type": "module",
-  "description": "Entrenador pasivo de vocabulario japonés para Windows",
+  "description": "Passive Japanese vocabulary trainer for Windows",
   "license": "MIT",
   "repository": {
     "type": "git",

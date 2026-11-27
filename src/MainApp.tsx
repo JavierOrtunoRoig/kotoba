@@ -18,7 +18,7 @@ import {
 
 type View = "practice" | "stats" | "settings";
 
-/** Versión que el usuario decidió posponer, para no repetir el aviso en cada arranque. */
+/** Version the user chose to postpone, so the prompt is not repeated on every startup. */
 const SKIPPED_UPDATE = "kotoba.skipped_update";
 
 export default function MainApp() {
@@ -68,8 +68,8 @@ export default function MainApp() {
     }
   }, [boot?.settings.theme, boot?.settings.font_scale]);
 
-  // Aviso de actualización al arrancar. Solo en la app instalada: firmar y actualizar un
-  // binario de desarrollo rompería el flujo de `tauri dev`.
+  // Update prompt on startup. Only in the installed app: signing and updating a
+  // development binary would break the `tauri dev` flow.
   useEffect(() => {
     if (!boot || boot.dev_build) return;
     let alive = true;
@@ -103,13 +103,13 @@ export default function MainApp() {
         }
         await installUpdate(update);
       } catch {
-        // Sin red o sin `latest.json`: no molestar en el arranque.
+        // No network or no `latest.json`: do not bother the user at startup.
       }
     })();
     return () => {
       alive = false;
     };
-    // `t` cambia con el idioma; el aviso se lanza una vez por sesión.
+    // `t` changes with the language; the prompt is triggered once per session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boot?.dev_build]);
 

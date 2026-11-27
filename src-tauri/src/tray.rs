@@ -17,7 +17,7 @@ pub struct TrayState {
     pub toast_mode: CheckMenuItem<tauri::Wry>,
 }
 
-/// Etiqueta del ítem de pausa según el estado actual.
+/// Label for the pause item based on the current state.
 fn pause_label(language: &str, paused: bool) -> &'static str {
     if paused {
         i18n::resume(language)
@@ -26,7 +26,7 @@ fn pause_label(language: &str, paused: bool) -> &'static str {
     }
 }
 
-/// Marca de verificación de cada modo del submenú: (popup, widget, toast).
+/// Check mark for each submenu mode: (popup, widget, toast).
 fn mode_flags(mode: &str) -> (bool, bool, bool) {
     (mode == "popup", mode == "widget", mode == "toast")
 }
@@ -177,7 +177,7 @@ pub fn sync_pause(app: &AppHandle, paused: bool) {
     }
 }
 
-/// Actualiza los textos de la bandeja al cambiar el idioma.
+/// Updates the tray texts when the language changes.
 pub fn sync_language(app: &AppHandle, language: &str) {
     let paused = current_settings(app).paused;
     if let Some(tray) = app.try_state::<TrayState>() {

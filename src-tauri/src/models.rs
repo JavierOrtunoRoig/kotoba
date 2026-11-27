@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// Configuración persistida. Se guarda como JSON en la tabla `settings`.
+/// Persisted settings. Stored as JSON in the `settings` table.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
@@ -11,34 +11,34 @@ pub struct Settings {
     pub dnd_enabled: bool,
     pub dnd_start: String,
     pub dnd_end: String,
-    /// Reproducir el audio automáticamente en la dirección JP → ES.
+    /// Automatically play audio in the JP → ES direction.
     pub audio_autoplay: bool,
-    /// `popup`, `widget` o `toast`.
+    /// `popup`, `widget` or `toast`.
     pub mode: String,
-    /// No mostrar retos si hay una app a pantalla completa o una presentación.
+    /// Do not show challenges if a full-screen app or a presentation is running.
     pub suppress_fullscreen: bool,
-    /// `random` o `alternate`.
+    /// `random` or `alternate`.
     pub direction_mode: String,
-    /// Incluir notas de gramática/plantillas (〜, +, ...).
+    /// Include grammar/pattern notes (〜, +, ...).
     pub include_patterns: bool,
     pub launch_at_startup: bool,
-    /// Repasos objetivo por semana (0 = sin objetivo).
+    /// Target reviews per week (0 = no goal).
     pub weekly_goal: i64,
-    /// Notificar hitos como completar el objetivo semanal o desbloquear logros.
+    /// Notify milestones such as completing the weekly goal or unlocking achievements.
     pub milestone_notifications: bool,
-    /// Porcentaje de palabras dominadas para completar una lección (50-100).
+    /// Percentage of mastered words needed to complete a lesson (50-100).
     pub lesson_mastery_percent: i64,
-    /// Reparar automáticamente un día perdido si hay un salvavidas disponible.
+    /// Automatically repair a missed day if a streak saver is available.
     pub streak_repair: bool,
-    /// Tema visual: `auto`, `light` o `dark`.
+    /// Visual theme: `auto`, `light` or `dark`.
     pub theme: String,
-    /// Escala de la interfaz en porcentaje (90-125).
+    /// UI scale in percent (90-125).
     pub font_scale: i64,
-    /// Idioma de la interfaz: `es`, `en` o `ja`.
+    /// UI language: `es`, `en` or `ja`.
     pub language: String,
-    /// Palabras nuevas máximas por día (0 = no introducir nuevas).
+    /// Maximum new words per day (0 = do not introduce new ones).
     pub new_per_day: i64,
-    /// Porcentaje de nuevas cuando también hay repasos vencidos (0 = repasos primero).
+    /// Percentage of new words when there are due reviews too (0 = reviews first).
     pub new_mix_percent: i64,
 }
 
@@ -131,7 +131,7 @@ pub struct Item {
 }
 
 impl Item {
-    /// Forma japonesa que se muestra en JP → ES.
+    /// Japanese form shown in JP → ES.
     #[allow(dead_code)]
     pub fn japanese_display(&self) -> &str {
         self.kanji
@@ -144,38 +144,38 @@ impl Item {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Challenge {
     pub item: Item,
-    /// `jp_to_es` o `es_to_jp`.
+    /// `jp_to_es` or `es_to_jp`.
     pub direction: String,
-    /// Repasos vencidos (sin contar palabras nuevas).
+    /// Due reviews (not counting new words).
     pub due_count: i64,
-    /// Palabras nuevas disponibles sin introducir.
+    /// New words available that have not been introduced.
     pub new_count: i64,
-    /// Segundos hasta el próximo repaso programado (null si no queda ninguna palabra vista).
+    /// Seconds until the next scheduled review (null if no seen words remain).
     pub next_due_seconds: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnswerResult {
     pub correct: bool,
-    /// Respuestas aceptadas, la primera es la principal.
+    /// Accepted answers; the first one is the primary one.
     pub expected: Vec<String>,
     pub reading: String,
     pub meaning: String,
     pub kanji_gloss: Option<String>,
     pub has_audio: bool,
-    /// Minutos hasta el próximo repaso de este ítem.
+    /// Minutes until the next review of this item.
     pub next_interval_minutes: i64,
-    /// XP ganado en este repaso (0 si falló).
+    /// XP earned in this review (0 if it failed).
     pub xp_gained: i64,
-    /// XP total acumulado.
+    /// Total accumulated XP.
     pub xp_total: i64,
-    /// Nivel actual.
+    /// Current level.
     pub level: i64,
-    /// Si este repaso ha subido de nivel.
+    /// Whether this review leveled up.
     pub leveled_up: bool,
-    /// Logros desbloqueados con este repaso.
+    /// Achievements unlocked with this review.
     pub unlocked: Vec<Achievement>,
-    /// Si este repaso ha completado el objetivo semanal y ha dado un salvavidas.
+    /// Whether this review completed the weekly goal and granted a streak saver.
     pub saver_earned: bool,
 }
 
@@ -195,20 +195,20 @@ pub struct LessonStat {
     pub reviews: i64,
     pub correct: i64,
     pub accuracy: f64,
-    /// Porcentaje de palabras dominadas sobre el total de la lección.
+    /// Percentage of mastered words over the lesson total.
     pub mastery_percent: f64,
-    /// Si la lección alcanza el umbral de maestría configurado.
+    /// Whether the lesson reaches the configured mastery threshold.
     pub is_mastered: bool,
 }
 
-/// Logro o insignia. `progress` se recorta en `target`.
+/// Achievement or badge. `progress` is clamped to `target`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Achievement {
     pub key: String,
     pub title: String,
     pub description: String,
     pub unlocked: bool,
-    /// Marca temporal de desbloqueo (segundos Unix).
+    /// Unlock timestamp (Unix seconds).
     pub unlocked_at: Option<i64>,
     pub progress: i64,
     pub target: i64,
@@ -224,46 +224,46 @@ pub struct DifficultItem {
     pub lapses: i64,
 }
 
-/// Un repaso del historial, con los datos del ítem al que pertenece.
+/// A review from the history, with the data of the item it belongs to.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ReviewLogEntry {
-    /// Marca temporal del repaso (segundos Unix).
+    /// Review timestamp (Unix seconds).
     pub answered_at: i64,
-    /// La misma marca en hora local, `YYYY-MM-DD HH:MM:SS`.
+    /// The same timestamp in local time, `YYYY-MM-DD HH:MM:SS`.
     pub answered_at_local: String,
     pub reading: String,
     pub meaning: String,
-    /// `jp_to_es` o `es_to_jp`.
+    /// `jp_to_es` or `es_to_jp`.
     pub direction: String,
-    /// `true` si fue acierto.
+    /// `true` if it was correct.
     pub result: bool,
     pub quality: i64,
     pub latency_ms: i64,
 }
 
-/// Página del historial de repasos.
+/// Page of the review history.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ReviewHistoryPage {
     pub entries: Vec<ReviewLogEntry>,
-    /// Repasos que cumplen los filtros, no solo los de esta página.
+    /// Reviews matching the filters, not only those on this page.
     pub total: i64,
     pub page: i64,
     pub per_page: i64,
     pub has_more: bool,
 }
 
-/// Filtros de una consulta del historial.
+/// Filters for a history query.
 #[derive(Debug, Clone, Default)]
 pub struct ReviewHistoryQuery {
     pub page: i64,
     pub per_page: i64,
-    /// `jp_to_es` o `es_to_jp`; cualquier otro valor se ignora.
+    /// `jp_to_es` or `es_to_jp`; any other value is ignored.
     pub direction: Option<String>,
-    /// `Some(true)` aciertos, `Some(false)` fallos.
+    /// `Some(true)` correct, `Some(false)` wrong.
     pub result: Option<bool>,
-    /// Desde esta marca (incluida).
+    /// From this timestamp (inclusive).
     pub from_ts: Option<i64>,
-    /// Hasta esta marca (excluida); la UI envía la medianoche del día siguiente.
+    /// Up to this timestamp (exclusive); the UI sends midnight of the following day.
     pub to_ts: Option<i64>,
 }
 
@@ -276,44 +276,44 @@ pub struct Stats {
     pub accuracy_today: f64,
     pub streak_days: i64,
     pub mastered: i64,
-    /// Repasos vencidos (sin contar palabras nuevas).
+    /// Due reviews (not counting new words).
     pub due_now: i64,
-    /// Palabras nuevas sin introducir.
+    /// New words not yet introduced.
     pub new_available: i64,
-    /// Palabras nuevas introducidas hoy.
+    /// New words introduced today.
     pub new_today: i64,
-    /// Segundos hasta el próximo repaso programado (null si no queda ninguna palabra vista).
+    /// Seconds until the next scheduled review (null if no seen words remain).
     pub next_due_seconds: Option<i64>,
-    /// Límite diario de palabras nuevas.
+    /// Daily limit of new words.
     pub new_per_day: i64,
     pub activity: Vec<DayCount>,
     pub lessons: Vec<LessonStat>,
     pub difficult: Vec<DifficultItem>,
-    /// XP acumulado.
+    /// Accumulated XP.
     pub xp_total: i64,
-    /// Nivel actual.
+    /// Current level.
     pub level: i64,
-    /// Nombre del tramo del nivel (Semilla, Brote, ...).
+    /// Name of the level tier (Semilla, Brote, ...).
     pub level_title: String,
-    /// Progreso 0-100 hacia el siguiente nivel.
+    /// Progress 0-100 towards the next level.
     pub level_progress: f64,
-    /// XP absoluto del siguiente nivel (null si es el máximo).
+    /// Absolute XP of the next level (null if it is the maximum).
     pub next_level_xp: Option<i64>,
-    /// Mejor racha histórica.
+    /// Best streak ever.
     pub streak_best: i64,
-    /// Salvavidas de racha disponibles.
+    /// Available streak savers.
     pub streak_savers: i64,
-    /// Máximo de salvavidas acumulables.
+    /// Maximum stackable streak savers.
     pub streak_savers_max: i64,
-    /// Días de racha reparados con salvavidas.
+    /// Streak days repaired with savers.
     pub streak_repairs: i64,
-    /// Repasos de la semana actual.
+    /// Reviews in the current week.
     pub week_reviews: i64,
-    /// Objetivo semanal configurado (0 = sin objetivo).
+    /// Configured weekly goal (0 = no goal).
     pub weekly_goal: i64,
-    /// Umbral de maestría por lección (50-100).
+    /// Mastery threshold per lesson (50-100).
     pub lesson_mastery_percent: i64,
-    /// Catálogo de logros con su progreso actual.
+    /// Achievement catalog with current progress.
     pub achievements: Vec<Achievement>,
 }
 
@@ -322,8 +322,8 @@ pub struct Bootstrap {
     pub item_count: i64,
     pub settings: Settings,
     pub stats: Stats,
-    /// `true` en compilaciones de desarrollo. La UI desactiva lo que solo funciona en release
-    /// (por ejemplo, arrancar con Windows: un binario debug abre consola y carga el devUrl).
+    /// `true` in development builds. The UI disables what only works in release
+    /// (for example, starting with Windows: a debug binary opens a console and loads the devUrl).
     pub dev_build: bool,
 }
 
@@ -348,7 +348,7 @@ pub struct ImportProgress {
     pub total: i64,
 }
 
-/// Índices de columna/campo que alimentan cada dato de kotoba.
+/// Column/field indices that feed each kotoba datum.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct FieldMapping {
     pub reading: Option<usize>,
@@ -371,11 +371,11 @@ pub struct NoteTypeMapping {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ImportMapping {
-    /// Mapeo del archivo `.txt` (columnas posicionales).
+    /// Mapping for the `.txt` file (positional columns).
     pub txt: Option<FieldMapping>,
-    /// Mapeo por tipo de nota de Anki.
+    /// Mapping per Anki note type.
     pub note_types: Vec<NoteTypeMapping>,
-    /// Carpeta de medios del `.txt`; por defecto, la hermana con su mismo nombre.
+    /// Media folder for the `.txt`; by default, the sibling with the same name.
     pub media_folder: Option<String>,
 }
 
@@ -389,19 +389,19 @@ pub struct NoteTypeInfo {
     pub suggested: FieldMapping,
 }
 
-/// Resultado de inspeccionar un mazo antes de importarlo.
+/// Result of inspecting a deck before importing it.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ImportInspection {
-    /// `txt` o `apkg`.
+    /// `txt` or `apkg`.
     pub kind: String,
     pub deck_name: String,
     pub total_notes: i64,
-    /// Columnas del `.txt` (vacío en `.apkg`).
+    /// Columns of the `.txt` (empty for `.apkg`).
     pub columns: Vec<String>,
     pub sample: Vec<Vec<String>>,
     pub suggested: Option<FieldMapping>,
     pub note_types: Vec<NoteTypeInfo>,
-    /// Carpeta de audio hermana detectada para un `.txt`.
+    /// Detected sibling audio folder for a `.txt`.
     pub media_folder: Option<String>,
 }
 

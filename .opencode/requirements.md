@@ -1,350 +1,351 @@
-# Requisitos
+# Requirements
 
-Leyenda: `[x]` implementado · `[~]` parcial · `[ ]` pendiente.
+Legend: `[x]` implemented · `[~]` partial · `[ ]` pending.
 
-Los requisitos funcionales usan `RF-xx`; los no funcionales, `RNF-xx`. Los de fases futuras usan
+Functional requirements use `RF-xx`; non-functional ones, `RNF-xx`. Future-phase ones use
 `RF2-xx` / `RF3-xx`.
 
 ---
 
-# Fase 1 — MVP técnico (implementado)
+# Phase 1 — Technical MVP (implemented)
 
-## RF-01 — Residencia en la bandeja
+## RF-01 — Tray residency
 
-- [x] Icono en la bandeja con menú: Practicar ahora, Abrir kotoba, Pausar/Reanudar, Salir.
-- [x] Click izquierdo abre la ventana principal.
-- [x] Cerrar la ventana principal la oculta; no termina el proceso.
-- [x] El estado de pausa se persiste y se refleja en el menú.
-- [x] La ventana principal solo se muestra al arrancar si la biblioteca está vacía.
+- [x] Tray icon with menu: Practice now, Open kotoba, Pause/Resume, Quit.
+- [x] Left click opens the main window.
+- [x] Closing the main window hides it; it does not terminate the process.
+- [x] The pause state is persisted and reflected in the menu.
+- [x] The main window is only shown at startup if the library is empty.
 
-## RF-02 — Arranque con Windows
+## RF-02 — Start with Windows
 
-- [x] Plugin `tauri-plugin-autostart` integrado.
-- [x] Toggle en Ajustes → Sistema.
-- [~] Falta verificarlo en un arranque real de Windows (registro/entrada de inicio) → #12.
+- [x] `tauri-plugin-autostart` plugin integrated.
+- [x] Toggle in Settings → System.
+- [~] Still needs verification on a real Windows startup (registry/startup entry) → #12.
 
-## RF-03 — Importación `.apkg`
+## RF-03 — `.apkg` import
 
-- [x] Selector de archivo nativo.
-- [x] Lectura de ZIP, `collection.anki21b`, zstd y SQLite schema 18.
-- [x] Fallback a `collection.anki21` / `collection.anki2`.
-- [x] Mapeo por nombre de campo con fallback posicional.
-- [x] Extracción de audio con verificación SHA-1 y deduplicación por hash.
-- [x] Resumen de importación: notas, ítems, audios, plantillas y avisos.
-- [x] Idempotencia por `source_uid`.
-- [x] Deduplicación por lectura + significado, conservando `item_sources`.
+- [x] Native file picker.
+- [x] Reading of ZIP, `collection.anki21b`, zstd and SQLite schema 18.
+- [x] Fallback to `collection.anki21` / `collection.anki2`.
+- [x] Mapping by field name with positional fallback.
+- [x] Audio extraction with SHA-1 verification and deduplication by hash.
+- [x] Import summary: notes, items, audio files, templates and warnings.
+- [x] Idempotency by `source_uid`.
+- [x] Deduplication by reading + meaning, keeping `item_sources`.
 
-**Aceptación verificada:** `Genki 1.apkg` → 1.076 notas, 1.012 ítems, 827 audios, 66 plantillas,
-0 avisos.
+**Verified acceptance:** `Genki 1.apkg` → 1,076 notes, 1,012 items, 827 audio files, 66 templates,
+0 warnings.
 
-## RF-04 - Importación `.txt` (fallback)
+## RF-04 - `.txt` import (fallback)
 
-- [x] Parseo de cabeceras `#separator`, `#tags column` y `#columns`.
-- [x] Mapeo posicional de Genki (8 columnas) y modo reducido (3 columnas).
-- [x] Audio en `.txt`: `[sound:…]` (también dentro de HTML) desde la columna mapeada, copiado con
-  SHA-1 y deduplicación desde la carpeta de medios elegida (por defecto, la hermana del `.txt`);
-  los archivos ausentes suman avisos sin abortar. → #10
-- [x] Pantalla de mapeo manual de columnas con vista previa de filas y asignación de lectura,
-  kanji, significado, glosa, UID, etiquetas, lección y subapartado.
+- [x] Parsing of `#separator`, `#tags column` and `#columns` headers.
+- [x] Genki positional mapping (8 columns) and reduced mode (3 columns).
+- [x] Audio in `.txt`: `[sound:…]` (also inside HTML) from the mapped column, copied with
+  SHA-1 and deduplicated from the chosen media folder (by default, the `.txt` sibling);
+  missing files add warnings without aborting. → #10
+- [x] Manual column-mapping screen with row preview and assignment of reading,
+  kanji, meaning, gloss, UID, tags, lesson and subsection.
 
-## RF-05 — Ejercicio bidireccional
+## RF-05 — Bidirectional exercise
 
-- [x] JP → ES: se muestra kanji (o kana si no hay kanji) y se escribe el significado.
-- [x] ES → JP: se muestra el significado y se escribe en japonés (kanji o kana).
-- [x] Entrada con IME nativa del sistema (`lang="ja"`).
-- [x] Dirección aleatoria o alternada (`direction_mode`).
-- [x] Enter envía sin interferir con la composición del IME.
+- [x] JP → ES: kanji is shown (or kana if there is no kanji) and the meaning is typed.
+- [x] ES → JP: the meaning is shown and the answer is typed in Japanese (kanji or kana).
+- [x] Input with the system's native IME (`lang="ja"`).
+- [x] Random or alternating direction (`direction_mode`).
+- [x] Enter submits without interfering with IME composition.
 
-## RF-06 — Normalización de respuestas (básica)
+## RF-06 — Answer normalization (basic)
 
-- [x] NFKC, minúsculas, sin diacríticos, sin espacios ni puntuación final.
-- [x] ES → JP acepta kanji y variantes de lectura separadas por `／`.
-- [x] Acepta formas con y sin paréntesis opcionales (`おやすみ（なさい）`).
-- [x] Quita `*` y `〜` para comparar.
-- [x] JP → ES acepta acepciones separadas por `;`.
-- [x] JP → ES acepta la forma sin paréntesis ni `...`.
-- [x] Casos límite (partículas en el significado, variantes de IME, romaji) cerrados en RF2-04.
+- [x] NFKC, lowercase, no diacritics, no spaces or trailing punctuation.
+- [x] ES → JP accepts kanji and reading variants separated by `／`.
+- [x] Accepts forms with and without optional parentheses (`おやすみ（なさい）`).
+- [x] Strips `*` and `〜` for comparison.
+- [x] JP → ES accepts senses separated by `;`.
+- [x] JP → ES accepts the form without parentheses or `...`.
+- [x] Edge cases (particles in the meaning, IME variants, romaji) closed in RF2-04.
 
-## RF-07 — Feedback inmediato
+## RF-07 — Immediate feedback
 
-- [x] Indicador correcto/incorrecto.
-- [x] Respuesta esperada principal y variantes aceptadas.
-- [x] Lectura en kana.
-- [x] Significado.
-- [x] Glosa de kanji (`significado`) cuando existe.
-- [x] Audio bajo demanda.
-- [x] Próximo intervalo (“Vuelve en …”).
+- [x] Correct/incorrect indicator.
+- [x] Primary expected answer and accepted variants.
+- [x] Kana reading.
+- [x] Meaning.
+- [x] Kanji gloss (`significado`) when present.
+- [x] Audio on demand.
+- [x] Next interval (“Come back in …”).
 
 ## RF-08 — Audio
 
-- [x] Audio automático en JP → ES si está activado.
-- [x] Audio después de responder en ES → JP.
-- [x] Reproducción desde bytes locales (sin servidor ni asset protocol).
-- [x] Si falta el audio, la tarjeta sigue funcionando.
+- [x] Automatic audio in JP → ES when enabled.
+- [x] Audio after answering in ES → JP.
+- [x] Playback from local bytes (no server or asset protocol).
+- [x] If the audio is missing, the card still works.
 
-## RF-09 — Modo popup
+## RF-09 — Popup mode
 
-- [x] Ventana frameless, transparente, always-on-top y sin taskbar.
-- [x] Se crea bajo demanda y se reutiliza.
-- [x] Posicionada en la esquina inferior derecha del monitor.
-- [x] Arrastrable desde la cabecera.
-- [x] Cerrar con Escape o con la X oculta la ventana sin registrar repaso.
-- [x] No robar foco al aparecer: se crea con `focused(false)`, se muestra sin activar y se devuelve
-  el foco (verificado con `GetForegroundWindow`). `WS_EX_NOACTIVATE` se descarta: impediría teclear
-  en el popup, que necesita foco de teclado.
+- [x] Frameless, transparent, always-on-top window with no taskbar.
+- [x] Created on demand and reused.
+- [x] Positioned in the bottom-right corner of the monitor.
+- [x] Draggable from the header.
+- [x] Closing with Escape or the X hides the window without recording a review.
+- [x] Does not steal focus when appearing: created with `focused(false)`, shown without activating and
+  focus is returned (verified with `GetForegroundWindow`). `WS_EX_NOACTIVATE` is discarded: it would
+  prevent typing in the popup, which needs keyboard focus.
 
 ## RF-10 — Scheduler
 
-- [x] Intervalo aleatorio entre mínimo y máximo.
-- [x] Primer reto ~75 s después de arrancar.
-- [x] Comprobación cada 10 s.
-- [x] No lanza otro reto si el popup sigue visible.
-- [x] Se detiene si la app está pausada, en DND o se alcanzó el máximo diario.
+- [x] Random interval between minimum and maximum.
+- [x] First challenge ~75 s after startup.
+- [x] Check every 10 s.
+- [x] Does not launch another challenge if the popup is still visible.
+- [x] Stops if the app is paused, in DND or the daily maximum has been reached.
 
-## RF-11 — No molestar
+## RF-11 — Do not disturb
 
-- [x] Horario configurable con hora inicio/fin.
-- [x] Soporta rangos que cruzan la medianoche.
-- [x] Toggle de activación.
+- [x] Configurable schedule with start/end time.
+- [x] Supports ranges that cross midnight.
+- [x] Enable toggle.
 
-## RF-12 — Límite diario
+## RF-12 — Daily limit
 
-- [x] `max_per_day` configurable (0 = sin límite).
-- [x] Solo cuentan los repasos respondidos; cerrar el popup no cuenta.
+- [x] Configurable `max_per_day` (0 = no limit).
+- [x] Only answered reviews count; closing the popup does not count.
 
 ## RF-13 — SRS SM-2
 
-- [x] Estado por ítem en `srs_state`.
-- [x] Calidad 1-5 derivada de acierto y latencia.
-- [x] Pasos de aprendizaje (10 min, 1 día) y crecimiento por `ease`.
-- [x] Fallo reinicia `reps`, vuelve a 10 min e incrementa `lapses`.
-- [x] `ease` se actualiza con la fórmula SM-2 y suelo 1.3.
-- [x] Tests de aprendizaje, crecimiento, fallo y suelo de `ease`.
+- [x] Per-item state in `srs_state`.
+- [x] Quality 1-5 derived from correctness and latency.
+- [x] Learning steps (10 min, 1 day) and growth by `ease`.
+- [x] A failure resets `reps`, returns to 10 min and increments `lapses`.
+- [x] `ease` is updated with the SM-2 formula and a floor of 1.3.
+- [x] Tests for learning, growth, failure and the `ease` floor.
 
-## RF-14 — Estadísticas
+## RF-14 — Statistics
 
-- [x] Total de palabras, repasos totales y repasos de hoy.
-- [x] Precisión de hoy.
-- [x] Racha de días.
-- [x] Palabras dominadas (intervalo ≥ 7 días).
-- [x] Pendientes (respetando `include_patterns`).
-- [x] Actividad de los últimos 14 días.
+- [x] Total words, total reviews and reviews today.
+- [x] Today's accuracy.
+- [x] Day streak.
+- [x] Mastered words (interval ≥ 7 days).
+- [x] Pending (respecting `include_patterns`).
+- [x] Activity over the last 14 days.
 
-## RF-15 — Persistencia local
+## RF-15 — Local persistence
 
-- [x] SQLite con WAL y claves foráneas.
-- [x] Tablas `items`, `item_sources`, `review_log`, `srs_state`, `settings`.
-- [x] Audio en `%APPDATA%\com.kotoba.app\media`.
-- [x] Ajustes persistidos como JSON.
+- [x] SQLite with WAL and foreign keys.
+- [x] `items`, `item_sources`, `review_log`, `srs_state`, `settings` tables.
+- [x] Audio in `%APPDATA%\com.kotoba.app\media`.
+- [x] Settings persisted as JSON.
 
-## RF-16 — Gestión de datos
+## RF-16 — Data management
 
-- [x] Reimportar mazo sin perder el progreso de las palabras existentes.
-- [x] Reiniciar progreso (borra historial e intervalos).
-- [x] Borrar biblioteca (borra palabras, fuentes y progreso).
+- [x] Reimport a deck without losing the progress of existing words.
+- [x] Reset progress (deletes history and intervals).
+- [x] Delete library (deletes words, sources and progress).
 
 ---
 
-# Requisitos no funcionales
+# Non-functional requirements
 
 ## RNF-01 — RAM
 
-- [x] Objetivo < ~120 MB en reposo.
-- [x] Medido en la verificación de Fase 1: **~33 MB** con la app en bandeja.
+- [x] Target < ~120 MB at rest.
+- [x] Measured in the Phase 1 verification: **~33 MB** with the app in the tray.
 
-## RNF-02 — Privacidad
+## RNF-02 — Privacy
 
-- [x] Sin red, sin telemetría, sin cuentas.
-- [x] Todo el contenido vive en el equipo del usuario.
+- [x] No network, no telemetry, no accounts.
+- [x] All content lives on the user's machine.
 
-## RNF-03 — No interrumpir
+## RNF-03 — Do not interrupt
 
-- [x] No robar foco (ver RF-09).
-- [x] Detección de apps a pantalla completa (RF2-02).
+- [x] Do not steal focus (see RF-09).
+- [x] Full-screen app detection (RF2-02).
 
-## RNF-04 — Plataforma
+## RNF-04 — Platform
 
-- [x] Windows 10/11 con WebView2.
-- [x] Build MSVC.
-- [x] CI con build y tests en Windows.
-- [x] Release automática con MSI y NSIS al empujar una etiqueta `v*`.
-- [ ] Instalador firmado → #14.
+- [x] Windows 10/11 with WebView2.
+- [x] MSVC build.
+- [x] CI with build and tests on Windows.
+- [x] Automatic release with MSI and NSIS when pushing a `v*` tag.
+- [ ] Signed installer → #14.
 
-## RNF-05 — Mantenibilidad
+## RNF-05 — Maintainability
 
-- [x] Módulos Rust separados (`db`, `import`, `media`, `text`, `scheduler`, `shell`, `tray`).
-- [x] Tests unitarios de normalización, parser de medios e importador.
-- [x] Migraciones versionadas (RF2-08: `PRAGMA user_version` + `ensure_column`).
-- [x] Logging estructurado a archivo y errores visibles con reintento (RF2-08).
+- [x] Separate Rust modules (`db`, `import`, `media`, `text`, `scheduler`, `shell`, `tray`).
+- [x] Unit tests for normalization, media parser and importer.
+- [x] Versioned migrations (RF2-08: `PRAGMA user_version` + `ensure_column`).
+- [x] Structured logging to file and visible errors with retry (RF2-08).
 
 ---
 
-# Fase 2 — Pulido
+# Phase 2 — Polish
 
-> Estado: completada. Los `[ ]` restantes son opcionales o de distribución (firma/CI).
+> Status: completed. The remaining `[ ]` are optional or distribution-related (signing/CI).
 
-## RF2-01 — Los 3 modos de aparición
+## RF2-01 — The 3 appearance modes
 
-- [x] Popup (Fase 1).
-- [x] Widget flotante persistente, always-on-top, arrastrable y con retos en vivo.
-- [x] Toast nativo de Windows (`tauri-plugin-notification`); al hacer click abre el popup.
-- [x] Selector de modo en Ajustes y submenú “Modo” en la bandeja.
-- [x] El modo se aplica al guardar y al arrancar (si es widget, aparece al iniciar).
+- [x] Popup (Phase 1).
+- [x] Persistent floating widget, always-on-top, draggable and with live challenges.
+- [x] Native Windows toast (`tauri-plugin-notification`); clicking it opens the popup.
+- [x] Mode selector in Settings and “Mode” submenu in the tray.
+- [x] The mode is applied on save and on startup (if it is the widget, it appears at startup).
 
-## RF2-02 — No molestar de verdad
+## RF2-02 — Real do not disturb
 
-- [x] Detección de pantalla completa, presentaciones, juegos y modo silencio con
+- [x] Full-screen, presentation, game and silent-mode detection with
   `SHQueryUserNotificationState`.
-- [x] El popup/widget se muestran y se devuelve el foco a la ventana anterior.
-- [ ] Pausa automática durante llamadas (opcional). La supresión durante pantalla completa ya
-  existe; el caso «llamada» no merece ticket todavía.
+- [x] The popup/widget is shown and focus is returned to the previous window.
+- [ ] Automatic pause during calls (optional). Suppression during full screen already
+  exists; the “call” case does not deserve a ticket yet.
 
-## RF2-03 — SRS SM-2 completo
+## RF2-03 — Full SRS SM-2
 
-- [x] Usar `ease` y calidad de respuesta (no solo acierto/fallo).
-- [x] Intervalos con factor de facilidad.
-- [x] `due_at` se guarda en UTC; las estadísticas usan hora local.
-- [x] Tests de la progresión.
+- [x] Use `ease` and answer quality (not just correct/incorrect).
+- [x] Intervals with ease factor.
+- [x] `due_at` is stored in UTC; statistics use local time.
+- [x] Progression tests.
 
-## RF2-04 — Normalización robusta
+## RF2-04 — Robust normalization
 
-- [x] Manejar partículas, anotaciones y placeholders del significado.
-- [x] Aceptar romaji (Hepburn, kunrei, vocales largas y は→wa).
-- [x] Normalizar variantes de IME (NFKC, medias anchuras, espacios ideográficos).
-- [x] Tests con las 1.012 entradas reales: **2.629 respuestas validadas** (incluye romaji).
+- [x] Handle particles, annotations and meaning placeholders.
+- [x] Accept romaji (Hepburn, kunrei, long vowels and は→wa).
+- [x] Normalize IME variants (NFKC, half-widths, ideographic spaces).
+- [x] Tests with the 1,012 real entries: **2,629 validated answers** (includes romaji).
 
-## RF2-05 — Estadísticas ampliadas
+## RF2-05 — Extended statistics
 
-- [x] Progreso por lección (`L00`…`L12`).
-- [x] Palabras difíciles / más falladas.
-- [x] Historial exportable a CSV (RF2-08).
-- [x] Historial detallado dentro de la app → #11.
-- [ ] Rachas y objetivos configurables (el objetivo semanal ya es configurable; falta definir qué
-  significa «racha»).
+- [x] Progress per lesson (`L00`…`L12`).
+- [x] Difficult / most-failed words.
+- [x] History exportable to CSV (RF2-08).
+- [x] Detailed history inside the app → #11.
+- [ ] Configurable streaks and goals (the weekly goal is already configurable; what
+  “streak” means still needs to be defined).
 
-## RF2-06 - Importación más cómoda
+## RF2-06 - More convenient import
 
-- [x] Progreso de importación por eventos (`import:progress` cada 25 notas).
-- [x] Inspección previa del `.apkg` por tipo de nota con nombres de campo y filas de ejemplo.
-- [x] Mapeo manual de campos por tipo de nota: lectura, kanji, significado, glosa, audio, UID,
-  etiquetas, lección y subapartado.
-- [x] Mapeo manual de columnas en `.txt` (incluye `#columns` cuando existe).
-- [x] Detección automática de campos por nombre con fallback posicional; el usuario puede ajustar.
-- [x] Registro de la colación `unicase` de Anki para leer `fields.name` y `notetypes.name`.
-- [~] Validación con mazos reales adicionales de varios tipos de nota (soportado por diseño) → #9.
-- [x] Limpieza de audios huérfanos al borrar o reimportar.
-- [ ] Importación de mazos distintos a Genki 1 → #9.
+- [x] Import progress via events (`import:progress` every 25 notes).
+- [x] Prior inspection of the `.apkg` by note type with field names and sample rows.
+- [x] Manual field mapping per note type: reading, kanji, meaning, gloss, audio, UID,
+  tags, lesson and subsection.
+- [x] Manual column mapping in `.txt` (includes `#columns` when present).
+- [x] Automatic field detection by name with positional fallback; the user can adjust it.
+- [x] Registration of Anki's `unicase` collation to read `fields.name` and `notetypes.name`.
+- [~] Validation with additional real decks of various note types (supported by design) → #9.
+- [x] Orphan audio cleanup when deleting or reimporting.
+- [ ] Import of decks other than Genki 1 → #9.
 
-## RF2-07 - UX y accesibilidad
+## RF2-07 - UX and accessibility
 
-- [x] Icono e identidad visual propios (sello 言).
-- [x] Navegación por teclado y foco visible: enlace “saltar al contenido”, `aria-current` en la
-  navegación, `Enter` para comprobar y pasar al siguiente reto, `Esc` para cerrar el popup.
-- [x] Textos de UI en español, inglés y japonés (interfaz, bandeja y notificaciones).
-- [x] Ajuste de tamaño de la interfaz (90-125 %), con ventanas flotantes escaladas.
-- [x] **Tema oscuro** con opción automática, clara y oscura; `auto` sigue el tema de Windows.
-- [x] Respeto a `prefers-reduced-motion` y etiquetas accesibles en controles e iconos.
+- [x] Own icon and visual identity (言 seal).
+- [x] Keyboard navigation and visible focus: “skip to content” link, `aria-current` in the
+  navigation, `Enter` to check and move to the next challenge, `Esc` to close the popup.
+- [x] UI texts in Spanish, English and Japanese (interface, tray and notifications).
+- [x] Interface size adjustment (90-125 %), with floating windows scaled.
+- [x] **Dark theme** with automatic, light and dark options; `auto` follows the Windows theme.
+- [x] Respect for `prefers-reduced-motion` and accessible labels on controls and icons.
 
-## RF2-08 - Robustez
+## RF2-08 - Robustness
 
-- [x] Migraciones versionadas (`PRAGMA user_version` + `ensure_column`).
-- [x] Copia de seguridad a carpeta (SQLite + `media/`).
-- [x] Restaurar una copia desde la app (reemplaza base y audio).
-- [x] Logging a archivo (`%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`).
-- [x] Manejo de errores con reintento (práctica e importación).
-- [x] Exportar historial de repasos (CSV).
+- [x] Versioned migrations (`PRAGMA user_version` + `ensure_column`).
+- [x] Backup to folder (SQLite + `media/`).
+- [x] Restore a backup from the app (replaces database and audio).
+- [x] Logging to file (`%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log`).
+- [x] Error handling with retry (practice and import).
+- [x] Export review history (CSV).
 
-## RF2-09 - Orden y límite de palabras nuevas
+## RF2-09 - Order and limit of new words
 
-- [x] Una palabra es nueva si no tiene `srs_state`; no hay flag aparte.
-- [x] Las nuevas siguen el orden del mazo: lección, subapartado y orden de importación
+- [x] A word is new if it has no `srs_state`; there is no separate flag.
+- [x] New words follow the deck order: lesson, subsection and import order
   (`ORDER BY lesson, category, id`).
-- [x] Al importar `.apkg` se leen las notas en orden estable (`ORDER BY notes.id`).
-- [x] Repasos vencidos antes que nuevas por defecto (`new_mix_percent = 0`).
-- [x] Mezcla configurable 0-100 %: porcentaje de nuevas cuando también hay repasos pendientes.
-- [x] Límite diario de nuevas (`new_per_day`, default 10; 0 = ninguna) contado por la primera
-  respuesta del día.
-- [x] Contadores separados: repasos vencidos, nuevas disponibles y nuevas introducidas hoy.
-- [x] El scheduler no abre retos si no hay repasos vencidos ni nuevas dentro del límite.
-- [x] Tests de orden por lección/subapartado, prioridad de repasos, mezcla y límite diario.
+- [x] When importing `.apkg`, notes are read in a stable order (`ORDER BY notes.id`).
+- [x] Due reviews before new words by default (`new_mix_percent = 0`).
+- [x] Configurable mix 0-100 %: percentage of new words when there are also pending reviews.
+- [x] Daily limit of new words (`new_per_day`, default 10; 0 = none) counted by the first
+  answer of the day.
+- [x] Separate counters: due reviews, available new words and new words introduced today.
+- [x] The scheduler does not open challenges if there are no due reviews and no new words within the
+  limit.
+- [x] Tests for lesson/subsection order, review priority, mix and daily limit.
 
 ---
 
-# Fase 3 — Extras
+# Phase 3 — Extras
 
 ## RF3-01 — AnkiConnect
 
-- [ ] Sincronización opt-in con Anki local.
-- [ ] Detección de cambios en el mazo.
-- [ ] No pisar el scheduling de Anki.
+- [ ] Opt-in sync with local Anki.
+- [ ] Deck change detection.
+- [ ] Do not overwrite Anki's scheduling.
 
-> Pendiente de una sesión de `grill-with-docs` → spec; no es un ticket suelto todavía.
+> Pending a `grill-with-docs` session → spec; it is not a standalone ticket yet.
 
-## RF3-02 — Más contenido
+## RF3-02 — More content
 
-- [ ] Genki 2 y otros mazos → #9.
-- [ ] Gramática y partículas.
-- [ ] Frases y listening.
+- [ ] Genki 2 and other decks → #9.
+- [ ] Grammar and particles.
+- [ ] Phrases and listening.
 
-## RF3-03 — Distribución
+## RF3-03 — Distribution
 
-- [x] CI con build y tests en Windows.
-- [x] Release automática con MSI y NSIS al empujar una etiqueta `v*`.
-- [ ] Instalador MSI/NSIS firmado → #14.
-- [x] Auto-update con `tauri-plugin-updater` y `latest.json` (2026-11-22).
+- [x] CI with build and tests on Windows.
+- [x] Automatic release with MSI and NSIS when pushing a `v*` tag.
+- [ ] Signed MSI/NSIS installer → #14.
+- [x] Auto-update with `tauri-plugin-updater` and `latest.json` (2026-11-22).
 
-## RF3-04 — Gamificación
+## RF3-04 — Gamification
 
-**Carácter:** híbrido. Silenciosa por defecto; las notificaciones de hito son opt-in y respetan
-pausa, DND y pantalla completa. Racha flexible. Todo local, sin cuentas ni social.
+**Character:** hybrid. Silent by default; milestone notifications are opt-in and respect
+pause, DND and full screen. Flexible streak. All local, no accounts or social.
 
-**Guardarraíles:** el XP solo premia calidad (no volumen); la racha no genera culpa; los premios no
-pueden incentivar respuestas rápidas/malas que rompan el SM-2.
+**Guardrails:** XP only rewards quality (not volume); the streak does not generate guilt; rewards
+cannot incentivize fast/bad answers that break SM-2.
 
-### R3-04a — MVG (implementado)
+### R3-04a — MVG (implemented)
 
-- [x] Perfil `profile` con `xp_total`, `level` y `streak_best` (migración v2).
-- [x] XP solo por aciertos: quality 3→+1, 4→+2, 5→+3; fallo → 0.
-- [x] Niveles por umbrales de XP (12 niveles).
-- [x] Racha flexible + mejor racha histórica.
-- [x] Objetivo semanal configurable (default 30; 0 = sin objetivo).
-- [x] Pantalla Progreso: nivel, XP, barra de nivel, racha/mejor racha y objetivo semanal.
-- [x] Feedback: `+X XP` y aviso de subida de nivel en práctica y popup.
-- [x] Notificación nativa al completar el objetivo semanal, opt-in, respeta pausa/DND/pantalla
-  completa y nunca avisa de “racha en peligro”.
-- [x] Tests de XP, niveles, racha, objetivo y migración.
+- [x] `profile` record with `xp_total`, `level` and `streak_best` (migration v2).
+- [x] XP only for correct answers: quality 3→+1, 4→+2, 5→+3; failure → 0.
+- [x] Levels by XP thresholds (12 levels).
+- [x] Flexible streak + best historical streak.
+- [x] Configurable weekly goal (default 30; 0 = no goal).
+- [x] Progress screen: level, XP, level bar, streak/best streak and weekly goal.
+- [x] Feedback: `+X XP` and level-up notice in practice and popup.
+- [x] Native notification when completing the weekly goal, opt-in, respects pause/DND/full
+  screen and never warns about a “streak in danger”.
+- [x] Tests for XP, levels, streak, goal and migration.
 
-### R3-04b — Logros y maestría (implementado)
+### R3-04b — Achievements and mastery (implemented)
 
-- [x] Catálogo de 16 logros: repasos, palabras dominadas, racha, lecciones maestras, nivel 5 y
-  objetivo semanal cumplido.
-- [x] Progreso de cada logro visible y desbloqueo permanente.
-- [x] Maestría por lección con umbral configurable (default 90 %): porcentaje de palabras con
-  intervalo ≥ 7 días sobre el total de la lección.
-- [x] Pantalla de logros en Progreso y feedback inmediato al desbloquear.
-- [x] Notificaciones opt-in al desbloquear, sujetas a pausa/DND/pantalla completa.
-- [x] Migración v3 (`achievements`, `profile.weekly_goals_done`).
-- [x] Tests de desbloqueo único y umbral de maestría.
+- [x] Catalog of 16 achievements: reviews, mastered words, streak, master lessons, level 5 and
+  weekly goal completed.
+- [x] Progress of each achievement visible and permanent unlock.
+- [x] Mastery per lesson with configurable threshold (default 90 %): percentage of words with
+  interval ≥ 7 days over the lesson total.
+- [x] Achievements screen in Progress and immediate feedback on unlock.
+- [x] Opt-in notifications on unlock, subject to pause/DND/full screen.
+- [x] Migration v3 (`achievements`, `profile.weekly_goals_done`).
+- [x] Tests for single unlock and mastery threshold.
 
-### R3-04c — Refinamiento (implementado)
+### R3-04c — Refinement (implemented)
 
-- [x] Salvavidas de racha: cada objetivo semanal completado da uno (máximo 2).
-- [x] Reparación automática de un día perdido, opcional en Ajustes; nunca repara más de un
-  hueco por repaso ni gasta salvavidas sin actividad reciente.
-- [x] Salvavidas visibles en Progreso y feedback `+1 salvavidas` al ganarlos.
-- [x] Curva de niveles más suave (80 → 5.800 XP) y títulos por tramo (Semilla, Brote, Raíz,
-  Rama, Árbol, Bosque).
-- [x] Migración v4 (`profile.streak_savers`, tabla `streak_repairs`) y tests de reparación,
-  tope de salvavidas y migración.
-- [ ] Métricas de retención a medio plazo: fuera del MVP local (sin telemetría ni nube); la
-  pantalla de Progreso ya muestra actividad de 14 días y progreso por lección. No es accionable
-  mientras no haya telemetría, así que no genera issue.
+- [x] Streak saver: each completed weekly goal gives one (maximum 2).
+- [x] Automatic repair of a missed day, optional in Settings; never repairs more than one
+  gap per review nor spends a saver without recent activity.
+- [x] Savers visible in Progress and `+1 saver` feedback when earning them.
+- [x] Smoother level curve (80 → 5,800 XP) and titles per tier (Seed, Sprout, Root,
+  Branch, Tree, Forest).
+- [x] Migration v4 (`profile.streak_savers`, `streak_repairs` table) and tests for repair,
+  saver cap and migration.
+- [ ] Mid-term retention metrics: outside the local MVP (no telemetry or cloud); the
+  Progress screen already shows 14-day activity and progress per lesson. It is not actionable
+  while there is no telemetry, so it does not generate an issue.
 
 ---
 
-# Fuera de alcance (por ahora)
+# Out of scope (for now)
 
-- Cuentas, nube, sincronización multidispositivo.
-- Redistribución del contenido del mazo.
-- Edición de tarjetas dentro de kotoba.
-- Versión móvil o web.
+- Accounts, cloud, multi-device sync.
+- Redistribution of the deck content.
+- Card editing inside kotoba.
+- Mobile or web version.

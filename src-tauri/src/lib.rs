@@ -31,7 +31,7 @@ fn to_err(error: impl std::fmt::Display) -> String {
     error.to_string()
 }
 
-/// Alterna la dirección respecto a la última respuesta.
+/// Alternates the direction relative to the last answer.
 fn alternate_direction(last: Option<&str>) -> &'static str {
     match last {
         Some("jp_to_es") => "es_to_jp",
@@ -39,7 +39,7 @@ fn alternate_direction(last: Option<&str>) -> &'static str {
     }
 }
 
-/// Calidad SM-2 según acierto, latencia y respuesta vacía.
+/// SM-2 quality based on correctness, latency and empty answer.
 fn review_quality(correct: bool, answer: &str, latency_ms: i64) -> u8 {
     if correct {
         if latency_ms <= 5_000 {
@@ -427,7 +427,7 @@ fn restore_backup(
     let backup_media = source.join("media");
     let mut conn = state.db.lock().map_err(to_err)?;
 
-    // Cerrar la base viva antes de reemplazar el archivo.
+    // Close the live database before replacing the file.
     let placeholder = rusqlite::Connection::open_in_memory().map_err(to_err)?;
     let old = std::mem::replace(&mut *conn, placeholder);
     drop(old);
@@ -554,7 +554,7 @@ fn practice_now(app: tauri::AppHandle) -> Result<(), String> {
         db::load_settings(&conn).map_err(to_err)?.mode
     };
 
-    // Crear ventanas desde el hilo del comando puede bloquear el webview.
+    // Creating windows from the command thread can block the webview.
     std::thread::spawn(move || match mode.as_str() {
         "widget" => {
             let _ = shell::show_widget(&app);
@@ -596,9 +596,9 @@ fn open_logs(app: tauri::AppHandle) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        // Debe ir antes que el resto de plugins: en Windows y Linux es lo que detecta una
-        // segunda instancia. La primera recibe el aviso y trae su ventana principal al frente;
-        // la segunda entrega los argumentos y sale sin abrir base de datos ni scheduler.
+        // Must go before the other plugins: on Windows and Linux this is what detects a
+        // second instance. The first one receives the notice and brings its main window to the front;
+        // the second one passes on the arguments and exits without opening the database or the scheduler.
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             shell::show_main(app);
         }))

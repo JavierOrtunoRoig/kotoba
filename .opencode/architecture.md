@@ -1,6 +1,6 @@
-# Arquitectura
+# Architecture
 
-## Vista general
+## Overview
 
 ```
 ┌─────────────────────────────┐
@@ -20,25 +20,25 @@
 └─────────────────────────────┘
 ```
 
-Sin red. El frontend solo habla con Rust mediante comandos; Rust es el único que toca SQLite y los
-archivos.
+No network. The frontend only talks to Rust through commands; Rust is the only one that touches
+SQLite and files.
 
-## Módulos Rust (`src-tauri/src/`)
+## Rust modules (`src-tauri/src/`)
 
-| Módulo | Responsabilidad |
+| Module | Responsibility |
 |---|---|
-| `main.rs` | Entrada binaria; llama a `kotoba_lib::run()` |
-| `lib.rs` | Estado de la app, comandos Tauri, setup, ventanas, plugins |
-| `models.rs` | Structs serde compartidos con el frontend |
-| `db.rs` | Conexión SQLite, esquema, migraciones, settings, ítems, repasos, SRS SM-2, estadísticas (global, por lección y difíciles) y limpieza de medios |
-| `import.rs` | Importador `.apkg` / `.txt`, deduplicación y extracción de audio |
-| `media.rs` | Parser del mapa de medios (protobuf de Anki + fallback JSON) |
-| `text.rs` | Limpieza de HTML, normalización, kana→romaji y validación de respuestas |
-| `scheduler.rs` | Bucle del planificador pasivo, modos de aparición y DND |
-| `shell.rs` | Mostrar/ocultar popup y widget, toast, foco, posicionamiento y pausa |
-| `tray.rs` | Icono, menú (incluido “Modo”) y eventos de la bandeja |
+| `main.rs` | Binary entry point; calls `kotoba_lib::run()` |
+| `lib.rs` | App state, Tauri commands, setup, windows, plugins |
+| `models.rs` | Serde structs shared with the frontend |
+| `db.rs` | SQLite connection, schema, migrations, settings, items, reviews, SM-2 SRS, statistics (global, per lesson and difficult) and media cleanup |
+| `import.rs` | `.apkg` / `.txt` importer, deduplication and audio extraction |
+| `media.rs` | Media map parser (Anki protobuf + JSON fallback) |
+| `text.rs` | HTML cleanup, normalization, kana→romaji and answer validation |
+| `scheduler.rs` | Passive scheduler loop, appearance modes and DND |
+| `shell.rs` | Show/hide popup and widget, toast, focus, positioning and pause |
+| `tray.rs` | Icon, menu (including “Mode”) and tray events |
 
-## Estado compartido
+## Shared state
 
 ```rust
 pub struct AppState {
@@ -50,35 +50,35 @@ pub struct AppState {
 }
 ```
 
-Se registra con `app.manage(AppState { ... })` en `setup`. Los comandos lo reciben como
+It is registered with `app.manage(AppState { ... })` in `setup`. Commands receive it as
 `State<AppState>`.
 
-## Esquema SQLite
+## SQLite schema
 
 ### `items`
 
-| Columna | Tipo | Nota |
+| Column | Type | Note |
 |---|---|---|
 | `id` | INTEGER PK | |
-| `source_uid` | TEXT UNIQUE | `uid` de Anki, clave de idempotencia |
-| `kanji` | TEXT NULL | forma en kanji |
+| `source_uid` | TEXT UNIQUE | Anki `uid`, idempotency key |
+| `kanji` | TEXT NULL | kanji form |
 | `reading` | TEXT | kana |
-| `meaning` | TEXT | significado principal en español (limpio) |
-| `meaning_plain` | TEXT | significado normalizado para claves |
-| `kanji_gloss` | TEXT NULL | glosa kanji a kanji (`significado`) |
-| `audio_file` | TEXT NULL | nombre `<sha1>.mp3` dentro de `media/` |
+| `meaning` | TEXT | main meaning in Spanish (clean) |
+| `meaning_plain` | TEXT | normalized meaning for keys |
+| `kanji_gloss` | TEXT NULL | kanji-to-kanji gloss (`significado`) |
+| `audio_file` | TEXT NULL | `<sha1>.mp3` name inside `media/` |
 | `lesson` | TEXT | `L00`…`L12` |
 | `category` | TEXT | `01 Vocabulario`, `03 Partes Del Cuerpo`, … |
-| `tags` | TEXT | tags de Anki separados por espacio |
+| `tags` | TEXT | space-separated Anki tags |
 | `is_pattern` | INTEGER | `〜`, `+`, `...` |
-| `irregular` | INTEGER | `*` en la lectura |
+| `irregular` | INTEGER | `*` in the reading |
 | `dedup_key` | TEXT UNIQUE | `normalize_key(reading) + "|" + normalize_key(meaning)` |
 | `created_at` | INTEGER | Unix UTC |
 
 ### `item_sources`
 
-`item_id`, `source_uid`, `lesson`, `category`. Permite que un ítem deduplicado recuerde todas las
-notas de Anki que lo originaron.
+`item_id`, `source_uid`, `lesson`, `category`. Lets a deduplicated item remember every Anki note
+that originated it.
 
 ### `review_log`
 
@@ -87,129 +87,128 @@ notas de Anki que lo originaron.
 
 ### `srs_state`
 
-`item_id` PK, `interval_minutes`, `ease` (2.5 por ahora), `due_at`, `reps`, `lapses`.
+`item_id` PK, `interval_minutes`, `ease` (2.5 for now), `due_at`, `reps`, `lapses`.
 
 ### `settings`
 
-`key` / `value`. Toda la configuración se guarda como JSON bajo la clave `settings`.
+`key` / `value`. All configuration is stored as JSON under the `settings` key.
 
-### Índices
+### Indexes
 
 `idx_srs_due`, `idx_review_answered`, `idx_items_pattern`.
 
-## Flujo de importación `.apkg`
+## `.apkg` import flow
 
-1. Abrir el ZIP.
-2. Buscar `collection.anki21b` → descomprimir zstd → escribir SQLite temporal → abrir con
-   `rusqlite`. Fallback a `collection.anki21` / `collection.anki2`.
-3. Leer `fields` (por `mid`), `cards` + `decks` (para lección/categoría) y `notes` (`flds`, `tags`).
-4. Leer `media` → zstd → protobuf (`MediaEntry { name, size, sha1 }`) o JSON antiguo.
-5. Para cada nota:
-   - separar `flds` por `\x1f`;
-   - mapear campos por nombre (fallback posicional);
-   - limpiar HTML/entidades y normalizar;
-   - calcular `is_pattern`, `irregular` y `dedup_key`;
-   - extraer el audio referenciado (`[sound:...]`), verificar SHA-1 y escribirlo en
+1. Open the ZIP.
+2. Look for `collection.anki21b` → decompress zstd → write a temporary SQLite database → open it
+   with `rusqlite`. Fallback to `collection.anki21` / `collection.anki2`.
+3. Read `fields` (by `mid`), `cards` + `decks` (for lesson/category) and `notes` (`flds`, `tags`).
+4. Read `media` → zstd → protobuf (`MediaEntry { name, size, sha1 }`) or legacy JSON.
+5. For each note:
+   - split `flds` by `\x1f`;
+   - map fields by name (positional fallback);
+   - clean HTML/entities and normalize;
+   - compute `is_pattern`, `irregular` and `dedup_key`;
+   - extract the referenced audio (`[sound:...]`), verify SHA-1 and write it to
      `media/<sha1>.<ext>`;
-   - insertar o reutilizar el ítem y registrar `item_sources`;
-   - emitir `import:progress` cada 25 notas.
-6. Commit y devolver `ImportSummary`.
+   - insert or reuse the item and record `item_sources`;
+   - emit `import:progress` every 25 notes.
+6. Commit and return `ImportSummary`.
 
-El audio se extrae una sola vez por nombre; las referencias repetidas cuentan como `audio_reused`.
+Audio is extracted only once per name; repeated references count as `audio_reused`.
 
-## Flujo de repaso
+## Review flow
 
-1. El scheduler (hilo propio) despierta cada 10 s.
-2. Comprueba pausa, DND, máximo diario, pantalla completa y si el popup ya está visible.
-3. Según el modo: `show_popup`, `show_widget` o `show_toast`.
-4. La ventana popup/widget recibe el evento `challenge:show` y pide `next_challenge`.
-5. `db::next_item` elige un ítem vencido (o cualquiera si no hay vencidos) excluyendo el actual y
-   filtrando plantillas.
-6. El usuario responde → `submit_answer` valida, calcula la calidad (1-5), registra en `review_log`,
-   actualiza `srs_state` con SM-2 y devuelve `AnswerResult`.
-7. El frontend muestra el feedback, el audio y el próximo intervalo.
-8. “Siguiente” pide otro reto; “Ahora no”/“Ocultar” oculta la ventana sin registrar nada.
+1. The scheduler (its own thread) wakes up every 10 s.
+2. It checks pause, DND, the daily maximum, fullscreen and whether the popup is already visible.
+3. Depending on the mode: `show_popup`, `show_widget` or `show_toast`.
+4. The popup/widget window receives the `challenge:show` event and requests `next_challenge`.
+5. `db::next_item` picks a due item (or any item if none are due) excluding the current one and
+   filtering templates.
+6. The user answers → `submit_answer` validates, computes the quality (1-5), logs to `review_log`,
+   updates `srs_state` with SM-2 and returns `AnswerResult`.
+7. The frontend shows the feedback, the audio and the next interval.
+8. “Next” requests another challenge; “Not now”/“Hide” hides the window without recording anything.
 
-## Normalización de respuestas
+## Answer normalization
 
-- NFKC, minúsculas, sin diacríticos, espacios ni puntuación.
-- ES → JP: kanji, kana y romaji (Hepburn/kunrei, vocales largas y は final → wa).
-- JP → ES: acepciones separadas por `;`, sin paréntesis ni `...`.
-- El romaji se genera desde las variantes en kana; los kanji no se romanizan.
+- NFKC, lowercase, no diacritics, no spaces or punctuation.
+- ES → JP: kanji, kana and romaji (Hepburn/kunrei, long vowels and final は → wa).
+- JP → ES: senses separated by `;`, without parentheses or `...`.
+- Romaji is generated from the kana variants; kanji are not romanized.
 
-## Comandos IPC
+## IPC commands
 
-| Comando | Entrada | Salida |
+| Command | Input | Output |
 |---|---|---|
 | `bootstrap` | — | `Bootstrap { item_count, settings, stats }` |
 | `get_settings` | — | `Settings` |
-| `update_settings` | `settings` | `Settings` saneado |
-| `get_stats` | — | `Stats` con actividad de 14 días, progreso por lección y palabras difíciles |
-| `import_deck` | `path` | `ImportSummary` (emite `import:progress`) |
+| `update_settings` | `settings` | Sanitized `Settings` |
+| `get_stats` | — | `Stats` with 14-day activity, per-lesson progress and difficult words |
+| `import_deck` | `path` | `ImportSummary` (emits `import:progress`) |
 | `next_challenge` | `excludeId?` | `Challenge \| null` |
 | `submit_answer` | `itemId`, `direction`, `answer`, `latencyMs` | `AnswerResult` |
-| `get_audio` | `itemId` | `number[] \| null` (bytes del mp3) |
+| `get_audio` | `itemId` | `number[] \| null` (mp3 bytes) |
 | `reset_progress` | — | `Stats` |
-| `clear_library` | — | `void` (borra ítems, progreso y audios huérfanos) |
-| `export_backup` | `destination` | ruta de la carpeta creada |
-| `restore_backup` | `source` | `Settings` restaurados (reemplaza DB y audio) |
-| `export_history` | `destination` | ruta del CSV de `review_log` |
-| `practice_now` | — | `void` (abre el modo actual: popup/widget/toast) |
+| `clear_library` | — | `void` (deletes items, progress and orphan audio) |
+| `export_backup` | `destination` | path of the created folder |
+| `restore_backup` | `source` | restored `Settings` (replaces DB and audio) |
+| `export_history` | `destination` | path of the `review_log` CSV |
+| `practice_now` | — | `void` (opens the current mode: popup/widget/toast) |
 | `close_popup` | — | `void` |
 | `hide_widget` | — | `void` |
 | `show_main_window` | — | `void` |
 
-Tauri convierte los argumentos `snake_case` a `camelCase` en JS (`itemId`, `latencyMs`,
-`excludeId`).
+Tauri converts `snake_case` arguments to `camelCase` in JS (`itemId`, `latencyMs`, `excludeId`).
 
-Eventos principales: `challenge:show` (a popup/widget), `settings:changed`, `import:progress` y
+Main events: `challenge:show` (to popup/widget), `settings:changed`, `import:progress` and
 `library:changed`.
 
 ## Frontend (`src/`)
 
-| Archivo | Responsabilidad |
+| File | Responsibility |
 |---|---|
-| `App.tsx` | Detecta si la ventana es `popup` por `getCurrentWindow().label` |
-| `MainApp.tsx` | Bootstrap, rail de navegación, vistas y estado global |
-| `PracticePanel.tsx` | Tarjeta de repaso, input, feedback, audio y atajos |
-| `PopupApp.tsx` | Versión compacta para la ventana popup; escucha `challenge:show` |
-| `ImportPanel.tsx` | Selector `.apkg`, resumen y avisos |
-| `StatsPanel.tsx` | Métricas y gráfico de actividad |
-| `SettingsPanel.tsx` | Frecuencia, DND, contenido, audio, autostart y datos |
-| `api.ts` | Tipos y wrappers de `invoke` |
-| `audio.ts` | Reproducción de bytes locales con Blob URL |
-| `Icons.tsx` | Iconos SVG inline |
-| `styles.css` | Sistema visual “washi” y estilos de todas las vistas |
+| `App.tsx` | Detects whether the window is `popup` via `getCurrentWindow().label` |
+| `MainApp.tsx` | Bootstrap, navigation rail, views and global state |
+| `PracticePanel.tsx` | Review card, input, feedback, audio and shortcuts |
+| `PopupApp.tsx` | Compact version for the popup window; listens for `challenge:show` |
+| `ImportPanel.tsx` | `.apkg` picker, summary and notices |
+| `StatsPanel.tsx` | Metrics and activity chart |
+| `SettingsPanel.tsx` | Frequency, DND, content, audio, autostart and data |
+| `api.ts` | Types and `invoke` wrappers |
+| `audio.ts` | Playback of local bytes with a Blob URL |
+| `Icons.tsx` | Inline SVG icons |
+| `styles.css` | “washi” visual system and styles for all views |
 
-El popup y la ventana principal comparten el mismo bundle; se distinguen por el label de la ventana.
+The popup and the main window share the same bundle; they are told apart by the window label.
 
 ## Scheduler
 
-- Hilo `std::thread` que duerme 10 s entre comprobaciones.
-- `next_run` es un `Instant`; el primer reto se programa a los ~75 s.
-- Antes de mostrar: comprobar que haya ítems, que no esté pausado, que no sea DND, que no se haya
-  alcanzado `max_per_day` y que no haya pantalla completa/presentación si
-  `suppress_fullscreen` está activo.
-- Si el modo es `popup` y el popup ya está visible, espera 45 s.
-- Dispatch por modo: `popup` → `show_popup`; `widget` → `show_widget` (re-emite el reto);
-  `toast` → `show_toast` (notificación nativa).
-- Tras mostrar: `next_run = now + rand(min..=max) minutos`.
+- `std::thread` thread that sleeps 10 s between checks.
+- `next_run` is an `Instant`; the first challenge is scheduled at ~75 s.
+- Before showing: check that there are items, that it is not paused, that it is not DND, that
+  `max_per_day` has not been reached and that there is no fullscreen/presentation if
+  `suppress_fullscreen` is active.
+- If the mode is `popup` and the popup is already visible, it waits 45 s.
+- Dispatch by mode: `popup` → `show_popup`; `widget` → `show_widget` (re-emits the challenge);
+  `toast` → `show_toast` (native notification).
+- After showing: `next_run = now + rand(min..=max) minutes`.
 
 ## SRS SM-2
 
-- Calidad: 5 si acierta en ≤ 5 s, 4 si acierta más lento, 2 si falla, 1 si no lo sabe.
-- `ease += 0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)`, con suelo 1.3.
-- Aprendizaje: primer acierto → 10 min; segundo → 1 día; después intervalo × `ease`.
-- Fallo: `reps = 0`, intervalo 10 min, `lapses += 1`.
-- `due_at` se guarda en Unix UTC.
+- Quality: 5 if correct in ≤ 5 s, 4 if correct but slower, 2 if wrong, 1 if you don't know.
+- `ease += 0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)`, with a floor of 1.3.
+- Learning: first correct → 10 min; second → 1 day; afterwards interval × `ease`.
+- Failure: `reps = 0`, interval 10 min, `lapses += 1`.
+- `due_at` is stored in Unix UTC.
 
-## Settings por defecto
+## Default settings
 
-| Clave | Valor |
+| Key | Value |
 |---|---|
 | `interval_min_minutes` | 10 |
 | `interval_max_minutes` | 25 |
-| `max_per_day` | 40 (0 = sin límite) |
+| `max_per_day` | 40 (0 = no limit) |
 | `paused` | `false` |
 | `dnd_enabled` | `true` |
 | `dnd_start` / `dnd_end` | `22:00` / `08:00` |
@@ -220,7 +219,7 @@ El popup y la ventana principal comparten el mismo bundle; se distinguen por el 
 | `include_patterns` | `false` |
 | `launch_at_startup` | `false` |
 
-## Datos locales
+## Local data
 
 ```
 %APPDATA%\com.kotoba.app\
@@ -231,42 +230,42 @@ El popup y la ventana principal comparten el mismo bundle; se distinguen por el 
     <sha1>.mp3
 ```
 
-Ajustes → Datos → **Exportar copia** crea `kotoba-backup-<timestamp>/` con `kotoba.sqlite3` y
-`media/`. Antes de copiar se hace `PRAGMA wal_checkpoint(TRUNCATE)` para que la base sea consistente.
-La limpieza de medios se ejecuta al borrar la biblioteca y al terminar una importación.
-**Restaurar copia** valida el SQLite, cierra la conexión viva, reemplaza base y `media/`, y reabre la
-conexión. **Exportar historial** genera un CSV de `review_log` con fecha local y datos del ítem.
+Settings → Data → **Export backup** creates `kotoba-backup-<timestamp>/` with `kotoba.sqlite3` and
+`media/`. Before copying, `PRAGMA wal_checkpoint(TRUNCATE)` is run so the database is consistent.
+Media cleanup runs when the library is deleted and at the end of an import.
+**Restore backup** validates the SQLite file, closes the live connection, replaces the database and
+`media/`, and reopens the connection. **Export history** generates a CSV of `review_log` with local
+date and item data.
 
 ## Logging
 
-`tauri-plugin-log` escribe en `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log` con nivel Info.
-Ajustes → Sistema → **Abrir carpeta** abre ese directorio. Se registran importaciones, copias,
-restauraciones y el arranque del scheduler.
+`tauri-plugin-log` writes to `%LOCALAPPDATA%\com.kotoba.app\logs\kotoba.log` at Info level.
+Settings → System → **Open folder** opens that directory. Imports, backups, restores and scheduler
+startup are logged.
 
-## Ventanas y capacidades
+## Windows and capabilities
 
-- `main`: 1120×780 lógica, mínimo 820×600, oculta hasta decidir si hay biblioteca.
-- `popup`: 392×280, frameless, transparente, always-on-top, skip-taskbar, sin foco inicial.
-- `widget`: 340×248, frameless, transparente, always-on-top, persistente; se crea al arrancar si
-  el modo es widget o al cambiar de modo.
+- `main`: 1120×780 logical, minimum 820×600, hidden until it decides whether there is a library.
+- `popup`: 392×280, frameless, transparent, always-on-top, skip-taskbar, no initial focus.
+- `widget`: 340×248, frameless, transparent, always-on-top, persistent; created at startup if
+  the mode is widget or when the mode changes.
 - Capabilities: `core:default`, show/hide/close/set-focus/start-dragging, `dialog:default`,
   `autostart:default`, `notification:default`.
-- `csp: null` por comodidad de desarrollo; no hay contenido remoto.
-- El audio no usa `assetProtocol`: se sirve como bytes por IPC y se reproduce con Blob URL.
+- `csp: null` for development convenience; there is no remote content.
+- Audio does not use `assetProtocol`: it is served as bytes over IPC and played with a Blob URL.
 
-## Modos de aparición y foco
+## Appearance modes and focus
 
-| Modo | Ventana | Comportamiento |
+| Mode | Window | Behaviour |
 |---|---|---|
-| `popup` | `popup` | Aparece cada intervalo; se oculta al responder o cerrar |
-| `widget` | `widget` | Permanece visible; el scheduler reemite retos en la misma ventana |
-| `toast` | ninguna | Notificación nativa; el click abre el popup |
+| `popup` | `popup` | Appears every interval; hides on answer or close |
+| `widget` | `widget` | Stays visible; the scheduler re-emits challenges in the same window |
+| `toast` | none | Native notification; clicking it opens the popup |
 
-- **No robar foco:** `shell::show_without_activation` llama a `window.show()` para inicializar el
-  webview, fuerza topmost con `SetWindowPos(SWP_NOACTIVATE)` y devuelve el foco a la ventana anterior
-  con `SetForegroundWindow`.
-- **Pantalla completa:** `SHQueryUserNotificationState` detecta presentaciones, juegos, apps a
-  pantalla completa y modo silencio. El scheduler no muestra nada en esos estados si
-  `suppress_fullscreen` está activo.
-- **Visibilidad:** `AppState.popup_visible` y `widget_visible` son la fuente de verdad para el
-  scheduler; no se depende de `is_visible()` porque el show nativo se hace por Win32.
+- **No focus stealing:** `shell::show_without_activation` calls `window.show()` to initialize the
+  webview, forces topmost with `SetWindowPos(SWP_NOACTIVATE)` and returns focus to the previous
+  window with `SetForegroundWindow`.
+- **Fullscreen:** `SHQueryUserNotificationState` detects presentations, games, fullscreen apps and
+  quiet mode. The scheduler shows nothing in those states if `suppress_fullscreen` is active.
+- **Visibility:** `AppState.popup_visible` and `widget_visible` are the source of truth for the
+  scheduler; it does not rely on `is_visible()` because the native show is done through Win32.

@@ -1,50 +1,50 @@
-# Plan: kotoba — repaso pasivo de japonés (Genki 1)
+# Plan: kotoba — passive Japanese review (Genki 1)
 
-## Resumen
+## Summary
 
-Aplicación de escritorio para **Windows** que vive en la bandeja del sistema y lanza **micro-retos de
-vocabulario** (5-10 s) en momentos aleatorios. El vocabulario sale del **mazo Anki "Genki 1"** (ya en
-español). Estudio **pasivo**: no abres una app a estudiar, la app te lo trae a ti. Repetición espaciada
-"invisible" por detrás para que realmente retenga.
+Desktop application for **Windows** that lives in the system tray and launches **vocabulary
+micro-challenges** (5-10 s) at random moments. The vocabulary comes from the **Anki deck "Genki 1"**
+(already in Spanish). **Passive** study: you don't open an app to study, the app brings it to you.
+"Invisible" spaced repetition behind the scenes so it actually sticks.
 
-## Decisiones cerradas
+## Settled decisions
 
 - **Stack**: Tauri 2 (Rust) + WebView2
-- **OS**: solo Windows
-- **MVP**: solo vocabulario (bidireccional ES↔JP)
-- **Apariciones**: 3 modos configurables (widget / popup / toast)
-- **Contenido**: export del mazo Anki "Genki 1" (definiciones ya en español)
-- **Extracción**: importar desde archivo `.txt`/`.apkg` exportado de Anki
+- **OS**: Windows only
+- **MVP**: vocabulary only (bidirectional ES↔JP)
+- **Appearances**: 3 configurable modes (widget / popup / toast)
+- **Content**: export of the Anki deck "Genki 1" (definitions already in Spanish)
+- **Extraction**: import from a `.txt`/`.apkg` file exported from Anki
 
 ## Stack
 
-- **Tauri 2** (Rust) + **WebView2** de Windows.
+- **Tauri 2** (Rust) + Windows **WebView2**.
 - Frontend: **React + TypeScript + Vite**.
-- Backend Rust: bandeja, scheduler, gestión de ventanas.
-- Storage: **SQLite** (`tauri-plugin-sql` o `rusqlite`).
-- Notificaciones nativas: `tauri-plugin-notification`.
+- Rust backend: tray, scheduler, window management.
+- Storage: **SQLite** (`tauri-plugin-sql` or `rusqlite`).
+- Native notifications: `tauri-plugin-notification`.
 
-## Requisitos funcionales
+## Functional requirements
 
-1. **Residencia**: icono en bandeja con menú (Pausar/Reanudar · Modo · Estadísticas · Config · Salir) y
-   arranque con Windows.
-2. **Importación de contenido**: importar el vocabulario desde un **export `.txt`** (tab-separado) o
-   **`.apkg`** del mazo "Genki 1". Mapeo de campos configurable en el primer import.
-3. **Ejercicio bidireccional**: mostrar palabra en un idioma → escribirla en el otro (con IME japonés).
-4. **Normalización de respuestas**: aceptar kana y kanji, tolerar variantes de lectura.
-5. **Feedback inmediato** + lectura en kana de la palabra tras responder.
-6. **3 modos de aparición** (configurables): widget flotante / popup / toast de sistema.
-7. **No molestar**: horario, detección de app a pantalla completa, máximo por día.
-8. **SRS pasiva** (SM-2 ligero) por ítem, invisible para el usuario.
-9. **Estadísticas simples**: % aciertos, racha, palabras dominadas.
+1. **Residence**: tray icon with a menu (Pause/Resume · Mode · Stats · Config · Quit) and
+   start with Windows.
+2. **Content import**: import the vocabulary from a **`.txt` export** (tab-separated) or
+   **`.apkg`** of the "Genki 1" deck. Field mapping configurable on first import.
+3. **Bidirectional exercise**: show a word in one language → type it in the other (with Japanese IME).
+4. **Answer normalization**: accept kana and kanji, tolerate reading variants.
+5. **Immediate feedback** + kana reading of the word after answering.
+6. **3 display modes** (configurable): floating widget / popup / system toast.
+7. **Do not disturb**: hours, fullscreen app detection, daily maximum.
+8. **Passive SRS** (light SM-2) per item, invisible to the user.
+9. **Simple stats**: hit %, streak, dominated words.
 
-## Requisitos no funcionales
+## Non-functional requirements
 
-- RAM < ~120 MB en reposo (es una app siempre encendida).
-- No interrumpir apps a pantalla completa ni robar el foco del teclado al aparecer.
-- Persistencia local completa en SQLite (sin nube).
+- RAM < ~120 MB idle (it is an always-on app).
+- Do not interrupt fullscreen apps or steal keyboard focus on appearance.
+- Full local persistence in SQLite (no cloud).
 
-## Modelo de datos
+## Data model
 
 ```
 items       → id, word (kanji), reading (kana), meaning (ES), lesson, tags
@@ -53,30 +53,30 @@ srs_state   → item_id, interval, ease, due_at
 settings    → mode, interval_range, do_not_disturb, max_per_day
 ```
 
-## Flujo de importación desde Anki
+## Import flow from Anki
 
-1. En Anki: *Archivo → Exportar → Notas en texto plano (.txt)* (o `.apkg`) del mazo "Genki 1".
-2. La app lee el archivo y muestra una **previsualización del mapeo de campos** (`word`/`reading`/
-   `meaning` detectados por cabecera) para confirmar.
-3. Guarda una copia en su propia SQLite con SRS independiente (Anki = estudio activo; esta app = repaso
-   pasivo; no se pisan).
+1. In Anki: *File → Export → Plain text notes (.txt)* (or `.apkg`) of the "Genki 1" deck.
+2. The app reads the file and shows a **preview of the field mapping** (`word`/`reading`/
+   `meaning` detected from the headers) for confirmation.
+3. It saves a copy in its own SQLite with an independent SRS (Anki = active study; this app = passive
+   review; they don't overwrite each other).
 
-## UX de los 3 modos
+## UX of the 3 modes
 
-- **Widget flotante**: ventana frameless, always-on-top, transparente, siempre visible proponiendo
-  retos.
-- **Popup**: ventana pequeña junto a la bandeja; responde o descarta, se va sola.
-- **Toast**: notificación nativa de Windows que abres solo si quieres.
+- **Floating widget**: frameless, always-on-top, transparent window, always visible proposing
+  challenges.
+- **Popup**: small window next to the tray; answer or dismiss, it goes away on its own.
+- **Toast**: native Windows notification that you open only if you want.
 
 ## Roadmap
 
-1. **Fase 0** — confirmar campos exactos del export del mazo.
-2. **Fase 1 — MVP técnico**: scaffold Tauri 2, bandeja, scheduler por intervalo, import `.txt`,
-   ejercicio bidireccional, SQLite, un modo de ventana.
-3. **Fase 2 — Pulido**: los 3 modos, no-molestar, normalización robusta, SRS, estadísticas.
-4. **Fase 3 — Extras**: sincronización AnkiConnect, rachas, tipos de gramática/partículas, más mazos.
+1. **Phase 0** — confirm the exact fields of the deck export.
+2. **Phase 1 — Technical MVP**: Tauri 2 scaffold, tray, interval scheduler, `.txt` import,
+   bidirectional exercise, SQLite, one window mode.
+3. **Phase 2 — Polish**: the 3 modes, do-not-disturb, robust normalization, SRS, stats.
+4. **Phase 3 — Extras**: AnkiConnect sync, streaks, grammar/particle types, more decks.
 
-## Nota de licencia
+## License note
 
-El mazo de Anki es para **uso personal**; la app consume tu propio export y no redistribuye contenido
-del libro.
+The Anki deck is for **personal use**; the app consumes your own export and does not redistribute content
+from the book.

@@ -80,8 +80,8 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
   }, []);
 
   useEffect(() => {
-    // En desarrollo el binario es de consola y carga el devUrl: arrancar con Windows deja
-    // una ventana abierta y una página de error. Solo se permite desde la app instalada.
+    // In development the binary is a console app and loads the devUrl: starting with Windows leaves
+    // an open window and an error page. Only allowed from the installed app.
     if (boot.dev_build) {
       setAutostart(false);
       setSettings((current) => ({ ...current, launch_at_startup: false }));
@@ -95,7 +95,7 @@ export default function SettingsPanel({ boot, onChanged, onToast }: Props) {
       .catch(() => undefined);
   }, [boot.dev_build]);
 
-  // El autostart se aplica al instante con el plugin; no cuenta como cambio sin guardar.
+  // Autostart is applied instantly by the plugin; it does not count as an unsaved change.
   const dirty =
     JSON.stringify({ ...settings, launch_at_startup: false }) !==
     JSON.stringify({ ...boot.settings, launch_at_startup: false });
